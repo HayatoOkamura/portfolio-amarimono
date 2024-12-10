@@ -1,38 +1,94 @@
 # portfolio-amarimono
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+このプロジェクトは、backend（Go/Gin ベース）、frontend（Next.js ベース）、および db（PostgreSQL）のサービスを含む Docker Compose を使用したマルチコンテナアプリケーションです。
 
-## Getting Started
+## 環境構成
+### サービス一覧
+backend
 
-First, run the development server:
+ポート: 8080
+機能: API サーバー（Go/Gin）
+ビルド元: ./backend/Dockerfile
+frontend
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+ポート: 3000
+機能: フロントエンド（Next.js）
+ビルド元: ./frontend/Dockerfile
+db
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+イメージ: postgres:17-alpine
+ポート: 5432
+機能: データベース
+初期化スクリプト: ./backend/db/init.sql
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## セットアップ手順
+### 1. 必要条件
+以下がインストールされている必要があります：
 
-## Learn More
+Docker
+Docker Compose
+### 2. プロジェクトのクローン
+リポジトリをローカル環境にクローンします。
 
-To learn more about Next.js, take a look at the following resources:
+bash
+コードをコピーする
+git clone <リポジトリのURL>
+cd <プロジェクトディレクトリ>
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 起動方法
+Docker Composeを使用してコンテナを起動 プロジェクトルートで以下のコマンドを実行します：
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### フロントエンド
+docker compose up frontend --build
 
-## Deploy on Vercel
+### バックエンド
+docker compose up backend --build -d
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### DB
+docker compose up db --build -d
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## アクセス方法
+### フロントエンド
+URL: http://localhost:3000
+### バックエンド
+URL: http://localhost:8080
+### データベース
+ホスト: localhost
+ポート: 5432
+ユーザー: postgres
+パスワード: password
+データベース名: db
+## 停止方法
+サービスを停止するには：
+
+bash
+コードをコピーする
+docker compose down
+ボリュームも含めて削除する場合は以下を実行します：
+
+bash
+コードをコピーする
+docker compose down -v
+
+## その他コマンド
+
+### execによるアクセス
+### バックエンド
+docker compose exec backend sh
+
+## DB
+docker compose exec　<container_id> sh
+
+## 開発時の注意
+ホットリロード
+backend と frontend のコードは、それぞれローカルの ./backend および ./frontend ディレクトリをマウントしているため、ローカルファイルの変更がコンテナに即時反映されます。
+Node_modules の管理
+frontend サービスでは、front_node_modules ボリュームを使用して node_modules ディレクトリを管理しています。ローカル環境で直接操作する必要はありません。
+トラブルシューティング
+1. ポート競合エラー
+他のアプリケーションがポート 3000, 8080, または 5432 を使用している場合、競合が発生します。docker-compose.yml のポート設定を変更してください。
+
+2. 初期化SQLが適用されない
+./backend/db/init.sql が正しくマウントされているか確認してください。
+
