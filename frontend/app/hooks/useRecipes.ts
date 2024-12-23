@@ -6,8 +6,6 @@ export async function fetchRecipesAPI(ingredients: { id: number; quantity: numbe
     },
     body: JSON.stringify(ingredients),
   });
-
-  console.log(response);
   
   
 

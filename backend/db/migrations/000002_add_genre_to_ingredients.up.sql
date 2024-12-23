@@ -1,0 +1,1 @@
+ALTER TABLE ingredients ADD COLUMN genre VARCHAR(50) NOT NULL DEFAULT 'その他';

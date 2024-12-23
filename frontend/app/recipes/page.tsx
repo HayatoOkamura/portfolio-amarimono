@@ -8,8 +8,6 @@ const RecipesPageContent = () => {
   const recipes = recipesParam
     ? JSON.parse(decodeURIComponent(recipesParam))
     : [];
-    console.log("test");
-    console.log(recipes);
     
 
   if (!recipes || recipes.length === 0) {

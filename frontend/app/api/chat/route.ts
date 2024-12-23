@@ -6,10 +6,7 @@ export async function POST(req: Request) {
   try {
     // リクエストから食材のリストを取得
     const { ingredients } = await req.json();
-
-    console.log(ingredients);
     
-
     //  const recipePrompt = `次の食材を使ってレシピを5つ生成してください: ${ingredients.join(", ")}`;
 
 

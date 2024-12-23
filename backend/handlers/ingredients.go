@@ -47,3 +47,4 @@ func (h *IngredientHandler) AddIngredient(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Ingredient added successfully"})
 }
+

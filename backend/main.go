@@ -3,10 +3,11 @@ package main
 import (
 	"os"
 
+	"portfolio-amarimono/db"
 	"portfolio-amarimono/handlers"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"portfolio-amarimono/db"
 )
 
 func main() {
@@ -16,6 +17,9 @@ func main() {
 	//Ginフレームワークのデフォルトの設定を使用してルータを作成
 	r := gin.Default()
 
+	// GinのLoggerミドルウェアを使用
+	r.Use(gin.Logger())
+
 	// CORS設定を追加
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"}, // フロントエンドのオリジンを指定
@@ -24,6 +28,8 @@ func main() {
 		AllowCredentials: true,
 	}))
 
+	// 静的ファイルを提供
+	r.Static("/uploads", "./uploads")
 
 	// `RecipeHandler` を初期化
 	recipeHandler := &handlers.RecipeHandler{
@@ -39,10 +45,13 @@ func main() {
 	// 管理画面用エンドポイント
 	admin := r.Group("/admin")
 	{
-		admin.GET("/ingredients", adminHandler.ListIngredients) // 具材一覧
-		admin.POST("/ingredients", adminHandler.AddIngredient) // 具材追加
-		admin.POST("/recipes", adminHandler.AddRecipe)         // レシピ追加
+		admin.GET("/ingredients", adminHandler.ListIngredients)         // 具材一覧
+		admin.POST("/ingredients", adminHandler.AddIngredient)          // 具材追加
+		admin.DELETE("/ingredients/:id", adminHandler.DeleteIngredient) //具材削除
+		admin.POST("/recipes", adminHandler.AddRecipe)                  // レシピ追加
 	}
+
+	// simulateAddIngredient(adminHandler)
 
 	// サーバーを起動
 	port := os.Getenv("PORT")

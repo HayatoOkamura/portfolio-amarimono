@@ -19,7 +19,7 @@ db
 イメージ: postgres:17-alpine
 ポート: 5432
 機能: データベース
-初期化スクリプト: ./backend/db/init.sql
+初期化スクリプト: ./backend/db/migrations
 
 
 ## セットアップ手順
@@ -78,7 +78,14 @@ docker compose down -v
 docker compose exec backend sh
 
 ## DB
-docker compose exec　<container_id> sh
+### dbコンテナに入る
+docker exec　-it <container_id> sh
+
+### sqlコマンドを使用
+psql -U postgres -d db
+
+### カラム確認
+\d ingredients;
 
 ## 開発時の注意
 ホットリロード
@@ -88,7 +95,3 @@ frontend サービスでは、front_node_modules ボリュームを使用して 
 トラブルシューティング
 1. ポート競合エラー
 他のアプリケーションがポート 3000, 8080, または 5432 を使用している場合、競合が発生します。docker-compose.yml のポート設定を変更してください。
-
-2. 初期化SQLが適用されない
-./backend/db/init.sql が正しくマウントされているか確認してください。
-

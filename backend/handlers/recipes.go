@@ -3,15 +3,10 @@ package handlers
 import (
 	"log"
 	"net/http"
-	"os"
 	"portfolio-amarimono/db"
 
 	"github.com/gin-gonic/gin"
 )
-
-func init() {
-	log.SetOutput(os.Stdout) // 標準出力に明示的に設定
-}
 
 type FetchRecipesFunc func(ingredientIDs []int, quantities []int) ([]db.Recipe, error)
 
@@ -22,7 +17,9 @@ type RecipeHandler struct {
 type Ingredient struct {
 	ID       int    `json:"id"`
 	Name     string `json:"name"`
+	Genre    string `json:"genre"`
 	Quantity int    `json:"quantity"`
+	ImageUrl string `json:"image_url"`
 }
 
 type Recipe struct {

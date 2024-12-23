@@ -5,16 +5,19 @@ import { create } from "zustand";
 export interface Ingredient {
   id: number;
   name: string;
+  genre: string;
+  imageUrl: string;
   quantity: number;
 }
 
 interface IngredientStore {
   ingredients: Ingredient[];
   error: string;
-  newIngredient: string;
+  newIngredient: { name: string; imageUrl: File | null, genre: string };
   fetchIngredients: () => void;
-  addIngredient: (name: string) => void;
-  setNewIngredient: (name: string) => void;
+  addIngredient: (name: string, imageUrl: File, genre: string) => void;
+  deleteIngredient: (id: number) => void;
+  setNewIngredient: (name: string, imageUrl: File | null, genre: string) => void;
   increaseIngredientQuantity: (id: number) => void;
   decreaseIngredientQuantity: (id: number) => void;
 }
@@ -22,41 +25,68 @@ interface IngredientStore {
 const useIngredientStore = create<IngredientStore>((set, get) => ({
   ingredients: [],
   error: "",
-  newIngredient: "",
+  newIngredient: { name: "", imageUrl: null, genre: "" },
   fetchIngredients: async () => {
     try {
       const res = await fetch("http://localhost:8080/admin/ingredients");
       const data = await res.json();
+      
       set({ ingredients: data, error: "" });
     } catch {
       set({ error: "Failed to fetch ingredients" });
     }
   },
-  addIngredient: async (name) => {
-    if (!name.trim()) return;
+  addIngredient: async (name, imageUrl, genre) => {
 
+    if (!name.trim() || !imageUrl || !genre.trim()) return;
+
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("image", imageUrl);
+    formData.append("genre", genre);
+
+    // FormDataの内容をログに出力
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
+    
     try {
       const res = await fetch("http://localhost:8080/admin/ingredients", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: formData,
       });
-      
-      
+
       if (res.status === 409) throw new Error("Ingredient already exists");
-      
+      if (!res.ok) throw new Error("Failed to add ingredient");
+
       const ingredient = await res.json();
       set((state) => ({
         ingredients: [...state.ingredients, ingredient],
-        newIngredient: "",
+        newIngredient: { name: "", imageUrl: null, genre: "その他" },
         error: "",
       }));
-      await get().fetchIngredients();
+      await get().fetchIngredients(); //具材追加後にリストを更新
     } catch (err: any) {
       set({ error: err.message });
     }
   },
-  setNewIngredient: (name) => set({ newIngredient: name }),
+  deleteIngredient: async (id) => {
+    try {
+      const res = await fetch(`http://localhost:8080/admin/ingredients/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("Failed to delete ingredient");
+
+      set((state) => ({
+        ingredients: state.ingredients.filter((ingredient) => ingredient.id !== id),
+        error: "",
+      }));
+    } catch (err: any) {
+      set({ error: err.message });
+    }
+  },
+  setNewIngredient: (name, imageUrl, genre) => set({ newIngredient: { name, imageUrl, genre } }),
   increaseIngredientQuantity: (id) =>
     set((state) => ({
       ingredients: state.ingredients.map((ingredient) =>

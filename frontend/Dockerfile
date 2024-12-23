@@ -1,5 +1,5 @@
 # ベースイメージを指定
-FROM node:20.18.0-alpine
+FROM node:20.18.0
 
 # 作業ディレクトリを設定
 WORKDIR /app
@@ -7,11 +7,11 @@ WORKDIR /app
 # # キャッシュ利用で効率化するために別でコピー
 COPY package.json package-lock.json ./
 
+# 依存関係をインストール
+RUN npm install --frozen-lockfile --prefer-offline
+
 # # ソースコードをコピー
 COPY . .
-
-# # 依存関係をインストール
-RUN npm install
 
 # # アプリケーションをビルド
 RUN npm run build
