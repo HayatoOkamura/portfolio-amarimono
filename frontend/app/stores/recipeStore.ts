@@ -12,6 +12,7 @@ export interface Recipe {
   instructions: InstructionStep[];
   imageUrl: string;
   ingredients: { id: number; name: string; quantity: number; }[];
+  genre: string
 }
 
 interface RecipeStore {
@@ -38,6 +39,7 @@ const useRecipeStore = create<RecipeStore>((set) => ({
           stepNumber: step.stepNumber,
           description: step.description
         })),
+        genre: recipe.genre,
         imageUrl: recipe.image_url,
         ingredients: recipe.ingredients.map((ingredient: any) => ({
           id: ingredient.ingredient_id,
@@ -62,6 +64,9 @@ const useRecipeStore = create<RecipeStore>((set) => ({
         method: "POST",
         body: formData,
       });
+      console.log("Response Status:", res.status);
+      const resBody = await res.json();
+      console.log("Response Body:", resBody);
 
       if (!res.ok) throw new Error("Failed to add recipe");
 

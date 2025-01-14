@@ -16,8 +16,9 @@ const RecipeList = () => {
   const [selectedIngredients, setSelectedIngredients] = useState<
     { id: number; quantity: number }[]
   >([]);
+  const [newRecipeGenre, setNewRecipeGenre] = useState("");
   const backendUrl =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
   useEffect(() => {
     fetchRecipes();
@@ -29,7 +30,8 @@ const RecipeList = () => {
       !newRecipeName ||
       !newRecipeInstructions ||
       !newRecipeImage ||
-      selectedIngredients.length === 0
+      selectedIngredients.length === 0 ||
+      !newRecipeGenre
     ) {
       alert("Please fill in all fields.");
       return;
@@ -39,13 +41,20 @@ const RecipeList = () => {
     formData.append("name", newRecipeName);
     formData.append("instructions", JSON.stringify(newRecipeInstructions));
     formData.append("image", newRecipeImage);
-    formData.append("ingredients", JSON.stringify(selectedIngredients));
+    formData.append("ingredients", JSON.stringify(
+      selectedIngredients.map((ingredient) => ({
+        ingredient_id: ingredient.id,
+        quantity_required: ingredient.quantity,
+      }))
+    ));
+    formData.append("genre", newRecipeGenre);
 
     await addRecipe(formData);
     setNewRecipeName("");
     setNewRecipeInstructions([{ step_number: 1, description: "" }]);
     setNewRecipeImage(null);
     setSelectedIngredients([]);
+    setNewRecipeGenre("");
     fetchRecipes();
   };
 
@@ -109,6 +118,14 @@ const RecipeList = () => {
           ></textarea>
         ))}
 
+        <input
+          type="text"
+          placeholder="Recipe Genre"
+          value={newRecipeGenre}
+          onChange={(e) => setNewRecipeGenre(e.target.value)}
+          className="border p-2 mb-2 w-full rounded text-gray-700"
+        />
+
         <button
           onClick={addInstructionStep}
           className="bg-green-500 text-white px-4 py-2 rounded w-full mb-2"
@@ -168,15 +185,19 @@ const RecipeList = () => {
                 ))}
               {recipe.imageUrl && (
                 <img
-                src={
-                  recipe.imageUrl
-                    ? `${backendUrl}/${recipe.imageUrl}`
-                    : "/default-image.jpg"
-                }
+                  src={
+                    recipe.imageUrl
+                      ? `${backendUrl}/${recipe.imageUrl}`
+                      : "/default-image.jpg"
+                  }
                   alt={recipe.name}
                   className="w-32 h-32 object-cover rounded mb-2"
                 />
               )}
+              {recipe.genre && (
+                <p>{recipe.genre}</p>
+              )}
+              
               <h5 className="font-semibold mt-4">Ingredients:</h5>
               <ul>
                 {recipe.ingredients.map((ingredient, index) => (

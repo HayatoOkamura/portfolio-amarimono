@@ -9,7 +9,6 @@ type Recipe struct {
 	Ingredients  []RecipeIngredient `json:"ingredients" gorm:"foreignKey:RecipeID" binding:"required,dive"`
 }
 
-
 type RecipeIngredient struct {
 	RecipeID         int `json:"recipe_id" gorm:"primaryKey"`
 	IngredientID     int `json:"ingredient_id" gorm:"primaryKey"`

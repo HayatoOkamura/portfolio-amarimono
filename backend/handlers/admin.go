@@ -163,6 +163,14 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	}
 	recipe.Name = name
 
+	// genre の取得
+	genre := c.PostForm("genre")
+	if genre == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Genre is required"})
+		return
+	}
+	recipe.Genre = genre  
+
 	// instructions の直接代入
 	instructionsJSON := c.PostForm("instructions")
 	if instructionsJSON != "" {
