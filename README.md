@@ -82,7 +82,7 @@ docker compose exec backend sh
 docker exec　-it <container_id> sh
 
 ### sqlコマンドを使用
-psql -U postgres -d db
+psql -U postgres -x db
 
 ### カラム確認
 \d ingredients;

@@ -3,12 +3,12 @@ package handlers
 import (
 	"log"
 	"net/http"
-	"portfolio-amarimono/db"
 
 	"github.com/gin-gonic/gin"
+	"portfolio-amarimono/models"
 )
 
-type FetchRecipesFunc func(ingredientIDs []int, quantities []int) ([]db.Recipe, error)
+type FetchRecipesFunc func(ingredientIDs []int, quantities []int) ([]models.Recipe, error)
 
 type RecipeHandler struct {
 	FetchRecipes FetchRecipesFunc
@@ -22,14 +22,8 @@ type Ingredient struct {
 	ImageUrl string `json:"image_url"`
 }
 
-type Recipe struct {
-	ID           int    `json:"id"`
-	Name         string `json:"name"`
-	Instructions string `json:"instructions"`
-}
-
-// GetRecipes handles POST /api/recipes
-func (h *RecipeHandler) GetRecipes(c *gin.Context) {
+// GenerateRecipes handles POST /api/recipes
+func (h *RecipeHandler) GenerateRecipes(c *gin.Context) {
 	var ingredients []Ingredient
 
 	if err := c.BindJSON(&ingredients); err != nil {

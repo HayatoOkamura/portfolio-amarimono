@@ -2,11 +2,13 @@ package db
 
 import (
 	"log"
+
+	"portfolio-amarimono/models"
 )
 
 // FetchRecipes queries recipes based on ingredients
-func FetchRecipes(ingredientIDs []int, quantities []int) ([]Recipe, error) {
-	var recipes []Recipe
+func FetchRecipes(ingredientIDs []int, quantities []int) ([]models.Recipe, error) {
+	var recipes []models.Recipe
 	// クエリ条件を構築
 	query := `
 		SELECT DISTINCT r.id, r.name, r.instructions

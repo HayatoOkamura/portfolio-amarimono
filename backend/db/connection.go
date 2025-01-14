@@ -34,9 +34,3 @@ func init() {
 	}
 	log.Println("Database connection established")
 }
-
-type Recipe struct {
-	ID           int    `json:"id"`
-	Name         string `json:"name"`
-	Instructions string `json:"instructions"`
-}

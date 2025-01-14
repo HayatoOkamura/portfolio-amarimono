@@ -26,11 +26,16 @@ RUN go build -o main .
 FROM golang:latest
 WORKDIR /app
 
-# golang-migrate とアプリケーションのバイナリをコピー
+# golang-migrateとアプリケーションのバイナリをコピー
 COPY --from=builder /usr/local/bin/migrate /usr/local/bin/migrate
 COPY --from=builder /app/main /app/main
 
 # 公開予定のコンテナのポートを明示
 EXPOSE 8080
 # アプリケーションを実行
-CMD ["go", "run", "main.go"]
+
+# migrationsを使用しない場合はこちら
+# CMD ["go", "run", "main.go"]
+
+# migrationsを使用する場合はこちら
+CMD ["/bin/sh", "-c", "migrate -path /app/db/migrations -database 'postgres://postgres:password@db:5432/db?sslmode=disable' up && ./main"]

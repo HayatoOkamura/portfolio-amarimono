@@ -40,7 +40,7 @@ func main() {
 	}
 
 	// `/api/recipes` エンドポイントの登録
-	r.POST("/api/recipes", recipeHandler.GetRecipes)
+	r.POST("/api/recipes", recipeHandler.GenerateRecipes)
 
 	// 管理画面用エンドポイント
 	admin := r.Group("/admin")
@@ -48,7 +48,9 @@ func main() {
 		admin.GET("/ingredients", adminHandler.ListIngredients)         // 具材一覧
 		admin.POST("/ingredients", adminHandler.AddIngredient)          // 具材追加
 		admin.DELETE("/ingredients/:id", adminHandler.DeleteIngredient) //具材削除
+		admin.GET("/recipes", adminHandler.ListRecipes)                 // レシピ一覧
 		admin.POST("/recipes", adminHandler.AddRecipe)                  // レシピ追加
+		admin.DELETE("/recipes/:id", adminHandler.DeleteRecipe)         //具材削除
 	}
 
 	// simulateAddIngredient(adminHandler)
