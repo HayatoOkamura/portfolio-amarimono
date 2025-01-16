@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation"; // useRouterをインポート
 import useIngredientStore from "./stores/ingredientStore";
+import useRecipeStore from "./stores/recipeStore";
 import { fetchRecipesAPI } from "./hooks/useRecipes";
 
 const IngredientSelector = () => {
@@ -14,13 +15,11 @@ const IngredientSelector = () => {
     decreaseIngredientQuantity,
   } = useIngredientStore();
 
+  const { setRecipes } = useRecipeStore();
+
   const [selectedGenre, setSelectedGenre] = useState<string>("すべて");
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
-
-  const [recipes, setRecipes] = useState<
-    { id: number; name: string; instructions: string }[]
-  >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -48,7 +47,9 @@ const IngredientSelector = () => {
 
       const response = await fetchRecipesAPI(filteredIngredients); // 新規関数の使用
       setRecipes(response); // レシピを更新
-      router.push("/recipes"); // /recipesページに遷移
+
+      // レシピをURLのクエリパラメータに追加
+     router.push("/recipes");
     } catch (err: any) {
       setError(err.message || "An unknown error occurred.");
       setRecipes([]); // エラー時にレシピをクリア
@@ -61,8 +62,8 @@ const IngredientSelector = () => {
     <div className="container mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6 text-center">Recipe Generator</h1>
 
-       {/* 具材登録ページへ移動するボタン */}
-       <div className="text-center mb-6">
+      {/* 具材登録ページへ移動するボタン */}
+      <div className="text-center mb-6">
         <button
           onClick={() => router.push("/admin/ingredients")}
           className="bg-blue-500 text-white px-6 py-3 rounded hover:bg-blue-600 transition"

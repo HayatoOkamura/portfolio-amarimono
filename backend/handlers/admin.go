@@ -109,7 +109,7 @@ func (h *AdminHandler) DeleteIngredient(c *gin.Context) {
 	id := c.Param("id")
 
 	// 具材情報を取得して画像のパスを取得
-	var ingredient Ingredient
+	var ingredient models.Ingredient
 	if err := h.DB.Table("ingredients").First(&ingredient, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Ingredient not found"})
@@ -124,7 +124,7 @@ func (h *AdminHandler) DeleteIngredient(c *gin.Context) {
 	imagePath := filepath.Join(uploadDir, filepath.Base(ingredient.ImageUrl))
 
 	// 具材データを削除
-	if err := h.DB.Delete(&Ingredient{}, id).Error; err != nil {
+	if err := h.DB.Delete(&models.Ingredient{}, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete ingredient"})
 		return
 	}

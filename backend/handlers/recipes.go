@@ -6,25 +6,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"portfolio-amarimono/models"
+	"portfolio-amarimono/db"
 )
 
-type FetchRecipesFunc func(ingredientIDs []int, quantities []int) ([]models.Recipe, error)
+type FetchRecipesFunc func(ingredientIDs []int, quantities []int) ([]db.RecipeWithIngredients, error)
 
 type RecipeHandler struct {
 	FetchRecipes FetchRecipesFunc
 }
 
-type Ingredient struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	Genre    string `json:"genre"`
-	Quantity int    `json:"quantity"`
-	ImageUrl string `json:"image_url"`
-}
-
 // GenerateRecipes handles POST /api/recipes
 func (h *RecipeHandler) GenerateRecipes(c *gin.Context) {
-	var ingredients []Ingredient
+	var ingredients []models.RecipeIngredient
 
 	if err := c.BindJSON(&ingredients); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -33,9 +26,10 @@ func (h *RecipeHandler) GenerateRecipes(c *gin.Context) {
 
 	ingredientIDs := []int{}
 	quantities := []int{}
+
 	for _, ing := range ingredients {
-		ingredientIDs = append(ingredientIDs, ing.ID)
-		quantities = append(quantities, ing.Quantity)
+		ingredientIDs = append(ingredientIDs, ing.IngredientID)
+		quantities = append(quantities, ing.QuantityRequired)
 	}
 
 	recipes, err := h.FetchRecipes(ingredientIDs, quantities)

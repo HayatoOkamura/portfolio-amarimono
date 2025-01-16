@@ -1,5 +1,6 @@
 /* eslint-disable */
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 export interface InstructionStep {
   stepNumber: number;
@@ -19,79 +20,92 @@ interface RecipeStore {
   recipes: Recipe[];
   error: string;
   fetchRecipes: () => Promise<void>;
+  setRecipes: (recipes: Recipe[]) => void;
+  clearRecipes: () => void;
   addRecipe: (formData: FormData) => Promise<void>;
   deleteRecipe: (id: number) => void;
 }
 
-const useRecipeStore = create<RecipeStore>((set) => ({
-  recipes: [],
-  error: "",
+const useRecipeStore = create<RecipeStore>()(
+  persist(
+    (set) => ({
+      recipes: [],
+      error: "",
 
-  fetchRecipes: async () => {
-    try {
-      const res = await fetch("http://localhost:8080/admin/recipes");
-      const data = await res.json();
+      setRecipes: (recipes) => set({ recipes }),
 
-      const formattedData = data.map((recipe: any) => ({
-        id: recipe.id,
-        name: recipe.name,
-        instructions: recipe.instructions.map((step: any) => ({
-          stepNumber: step.stepNumber,
-          description: step.description
-        })),
-        genre: recipe.genre,
-        imageUrl: recipe.image_url,
-        ingredients: recipe.ingredients.map((ingredient: any) => ({
-          id: ingredient.ingredient_id,
-          quantity: ingredient.quantity_required
-        }))
-      }));
+      // ページ遷移時にレシピを削除する
+      clearRecipes: () => set({ recipes: [] }),
 
-      console.log(formattedData);
+      fetchRecipes: async () => {
+        try {
+          const res = await fetch("http://localhost:8080/admin/recipes");
+          const data = await res.json();
 
+          const formattedData = data.map((recipe: any) => ({
+            id: recipe.id,
+            name: recipe.name,
+            instructions: recipe.instructions.map((step: any) => ({
+              stepNumber: step.stepNumber,
+              description: step.description
+            })),
+            genre: recipe.genre,
+            imageUrl: recipe.image_url,
+            ingredients: recipe.ingredients.map((ingredient: any) => ({
+              id: ingredient.ingredient_id,
+              quantity: ingredient.quantity_required
+            }))
+          }));
 
-      set({ recipes: formattedData, error: "" });
+          console.log(formattedData);
 
-    } catch {
-      set({ error: "Failed to fetch recipes" });
+          set({ recipes: formattedData, error: "" });
+        } catch {
+          set({ error: "Failed to fetch recipes" });
+        }
+      },
+
+      addRecipe: async (formData) => {
+        try {
+          console.log("Sending Recipe Data:", Object.fromEntries(formData.entries()));
+          const res = await fetch("http://localhost:8080/admin/recipes", {
+            method: "POST",
+            body: formData,
+          });
+          console.log("Response Status:", res.status);
+          const resBody = await res.json();
+          console.log("Response Body:", resBody);
+
+          if (!res.ok) throw new Error("Failed to add recipe");
+
+          const newRecipe = await res.json();
+          set((state) => ({
+            recipes: [...state.recipes, newRecipe],
+            error: "",
+          }));
+        } catch (err: any) {
+          set({ error: err.message });
+        }
+      },
+
+      deleteRecipe: async (id) => {
+        try {
+          const res = await fetch(`http://localhost:8080/admin/recipes/${id}`, {
+            method: "DELETE",
+          });
+          if (!res.ok) throw new Error("Failed to delete recipe");
+
+          set((state) => ({ recipes: state.recipes.filter(recipe => recipe.id !== id), error: "" }));
+        } catch (err: any) {
+          set({ error: err.message });
+        }
+      },
+    }),
+    {
+      name: "recipe-storage", // ローカルストレージキー
+      storage: createJSONStorage(() => localStorage), // 永続化のためのストレージ設定
     }
-  },
-
-  addRecipe: async (formData) => {
-    try {
-      console.log("Sending Recipe Data:", Object.fromEntries(formData.entries()));
-      const res = await fetch("http://localhost:8080/admin/recipes", {
-        method: "POST",
-        body: formData,
-      });
-      console.log("Response Status:", res.status);
-      const resBody = await res.json();
-      console.log("Response Body:", resBody);
-
-      if (!res.ok) throw new Error("Failed to add recipe");
-
-      const newRecipe = await res.json();
-      set((state) => ({
-        recipes: [...state.recipes, newRecipe],
-        error: "",
-      }));
-    } catch (err: any) {
-      set({ error: err.message });
-    }
-  },
-
-  deleteRecipe: async (id) => {
-    try {
-      const res = await fetch(`http://localhost:8080/admin/recipes/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete recipe");
-
-      set((state) => ({ recipes: state.recipes.filter(recipe => recipe.id !== id), error: "" }));
-    } catch (err: any) {
-      set({ error: err.message });
-    }
-  }
-}));
+  )
+);
 
 export default useRecipeStore;

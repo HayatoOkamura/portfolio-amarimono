@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"portfolio-amarimono/db"
@@ -11,6 +12,9 @@ import (
 )
 
 func main() {
+	log.SetOutput(os.Stdout)              // 標準出力に変更
+	log.Println("This is a log message.") // 標準出力に表示される
+
 	// Ginをデバッグモードに設定
 	gin.SetMode(gin.DebugMode)
 
