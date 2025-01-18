@@ -30,8 +30,13 @@ const useIngredientStore = create<IngredientStore>((set, get) => ({
     try {
       const res = await fetch("http://localhost:8080/admin/ingredients");
       const data = await res.json();
-      
-      set({ ingredients: data, error: "" });
+
+      const formattedIngredients = data.map((ingredient: any) => ({
+        ...ingredient,
+        imageUrl: ingredient.image_url,
+      }));
+
+      set({ ingredients: formattedIngredients, error: "" });
     } catch {
       set({ error: "Failed to fetch ingredients" });
     }
@@ -49,7 +54,7 @@ const useIngredientStore = create<IngredientStore>((set, get) => ({
     for (const [key, value] of formData.entries()) {
       console.log(`${key}:`, value);
     }
-    
+
     try {
       const res = await fetch("http://localhost:8080/admin/ingredients", {
         method: "POST",

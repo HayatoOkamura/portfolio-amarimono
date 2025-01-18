@@ -2,6 +2,7 @@
 "use client";
 
 import useIngredientStore from "../../stores/ingredientStore";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -92,10 +93,11 @@ const AdminIngredients = () => {
             className="bg-white shadow rounded-lg p-5 flex flex-col items-center gap-4"
           >
             <p className="text-gray-400">{ing.genre}</p>
-            <img
+            <Image
+            fill
               src={
-                ing.image_url
-                  ? `${backendUrl}/${ing.image_url}`
+                ing.imageUrl
+                  ? `${backendUrl}/${ing.imageUrl}`
                   : "/default-image.jpg"
               }
               alt={ing.name}

@@ -18,10 +18,13 @@ export interface Recipe {
 
 interface RecipeStore {
   recipes: Recipe[];
+  generatedRecipes: Recipe[];
   error: string;
   fetchRecipes: () => Promise<void>;
+  setGeneratedRecipes: (recipes: Recipe[]) => void;
   setRecipes: (recipes: Recipe[]) => void;
   clearRecipes: () => void;
+  clearGeneratedRecipes: () => void;
   addRecipe: (formData: FormData) => Promise<void>;
   deleteRecipe: (id: number) => void;
 }
@@ -30,12 +33,15 @@ const useRecipeStore = create<RecipeStore>()(
   persist(
     (set) => ({
       recipes: [],
+      generatedRecipes: [],
       error: "",
 
       setRecipes: (recipes) => set({ recipes }),
+       setGeneratedRecipes: (recipes) => set({ generatedRecipes: recipes }),
 
       // ページ遷移時にレシピを削除する
       clearRecipes: () => set({ recipes: [] }),
+      clearGeneratedRecipes: () => set({ generatedRecipes: [] }),
 
       fetchRecipes: async () => {
         try {

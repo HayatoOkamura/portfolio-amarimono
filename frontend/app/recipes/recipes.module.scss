@@ -1,0 +1,54 @@
+.container_block {
+  padding: 50px;
+  &__thumbnail {
+  }
+  
+  &__img {
+    display: block;
+    position: relative;
+    aspect-ratio: 16 / 9;
+    width: 400px;
+
+    img {
+      object-fit: cover;
+    }
+  }
+
+  &__title {
+    font-size: 1.8rem;
+    margin-top: 1rem;
+    font-weight: bold;
+  }
+
+  &__contents {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 40px;
+    margin-top: 50px;
+  }
+
+  &__list {
+    display: flex;
+    overflow-x: auto; /* 横スクロールを有効化 */
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    scroll-snap-type: x mandatory; /* スクロール位置の固定 */
+  }
+
+  &__item {
+    scroll-snap-align: start; /* 要素をスクロールの開始位置に固定 */
+    min-width: 200px; /* カードの横幅 */
+    flex-shrink: 0; /* サイズを縮小しない */
+    transition: transform 0.2s ease-in-out;
+
+    &:hover {
+      transform: scale(1.05); /* ホバー時の拡大表示 */
+    }
+
+    &.active {
+      border: 2px solid #3498db; /* 選択中のレシピを強調表示 */
+      border-radius: 8px;
+    }
+  }
+}

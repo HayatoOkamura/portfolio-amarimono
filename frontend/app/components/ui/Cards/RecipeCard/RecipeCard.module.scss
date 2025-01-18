@@ -1,0 +1,57 @@
+.card_block {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: box-shadow 0.2s;
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  &__img {
+    width: 100%;
+    display: block;
+    position: relative;
+    margin-bottom: 1rem;
+    aspect-ratio: 16 / 9;
+    img {
+      border-radius: 5px;
+      object-fit: cover;
+      width: 100%;
+    }
+  }
+
+  &__contents {
+
+  }
+
+  &__name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #323232;
+  }
+
+  &__ingredients {
+
+  }
+
+  &__ing_list {
+
+  }
+
+  &__ing_item {
+
+  }
+
+  &__step {
+
+  }
+
+  &__step_list {
+
+  }
+
+  &__step_item {
+    
+  }
+}

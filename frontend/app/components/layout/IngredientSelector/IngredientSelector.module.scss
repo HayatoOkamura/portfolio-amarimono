@@ -1,0 +1,16 @@
+.container_block {
+  padding: 50px 30px;
+  width: 100%;
+
+  &__category {
+    display: flex;
+    gap: 16px;
+  }
+
+  &__ingredient {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 24px;
+    margin-top: 32px;
+  }
+}

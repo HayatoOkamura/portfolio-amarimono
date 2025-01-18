@@ -1,0 +1,26 @@
+@import "./reset.scss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-bg-color: #1d223f;
+  --secondary-bg-color: #AF8101;
+
+  --primary-font-color: #2d2d2d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+  }
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: "Noto sans JP", sans-serif;
+}

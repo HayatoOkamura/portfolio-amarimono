@@ -1,0 +1,42 @@
+/* styles/reset.css */
+
+/* Box-sizing rules */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Remove default font styles */
+body, h1, h2, h3, h4, h5, h6, p, ul, ol, li, a {
+    margin: 0;
+    padding: 0;
+    font-size: 100%;
+    font: inherit;
+    list-style: none;
+    text-decoration: none;
+}
+
+/* Set base font settings */
+body {
+    line-height: 1.5;
+    font-family: 'Arial', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reset media defaults */
+img, picture, video, canvas, svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Remove button styles */
+button {
+    border: none;
+    cursor: pointer;
+    background: none;
+}

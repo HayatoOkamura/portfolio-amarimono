@@ -1,8 +1,17 @@
 "use client";
 
-// import { ReactNode } from "react";
-import "./globals.css";
-import Main from "./Main";
+import { Noto_Sans_JP } from "next/font/google";
+import "@/styles/globals.scss";
+import Container from './components/layout/Container/Container';
+
+const notoSansJp = Noto_Sans_JP({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  preload: false,
+  variable: '--font-noto-sans-jp',
+  display: 'swap',
+  fallback: ['Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'sans-serif'],
+})
 
 export default function RootLayout({
   children,
@@ -10,10 +19,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" suppressHydrationWarning>
+    <html lang="ja" className={notoSansJp.variable} suppressHydrationWarning>
       <head />
-      <body className="min-h-screen bg-white md:bg-gray-400">
-        <Main>{children}</Main>
+      <body>
+      <Container>{children}</Container>
       </body>
     </html>
   );

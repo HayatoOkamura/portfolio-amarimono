@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import useRecipeStore from "../../stores/recipeStore";
 import useIngredientStore from "../../stores/ingredientStore";
 
@@ -175,24 +176,28 @@ const RecipeList = () => {
       <ul className="grid grid-cols-3 gap-3">
         {Array.isArray(recipes) &&
           recipes.map((recipe) => (
-            <li key={recipe.id} className="bg-gray-500 p-6 rounded-lg shadow">
+            <li key={recipe.id} className="p-6 rounded-lg shadow">
               <h4 className="text-xl font-bold mb-2">{recipe.name}</h4>
               {Array.isArray(recipe.instructions) &&
                 recipe.instructions.map((step, index) => (
                   <p
                     key={index}
                   >{`Step ${step.stepNumber}: ${step.description}`}</p>
-                ))}
+                ))} 
               {recipe.imageUrl && (
-                <img
-                  src={
-                    recipe.imageUrl
-                      ? `${backendUrl}/${recipe.imageUrl}`
-                      : "/default-image.jpg"
-                  }
-                  alt={recipe.name}
-                  className="w-32 h-32 object-cover rounded mb-2"
-                />
+                <div className="relative block aspect-video">
+                  <Image
+                  fill
+                    src={
+                      recipe.imageUrl
+                        ? `${backendUrl}/${recipe.imageUrl}`
+                        : "/default-image.jpg"
+                    }
+                    alt={recipe.name}
+                    className="w-32 h-32 object-cover rounded mb-2"
+                    unoptimized
+                  />
+                </div>
               )}
               {recipe.genre && (
                 <p>{recipe.genre}</p>

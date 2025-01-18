@@ -52,10 +52,5 @@ export async function fetchRecipesAPI(ingredients: { id: number; quantity: numbe
     }))
     : [];
 
-
-  console.log(formattedData);
-
-
-
   return formattedData;
 }
