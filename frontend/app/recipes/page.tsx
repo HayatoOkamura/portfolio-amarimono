@@ -22,6 +22,8 @@ const RecipesPageContent = () => {
   useEffect(() => {
     if (generatedRecipes.length > 0) {
       setSelectedRecipe(generatedRecipes[0]);
+      console.log("response02", generatedRecipes);
+      
     }
   }, [generatedRecipes]);
 

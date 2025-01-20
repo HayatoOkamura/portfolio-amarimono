@@ -4,9 +4,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"portfolio-amarimono/models"
 	"portfolio-amarimono/db"
+	"portfolio-amarimono/models"
+
+	"github.com/gin-gonic/gin"
 )
 
 type FetchRecipesFunc func(ingredientIDs []int, quantities []int) ([]db.RecipeWithIngredients, error)
@@ -33,6 +34,7 @@ func (h *RecipeHandler) GenerateRecipes(c *gin.Context) {
 	}
 
 	recipes, err := h.FetchRecipes(ingredientIDs, quantities)
+	log.Printf("recipes てすと: %v", recipes)
 	if err != nil {
 		log.Printf("Failed to fetch recipes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query failed!!", "details": err.Error()})

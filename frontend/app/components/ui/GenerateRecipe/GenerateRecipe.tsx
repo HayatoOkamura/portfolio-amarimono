@@ -29,8 +29,14 @@ const GenerateRecipe = () => {
         .filter((ingredient) => ingredient.quantity > 0)
         .map(({ id, quantity }) => ({ id, quantity }));
 
+        console.log("filter", filteredIngredients);
+        
+
       const response = await fetchRecipesAPI(filteredIngredients); // 新規関数の使用
       setGeneratedRecipes(response); // レシピを更新
+
+      console.log("response01", response);
+      
 
       // レシピをURLのクエリパラメータに追加
       router.push("/recipes");

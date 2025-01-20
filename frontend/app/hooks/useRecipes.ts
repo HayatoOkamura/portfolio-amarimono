@@ -21,8 +21,11 @@ export async function fetchRecipesAPI(ingredients: { id: number; quantity: numbe
     body: JSON.stringify(transformedIngredients),
   });
 
+  console.log("送信前", transformedIngredients);
+  
+
   const responseData = await response.json();
-  console.log(responseData);
+  console.log("取得後", responseData);
 
 
   if (!response.ok) {
