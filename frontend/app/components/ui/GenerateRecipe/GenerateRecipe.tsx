@@ -18,7 +18,7 @@ const GenerateRecipe = () => {
   const router = useRouter();
 
   const backendUrl =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
   const fetchRecipes = async () => {
     setLoading(true);
@@ -29,14 +29,13 @@ const GenerateRecipe = () => {
         .filter((ingredient) => ingredient.quantity > 0)
         .map(({ id, quantity }) => ({ id, quantity }));
 
-        console.log("filter", filteredIngredients);
-        
-
       const response = await fetchRecipesAPI(filteredIngredients); // 新規関数の使用
+
+      console.log("取得レシピ", response);
+
       setGeneratedRecipes(response); // レシピを更新
 
       console.log("response01", response);
-      
 
       // レシピをURLのクエリパラメータに追加
       router.push("/recipes");
@@ -84,10 +83,12 @@ const GenerateRecipe = () => {
           </ul>
         )}
         <div className={styles.container_block__btn}>
-          <button onClick={fetchRecipes}>{loading ? <p>レシピを検索中...</p> : <p>レシピを検索</p> }</button>
+          <button onClick={fetchRecipes}>
+            {loading ? <p>レシピを検索中...</p> : <p>レシピを検索</p>}
+          </button>
         </div>
       </div>
-      
+
       {error && <p className="text-red-500">{error}</p>}
     </div>
   );

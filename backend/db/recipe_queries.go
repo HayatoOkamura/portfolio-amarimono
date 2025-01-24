@@ -3,11 +3,10 @@ package db
 import (
 	"log"
 	"portfolio-amarimono/models"
-
 )
 
 type RecipeWithIngredients struct {
-	Recipe      models.Recipe      `json:"recipe"`
+	Recipe      models.Recipe       `json:"recipe"`
 	Ingredients []models.Ingredient `json:"ingredients"`
 }
 
@@ -31,6 +30,7 @@ func FetchRecipes(ingredientIDs []int, quantities []int) ([]RecipeWithIngredient
 
 	// レシピと関連具材をロード
 	err := DB.Preload("Ingredients").
+		Preload("Genre").
 		Where("id IN (?)", subQuery).
 		Find(&recipes).Error
 	if err != nil {
@@ -40,6 +40,7 @@ func FetchRecipes(ingredientIDs []int, quantities []int) ([]RecipeWithIngredient
 
 	// 結果をフィルタリング
 	for _, recipe := range recipes {
+		log.Printf("テストぉ！！！！！: %v", recipe)
 		allIngredientsMatch := true
 		var matchedIngredients []models.Ingredient
 

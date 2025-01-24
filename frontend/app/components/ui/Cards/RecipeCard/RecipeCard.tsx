@@ -13,10 +13,15 @@ interface Instruction {
   description: string;
 }
 
+interface Genre {
+  id: number;
+  name: string;
+}
+
 interface RecipeCardProps {
   recipe: {
     name: string;
-    genre: string;
+    genre: Genre;
     imageUrl?: string;
     ingredients: Ingredient[];
     instructions: Instruction[];
@@ -43,6 +48,11 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
       </div>
       <div className={styles.card_block__contents}>
         <h2 className={styles.card_block__name}>{recipe.name}</h2>
+        {/* ジャンル */}
+        <p className={styles.card_block__genre}>
+          ジャンル: <strong>{recipe.genre.name}</strong>{" "}
+          {/* 修正: genre.name を表示 */}
+        </p>
 
         {/* 材料リスト */}
         <h3 className={styles.card_block__ingredients}>材料</h3>

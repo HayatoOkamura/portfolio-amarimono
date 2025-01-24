@@ -1,7 +1,8 @@
 .container_block {
   display: flex;
   flex-direction: row;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   width: 100%;
   background: #fff;
   justify-content: space-between;

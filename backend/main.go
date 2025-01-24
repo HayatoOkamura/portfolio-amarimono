@@ -35,16 +35,26 @@ func main() {
 	// 静的ファイルを提供
 	r.Static("/uploads", "./uploads")
 
+		// DB接続
+		dbConn := db.GetDB()
+
 	// `RecipeHandler` を初期化
 	recipeHandler := &handlers.RecipeHandler{
 		FetchRecipes: db.FetchRecipes, // `db.FetchRecipes` を関数として渡す
 	}
 	adminHandler := &handlers.AdminHandler{
-		DB: db.GetDB(), // DB接続を渡す
+		DB: dbConn,
+	}
+	genreHandler := &handlers.GenreHandler{
+		DB: dbConn,
 	}
 
 	// `/api/recipes` エンドポイントの登録
 	r.POST("/api/recipes", recipeHandler.GenerateRecipes)
+
+	// ジャンル取得エンドポイント
+	r.GET("/api/recipe_genres", genreHandler.ListRecipeGenres)
+	r.GET("/api/ingredient_genres", genreHandler.ListIngredientGenres)
 
 	// 管理画面用エンドポイント
 	admin := r.Group("/admin")

@@ -24,3 +24,7 @@ body {
   background: var(--background);
   font-family: "Noto sans JP", sans-serif;
 }
+
+main {
+  overflow-y: auto;
+}

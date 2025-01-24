@@ -8,8 +8,11 @@ export interface IngredientCardProps {
   ingredient: {
     id: number;
     name: string;
-    genre: string;
-    imageUrl: string;
+    genre: {
+      id: number;
+      name: string;
+    };
+    imageUrl?: string | null;
     quantity: number;
   };
   increaseQuantity: (id: number) => void;
@@ -41,10 +44,21 @@ const IngredientCard: React.FC<IngredientCardProps> = ({
         />
       </div>
       <p className={styles.card_block__name}>{ingredient.name}</p>
+      <p className={styles.card_block__genre}>{ingredient.genre.name}</p>
       <div className={styles.card_block__controls}>
-        <button onClick={() => increaseQuantity(ingredient.id)}>+</button>
+      <button
+          onClick={() => increaseQuantity(ingredient.id)}
+          aria-label={`Increase quantity of ${ingredient.name}`}
+        >
+          +
+        </button>
         <span>{ingredient.quantity}</span>
-        <button onClick={() => decreaseQuantity(ingredient.id)}>-</button>
+        <button
+          onClick={() => decreaseQuantity(ingredient.id)}
+          aria-label={`Decrease quantity of ${ingredient.name}`}
+        >
+          -
+        </button>
       </div>
     </li>
   );

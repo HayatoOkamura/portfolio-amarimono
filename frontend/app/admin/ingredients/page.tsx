@@ -2,6 +2,7 @@
 "use client";
 
 import useIngredientStore from "../../stores/ingredientStore";
+import useGenreStore from "../../stores/genreStore";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -17,22 +18,41 @@ const AdminIngredients = () => {
     setNewIngredient,
   } = useIngredientStore();
 
+  const {
+    ingredientGenres,
+    fetchIngredientGenres,
+    error: genreError,
+  } = useGenreStore();
+
   const router = useRouter();
-  const [selectedGenre, setSelectedGenre] = useState<string>("すべて");
+  const [selectedGenre, setSelectedGenre] = useState<number | string>("すべて");
   const [inputError, setInputError] = useState<string>("");
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
-  // 初回レンダリング時に具材を取得
+  // 初回レンダリング時にデータを取得
   useEffect(() => {
-    fetchIngredients();
+    const initializeData = async () => {
+      await fetchIngredientGenres();
+      fetchIngredients();
+      
+    };
+    
+    initializeData();
   }, []);
+
+  useEffect(() => {
+    console.log(selectedGenre);
+    console.log(ingredients.filter((ing) => ing.genre.name));
+    
+    
+  }, [selectedGenre]);
 
   // ジャンルごとに具材をフィルタリング
   const filteredIngredients =
     selectedGenre === "すべて"
       ? ingredients
-      : ingredients.filter((ing) => ing.genre === selectedGenre);
+      : ingredients.filter((ing) => ing.genre.id === selectedGenre);
 
   // 入力を確認してエラーを設定
   const handleAddIngredient = () => {
@@ -44,12 +64,16 @@ const AdminIngredients = () => {
       setInputError("名前、ジャンル、画像はすべて必須です。");
       return;
     }
+    console.log(newIngredient);
+
     setInputError(""); // エラーをクリア
-    addIngredient(
-      newIngredient.name,
-      newIngredient.imageUrl,
-      newIngredient.genre
-    );
+    if (newIngredient.genre) {
+      addIngredient(
+        newIngredient.name,
+        newIngredient.imageUrl,
+        newIngredient.genre
+      );
+    }
   };
 
   return (
@@ -57,8 +81,8 @@ const AdminIngredients = () => {
       <h1 className="text-2xl font-bold mb-6 text-center">Ingredients</h1>
       {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
 
-       {/* TOPページに戻るボタン */}
-       <div className="text-center mb-6">
+      {/* TOPページに戻るボタン */}
+      <div className="text-center mb-6">
         <button
           onClick={() => router.push("/")}
           className="bg-green-500 text-white px-6 py-3 rounded hover:bg-green-600 transition"
@@ -71,18 +95,19 @@ const AdminIngredients = () => {
       <div className="mb-6 text-center">
         <select
           value={selectedGenre}
-          onChange={(e) => setSelectedGenre(e.target.value)}
+          onChange={(e) =>
+            setSelectedGenre(
+              e.target.value === "すべて" ? "すべて" : parseInt(e.target.value)
+            )
+          }
           className="px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
         >
           <option value="すべて">すべて</option>
-          <option value="野菜">野菜</option>
-          <option value="果物">果物</option>
-          <option value="肉">肉</option>
-          <option value="魚介類">魚介類</option>
-          <option value="穀物">穀物</option>
-          <option value="乳製品">乳製品</option>
-          <option value="調味料">調味料</option>
-          <option value="その他">その他</option>
+          {ingredientGenres.map((genre) => (
+            <option key={genre.id} value={genre.id}>
+              {genre.name}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -92,17 +117,20 @@ const AdminIngredients = () => {
             key={index}
             className="bg-white shadow rounded-lg p-5 flex flex-col items-center gap-4"
           >
-            <p className="text-gray-400">{ing.genre}</p>
-            <Image
-            fill
-              src={
-                ing.imageUrl
-                  ? `${backendUrl}/${ing.imageUrl}`
-                  : "/default-image.jpg"
-              }
-              alt={ing.name}
-              className="w-full object-cover rounded-full"
-            />
+            <p className="text-gray-400">{ing.genre.name}</p>
+            <div className="block relative aspect-video w-full">
+              <Image
+                fill
+                src={
+                  ing.imageUrl
+                    ? `${backendUrl}/${ing.imageUrl}`
+                    : "/default-image.jpg"
+                }
+                alt={ing.name ? ing.name : ""}
+                className="object-cover"
+                unoptimized
+              />
+            </div>
             <p className="text-2xl font-semibold text-gray-600">{ing.name}</p>
             <button
               className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
@@ -131,25 +159,24 @@ const AdminIngredients = () => {
             className="w-full md:w-1/3 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
           />
           <select
-            value={newIngredient.genre}
+            value={newIngredient.genre?.id || ""}
             onChange={(e) =>
               setNewIngredient(
                 newIngredient.name,
                 newIngredient.imageUrl,
-                e.target.value
+                ingredientGenres.find(
+                  (g) => g.id === parseInt(e.target.value)
+                ) || null
               )
             }
             className="w-full md:w-1/3 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
           >
             <option value="">ジャンルを選択</option>
-            <option value="野菜">野菜</option>
-            <option value="果物">果物</option>
-            <option value="肉">肉</option>
-            <option value="魚介類">魚介類</option>
-            <option value="穀物">穀物</option>
-            <option value="乳製品">乳製品</option>
-            <option value="調味料">調味料</option>
-            <option value="その他">その他</option>
+            {ingredientGenres.map((genre) => (
+              <option key={genre.id} value={genre.id}>
+                {genre.name}
+              </option>
+            ))}
           </select>
           <input
             type="file"

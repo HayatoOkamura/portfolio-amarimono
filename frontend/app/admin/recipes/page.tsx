@@ -5,10 +5,14 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import useRecipeStore from "../../stores/recipeStore";
 import useIngredientStore from "../../stores/ingredientStore";
+import useGenreStore from "../../stores/genreStore";
+import { Genre } from "@/app/types";
 
 const RecipeList = () => {
   const { recipes, fetchRecipes, addRecipe, deleteRecipe } = useRecipeStore();
   const { ingredients, fetchIngredients } = useIngredientStore();
+  const { recipeGenres, fetchRecipeGenres, error } = useGenreStore();
+
   const [newRecipeName, setNewRecipeName] = useState("");
   const [newRecipeInstructions, setNewRecipeInstructions] = useState([
     { step_number: 1, description: "" },
@@ -17,14 +21,17 @@ const RecipeList = () => {
   const [selectedIngredients, setSelectedIngredients] = useState<
     { id: number; quantity: number }[]
   >([]);
-  const [newRecipeGenre, setNewRecipeGenre] = useState("");
+  const [newRecipeGenre, setNewRecipeGenre] = useState<number | string>(
+    "すべて"
+  );
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
   useEffect(() => {
     fetchRecipes();
     fetchIngredients();
-  }, [fetchRecipes, fetchIngredients]);
+    fetchRecipeGenres();
+  }, [fetchRecipes, fetchIngredients, fetchRecipeGenres]);
 
   const handleAddRecipe = async () => {
     if (
@@ -32,30 +39,42 @@ const RecipeList = () => {
       !newRecipeInstructions ||
       !newRecipeImage ||
       selectedIngredients.length === 0 ||
-      !newRecipeGenre
+      newRecipeGenre === "すべて"
     ) {
       alert("Please fill in all fields.");
       return;
     }
 
+    // FormData の作成
     const formData = new FormData();
     formData.append("name", newRecipeName);
     formData.append("instructions", JSON.stringify(newRecipeInstructions));
-    formData.append("image", newRecipeImage);
-    formData.append("ingredients", JSON.stringify(
-      selectedIngredients.map((ingredient) => ({
-        ingredient_id: ingredient.id,
-        quantity_required: ingredient.quantity,
-      }))
-    ));
-    formData.append("genre", newRecipeGenre);
+    formData.append(
+      "ingredients",
+      JSON.stringify(
+        selectedIngredients.map((ingredient) => ({
+          ingredient_id: ingredient.id,
+          quantity_required: ingredient.quantity,
+        }))
+      )
+    );
+    formData.append("genre", newRecipeGenre.toString());
+    formData.append("image", newRecipeImage); // ファイルを直接追加
 
+    // FormData の内容を確認
+    console.log("FormData 内容:");
+    formData.forEach((value, key) => {
+      console.log(`${key}:`, value);
+    });
+
+    // サーバーに送信
     await addRecipe(formData);
+
+    // フォームのリセット
     setNewRecipeName("");
     setNewRecipeInstructions([{ step_number: 1, description: "" }]);
-    setNewRecipeImage(null);
     setSelectedIngredients([]);
-    setNewRecipeGenre("");
+    setNewRecipeGenre("すべて");
     fetchRecipes();
   };
 
@@ -119,13 +138,23 @@ const RecipeList = () => {
           ></textarea>
         ))}
 
-        <input
-          type="text"
-          placeholder="Recipe Genre"
+        <select
           value={newRecipeGenre}
-          onChange={(e) => setNewRecipeGenre(e.target.value)}
+          onChange={(e) =>
+            setNewRecipeGenre(
+              e.target.value === "すべて" ? "すべて" : Number(e.target.value)
+            )
+          }
           className="border p-2 mb-2 w-full rounded text-gray-700"
-        />
+        >
+          <option value="すべて">Select Genre</option>
+          {recipeGenres.length > 0 &&
+            recipeGenres.map((genre) => (
+              <option key={genre.id} value={genre.id}>
+                {genre.name}
+              </option>
+            ))}
+        </select>
 
         <button
           onClick={addInstructionStep}
@@ -175,19 +204,19 @@ const RecipeList = () => {
 
       <ul className="grid grid-cols-3 gap-3">
         {Array.isArray(recipes) &&
-          recipes.map((recipe) => (
-            <li key={recipe.id} className="p-6 rounded-lg shadow">
+          recipes.map((recipe, index) => (
+            <li key={index} className="p-6 rounded-lg shadow">
               <h4 className="text-xl font-bold mb-2">{recipe.name}</h4>
               {Array.isArray(recipe.instructions) &&
-                recipe.instructions.map((step, index) => (
+                recipe.instructions.map((step) => (
                   <p
-                    key={index}
+                    key={step.stepNumber}
                   >{`Step ${step.stepNumber}: ${step.description}`}</p>
-                ))} 
+                ))}
               {recipe.imageUrl && (
                 <div className="relative block aspect-video">
                   <Image
-                  fill
+                    fill
                     src={
                       recipe.imageUrl
                         ? `${backendUrl}/${recipe.imageUrl}`
@@ -199,14 +228,14 @@ const RecipeList = () => {
                   />
                 </div>
               )}
-              {recipe.genre && (
-                <p>{recipe.genre}</p>
+              {recipe.genre && recipe.genre.name && (
+                <p>Genre: {recipe.genre.name}</p>
               )}
-              
+
               <h5 className="font-semibold mt-4">Ingredients:</h5>
               <ul>
-                {recipe.ingredients.map((ingredient, index) => (
-                  <li key={index}>
+                {Array.isArray(recipe.ingredients) && recipe.ingredients.map((ingredient) => (
+                  <li key={ingredient.id}>
                     {getIngredientName(ingredient.id)} - {ingredient.quantity}
                   </li>
                 ))}

@@ -5,7 +5,8 @@ type Recipe struct {
 	Name         string             `json:"name" binding:"required"`
 	Instructions JSONBInstructions  `json:"instructions" gorm:"type:jsonb" binding:"required"`
 	ImageUrl     string             `json:"image_url"`
-	Genre        string             `json:"genre" binding:"required"`
+	GenreID      int                `json:"genre_id" binding:"required"`
+		Genre        RecipeGenre        `json:"genre" gorm:"foreignKey:GenreID;references:ID"`
 	Ingredients  []RecipeIngredient `json:"ingredients" gorm:"foreignKey:RecipeID" binding:"required,dive"`
 }
 

@@ -1,20 +1,12 @@
 /* eslint-disable */
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-
-export interface InstructionStep {
-  stepNumber: number;
-  description: string;
-}
-
-export interface Recipe {
-  id: number;
-  name: string;
-  instructions: InstructionStep[];
-  imageUrl: string;
-  ingredients: { id: number; name: string; quantity: number; }[];
-  genre: string
-}
+import { Recipe } from "../types";
+import {
+  fetchRecipesService,
+  addRecipeService,
+  deleteRecipeService,
+} from "../hooks/recipes";
 
 interface RecipeStore {
   recipes: Recipe[];
@@ -26,7 +18,7 @@ interface RecipeStore {
   clearRecipes: () => void;
   clearGeneratedRecipes: () => void;
   addRecipe: (formData: FormData) => Promise<void>;
-  deleteRecipe: (id: number) => void;
+  deleteRecipe: (id: number) => Promise<void>;
 }
 
 const useRecipeStore = create<RecipeStore>()(
@@ -37,54 +29,26 @@ const useRecipeStore = create<RecipeStore>()(
       error: "",
 
       setRecipes: (recipes) => set({ recipes }),
-       setGeneratedRecipes: (recipes) => set({ generatedRecipes: recipes }),
+      setGeneratedRecipes: (recipes) => set({ generatedRecipes: recipes }),
 
-      // ページ遷移時にレシピを削除する
       clearRecipes: () => set({ recipes: [] }),
       clearGeneratedRecipes: () => set({ generatedRecipes: [] }),
 
       fetchRecipes: async () => {
         try {
-          const res = await fetch("http://localhost:8080/admin/recipes");
-          const data = await res.json();
-
-          const formattedData = data.map((recipe: any) => ({
-            id: recipe.id,
-            name: recipe.name,
-            instructions: recipe.instructions.map((step: any) => ({
-              stepNumber: step.stepNumber,
-              description: step.description
-            })),
-            genre: recipe.genre,
-            imageUrl: recipe.image_url,
-            ingredients: recipe.ingredients.map((ingredient: any) => ({
-              id: ingredient.ingredient_id,
-              quantity: ingredient.quantity_required
-            }))
-          }));
-
-          console.log(formattedData);
-
-          set({ recipes: formattedData, error: "" });
-        } catch {
+          const recipes = await fetchRecipesService();
+          
+          set({ recipes, error: "" });
+        } catch (err) {
           set({ error: "Failed to fetch recipes" });
         }
       },
 
       addRecipe: async (formData) => {
+        
         try {
-          console.log("Sending Recipe Data:", Object.fromEntries(formData.entries()));
-          const res = await fetch("http://localhost:8080/admin/recipes", {
-            method: "POST",
-            body: formData,
-          });
-          console.log("Response Status:", res.status);
-          const resBody = await res.json();
-          console.log("Response Body:", resBody);
-
-          if (!res.ok) throw new Error("Failed to add recipe");
-
-          const newRecipe = await res.json();
+          const newRecipe = await addRecipeService(formData);
+          
           set((state) => ({
             recipes: [...state.recipes, newRecipe],
             error: "",
@@ -96,20 +60,19 @@ const useRecipeStore = create<RecipeStore>()(
 
       deleteRecipe: async (id) => {
         try {
-          const res = await fetch(`http://localhost:8080/admin/recipes/${id}`, {
-            method: "DELETE",
-          });
-          if (!res.ok) throw new Error("Failed to delete recipe");
-
-          set((state) => ({ recipes: state.recipes.filter(recipe => recipe.id !== id), error: "" }));
+          await deleteRecipeService(id);
+          set((state) => ({
+            recipes: state.recipes.filter((recipe) => recipe.id !== id),
+            error: "",
+          }));
         } catch (err: any) {
           set({ error: err.message });
         }
       },
     }),
     {
-      name: "recipe-storage", // ローカルストレージキー
-      storage: createJSONStorage(() => localStorage), // 永続化のためのストレージ設定
+      name: "recipe-storage",
+      storage: createJSONStorage(() => localStorage),
     }
   )
 );

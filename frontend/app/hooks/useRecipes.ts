@@ -1,4 +1,5 @@
 /* eslint-disable */
+import { handleApiResponse } from "../utils/apiUtils";
 
 export async function fetchRecipesAPI(ingredients: { id: number; quantity: number }[]) {
   // 具材が空の場合はリクエストを送信しない
@@ -20,40 +21,25 @@ export async function fetchRecipesAPI(ingredients: { id: number; quantity: numbe
     },
     body: JSON.stringify(transformedIngredients),
   });
-
-  console.log("送信前", transformedIngredients);
+  
+  const responseData = await handleApiResponse(response);
   
 
-  const responseData = await response.json();
-  console.log("取得後", responseData);
-
-
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status} - ${JSON.stringify(responseData)}`);
-  }
-
-  // レスポンスデータのフォーマット
-  const formattedData = Array.isArray(responseData)
-    ? responseData.map((data: any) => ({
+  return Array.isArray(responseData)
+  ? responseData.map((data: any) => ({
       id: data.recipe.id,
       name: data.recipe.name,
-      instructions: Array.isArray(data.recipe.instructions)
-        ? data.recipe.instructions.map((step: any) => ({
-          stepNumber: step.stepNumber,
-          description: step.description,
-        }))
-        : [],
+      instructions: data.recipe.instructions.map((step: any) => ({
+        stepNumber: step.stepNumber,
+        description: step.description,
+      })),
       genre: data.recipe.genre,
       imageUrl: data.recipe.image_url,
-      ingredients: Array.isArray(data.ingredients)
-        ? data.ingredients.map((ingredient: any) => ({
-          id: ingredient.id,
-          name: ingredient.name,
-          quantity: ingredient.quantity
-        }))
-        : [],
+      ingredients: data.ingredients.map((ingredient: any) => ({
+        id: ingredient.id,
+        name: ingredient.name,
+        quantity: ingredient.quantity,
+      })),
     }))
-    : [];
-
-  return formattedData;
+  : [];
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"portfolio-amarimono/models"
@@ -22,7 +23,7 @@ type AdminHandler struct {
 // ListIngredients /admin/ingredients(GET) 具材一覧を取得
 func (h *AdminHandler) ListIngredients(c *gin.Context) {
 	var ingredients []models.Ingredient
-	if err := h.DB.Find(&ingredients).Error; err != nil {
+	if err := h.DB.Preload("Genre").Find(&ingredients).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch ingredients", "details": err.Error()})
 		return
 	}
@@ -33,16 +34,38 @@ func (h *AdminHandler) ListIngredients(c *gin.Context) {
 func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	// 名前を受け取る
 	name := c.PostForm("name")
+	log.Println("Received name:", name)
 	if name == "" {
 		log.Println("Error: Name is missing") // ログ追加
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Name is required"})
 		return
 	}
 
-	// ジャンルを受け取る
-	genre := c.PostForm("genre")
-	if genre == "" {
-		genre = "その他" // デフォルト値
+	// ジャンルを受け取る (JSON形式の文字列)
+	genreJSON := c.PostForm("genre")
+	if genreJSON == "" {
+		log.Println("Error: Genre is missing") // ログ追加
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Genre is required"})
+		return
+	}
+
+	// genreJSON をパース
+	var genreReq struct {
+		ID   int    `json:"id" binding:"required"`
+		Name string `json:"name" binding:"required"`
+	}
+	if err := json.Unmarshal([]byte(genreJSON), &genreReq); err != nil {
+		log.Println("Error parsing genre JSON:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre format"})
+		return
+	}
+
+	// ジャンルが存在するか確認
+	var genre models.IngredientGenre
+	if err := h.DB.Where("id = ?", genreReq.ID).First(&genre).Error; err != nil {
+		log.Println("Error: Genre not found:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre"})
+		return
 	}
 
 	// ファイルを受け取る
@@ -75,14 +98,13 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 
 	ingredient := models.Ingredient{
 		Name:     name,
-		Genre:    genre,
+		GenreID:  genre.ID,
 		ImageUrl: savePath,
 	}
 
 	// 具材名の重複をチェック
 	var count int64
-	if err := h.DB.Table("ingredients").Where("name = ?", ingredient.Name).Count(&count).Error; err != nil {
-		log.Println("Error checking for duplicate ingredient:", err) // ログ追加
+	if err := h.DB.Model(&models.Ingredient{}).Where("name = ?", ingredient.Name).Count(&count).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check for duplicate ingredient"})
 		return
 	}
@@ -94,8 +116,7 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	}
 
 	// 新規具材を追加
-	if err := h.DB.Table("ingredients").Create(&ingredient).Error; err != nil {
-		log.Println("Error adding ingredient to database:", err) // ログ追加
+	if err := h.DB.Create(&ingredient).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add ingredient"})
 		return
 	}
@@ -119,15 +140,58 @@ func (h *AdminHandler) DeleteIngredient(c *gin.Context) {
 		return
 	}
 
+	// 具材を使用しているレシピを削除
+	err := h.DB.Transaction(func(tx *gorm.DB) error {
+		// 1. 該当する ingredient_id を持つ recipe_id を中間テーブルから取得
+		var recipeIDs []int
+		if err := tx.Table("recipe_ingredients").
+			Select("recipe_id").
+			Where("ingredient_id = ?", id).
+			Find(&recipeIDs).Error; err != nil {
+			log.Println("Error finding recipe IDs associated with ingredient ID:", err)
+			return err
+		}
+
+		// 2. 中間テーブルから該当の ingredient_id のデータを削除
+		if err := tx.Table("recipe_ingredients").
+			Where("ingredient_id = ?", id).
+			Delete(nil).Error; err != nil {
+			log.Println("Error deleting recipe ingredients:", err)
+			return err
+		} else {
+			log.Println("Deleted recipe_ingredients for ingredient ID:", id)
+		}
+
+		// 3. 該当する recipe_id のレシピを削除
+		if len(recipeIDs) > 0 {
+			if err := tx.Table("recipes").
+				Where("id IN ?", recipeIDs).
+				Delete(nil).Error; err != nil {
+				log.Println("Error deleting recipes associated with ingredient ID:", id)
+				return err
+			}
+			log.Println("Deleted recipes associated with ingredient ID:", id)
+		}
+
+		// 4. 最後に具材を削除
+		if err := tx.Delete(&models.Ingredient{}, id).Error; err != nil {
+			log.Println("Error deleting ingredient:", err)
+			return err
+		} else {
+			log.Println("Deleted ingredient ID:", id)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete ingredient and associated recipes"})
+		return
+	}
+
 	// パス設定: Docker プロジェクトの "backend/uploads" ディレクトリを基準
 	uploadDir := filepath.Join(".", "backend", "uploads")
 	imagePath := filepath.Join(uploadDir, filepath.Base(ingredient.ImageUrl))
-
-	// 具材データを削除
-	if err := h.DB.Delete(&models.Ingredient{}, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete ingredient"})
-		return
-	}
 
 	// 対応する画像ファイルを削除
 	if err := os.Remove(imagePath); err != nil {
@@ -143,7 +207,7 @@ func (h *AdminHandler) ListRecipes(c *gin.Context) {
 	var recipes []models.Recipe
 
 	// ingredientsを一緒にロードするためにPreloadを使用
-	if err := h.DB.Preload("Ingredients").Find(&recipes).Error; err != nil {
+	if err := h.DB.Preload("Genre").Preload("Ingredients").Find(&recipes).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes", "details": err.Error()})
 		return
 	}
@@ -163,13 +227,21 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	}
 	recipe.Name = name
 
-	// genre の取得
-	genre := c.PostForm("genre")
-	if genre == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Genre is required"})
+	// ジャンルIDの取得とバリデーション
+	genreID, err := strconv.Atoi(c.PostForm("genre")) // genre を整数型に変換
+	if err != nil || genreID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre ID"})
 		return
 	}
-	recipe.Genre = genre  
+
+	// ジャンルが存在するか確認
+	var genre models.RecipeGenre
+	if err := h.DB.Where("id = ?", genreID).First(&genre).Error; err != nil {
+		log.Println("Error: Genre not found:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre"})
+		return
+	}
+	recipe.Genre = genre
 
 	// instructions の直接代入
 	instructionsJSON := c.PostForm("instructions")
@@ -234,13 +306,19 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 				return
 			}
 		}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ingredients are required"})
+		return
 	}
 
 	// recipe構造体にingredientsを追加
 	recipe.Ingredients = tempIngredients
 
 	// コミット処理
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction commit failed", "details": err.Error()})
+		return
+	}
 	c.JSON(http.StatusCreated, gin.H{"message": "Recipe added successfully", "recipe": recipe})
 }
 
