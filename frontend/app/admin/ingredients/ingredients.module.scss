@@ -1,0 +1,19 @@
+
+.modal_block {
+  position: fixed;
+  inset: 0;
+  background: #00000071;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  &__inner {
+    background: #fff;
+    width: 600px;
+    padding: 50px 80px;
+    border-radius: 8px;
+  }
+
+  &__title {
+
+  }
+}

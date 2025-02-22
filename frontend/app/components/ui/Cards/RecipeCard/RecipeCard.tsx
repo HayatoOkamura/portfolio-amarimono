@@ -1,16 +1,17 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import styles from "./RecipeCard.module.scss";
+import { backendUrl } from "@/app/utils/apiUtils";
+import Link from "next/link";
 
 interface Ingredient {
   name: string;
   quantity: number;
-}
-
-interface Instruction {
-  stepNumber: number;
-  description: string;
+  unit: {
+    id: number;
+    name: string;
+  };
 }
 
 interface Genre {
@@ -20,18 +21,20 @@ interface Genre {
 
 interface RecipeCardProps {
   recipe: {
+    id?: string | number;
     name: string;
     genre: Genre;
     imageUrl?: string;
     ingredients: Ingredient[];
-    instructions: Instruction[];
   };
+  isFavoritePage?: boolean;
 }
 
-const backendUrl =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
-const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
+const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, isFavoritePage }) => {
+  useEffect(() => {
+    console.log("テスト", recipe);
+  }, [recipe]);
   return (
     <div className={styles.card_block}>
       <div className={styles.card_block__img}>
@@ -39,7 +42,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
           fill
           src={
             recipe.imageUrl
-              ? `${backendUrl}/${recipe.imageUrl}`
+              ? `${backendUrl}/uploads/${recipe.imageUrl}`
               : "/default-image.jpg"
           }
           alt={recipe.name}
@@ -59,20 +62,17 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
         <ul className={styles.card_block__ing_list}>
           {recipe.ingredients.map((ingredient, idx) => (
             <li key={idx} className={styles.card_block__ing_item}>
-              {ingredient.name} ({ingredient.quantity} 個)
+              {ingredient.name} ({ingredient.quantity} {ingredient.unit?.name})
             </li>
           ))}
         </ul>
 
-        {/* 調理手順 */}
-        <h3 className={styles.card_block__step}>調理手順</h3>
-        <ol className={styles.card_block__step_list}>
-          {recipe.instructions.map((step, idx) => (
-            <li key={idx} className={styles.card_block__step_item}>
-              <strong>Step {step.stepNumber}:</strong> {step.description}
-            </li>
-          ))}
-        </ol>
+         {/* ✅ 詳しく見るボタン（お気に入りページ限定） */}
+         {isFavoritePage && recipe.id && (
+          <Link href={`/recipes/${recipe.id}`}>
+            <button className={styles.details_button}>詳しく見る</button>
+          </Link>
+        )}
       </div>
     </div>
   );

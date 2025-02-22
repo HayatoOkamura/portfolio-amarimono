@@ -1,11 +1,15 @@
 /* eslint-disable */
 "use client";
 
+import styles from "./ingredients.module.scss";
+import { backendUrl } from "@/app/utils/apiUtils";
 import useIngredientStore from "../../stores/ingredientStore";
 import useGenreStore from "../../stores/genreStore";
+import useUnitStore from "../../stores/unitStore";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { EditIngredient, Ingredient } from "../../types";
 
 const AdminIngredients = () => {
   const {
@@ -15,6 +19,7 @@ const AdminIngredients = () => {
     fetchIngredients,
     addIngredient,
     deleteIngredient,
+    editIngredient,
     setNewIngredient,
   } = useIngredientStore();
 
@@ -24,29 +29,25 @@ const AdminIngredients = () => {
     error: genreError,
   } = useGenreStore();
 
+  const { units, fetchUnits, error: unitError } = useUnitStore();
+
   const router = useRouter();
   const [selectedGenre, setSelectedGenre] = useState<number | string>("すべて");
   const [inputError, setInputError] = useState<string>("");
-  const backendUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [editingIngredient, setEditingIngredient] = useState<EditIngredient | null>(null);
+
 
   // 初回レンダリング時にデータを取得
   useEffect(() => {
     const initializeData = async () => {
+      await fetchUnits();
       await fetchIngredientGenres();
       fetchIngredients();
-      
     };
-    
+
     initializeData();
   }, []);
-
-  useEffect(() => {
-    console.log(selectedGenre);
-    console.log(ingredients.filter((ing) => ing.genre.name));
-    
-    
-  }, [selectedGenre]);
 
   // ジャンルごとに具材をフィルタリング
   const filteredIngredients =
@@ -59,20 +60,49 @@ const AdminIngredients = () => {
     if (
       !newIngredient.name ||
       !newIngredient.genre ||
-      !newIngredient.imageUrl
+      !newIngredient.imageUrl ||
+      !newIngredient.unit
     ) {
-      setInputError("名前、ジャンル、画像はすべて必須です。");
+      setInputError("名前、ジャンル、画像、単位はすべて必須です。");
       return;
     }
-    console.log(newIngredient);
 
     setInputError(""); // エラーをクリア
     if (newIngredient.genre) {
       addIngredient(
         newIngredient.name,
         newIngredient.imageUrl,
-        newIngredient.genre
+        newIngredient.genre,
+        newIngredient.unit
       );
+    }
+  };
+
+  const openEditModal = (ingredient: EditIngredient) => {
+    setEditingIngredient(ingredient);
+    setIsModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsModalOpen(false);
+    setEditingIngredient(null);
+  };
+
+  const saveEditedIngredient = async () => {
+    if (editingIngredient) {
+      const updatedData: EditIngredient = {
+        id: editingIngredient.id,
+        name: editingIngredient.name,
+        genreId: editingIngredient.genre!.id,
+        genre: editingIngredient.genre,
+        unit: editingIngredient.unit,
+        quantity: editingIngredient.quantity,
+        imageUrl: editingIngredient.imageUrl, // 画像アップロードの処理が必要
+      };
+  
+      await editIngredient(updatedData);
+      await fetchIngredients();
+      closeEditModal();
     }
   };
 
@@ -133,6 +163,12 @@ const AdminIngredients = () => {
             </div>
             <p className="text-2xl font-semibold text-gray-600">{ing.name}</p>
             <button
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+              onClick={() => openEditModal(ing)}
+            >
+              Edit
+            </button>
+            <button
               className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
               onClick={() => deleteIngredient(ing.id)}
             >
@@ -153,11 +189,37 @@ const AdminIngredients = () => {
               setNewIngredient(
                 e.target.value,
                 newIngredient.imageUrl,
-                newIngredient.genre
+                newIngredient.genre,
+                newIngredient.unit
               )
             }
             className="w-full md:w-1/3 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
           />
+          {/* Unit 入力欄を追加 */}
+          {/* 単位のエラー表示 */}
+          {unitError && <p className="text-red-500 mb-4">{unitError}</p>}
+
+          {/* 単位選択 */}
+          <select
+            value={newIngredient.unit?.id || ""}
+            onChange={(e) =>
+              setNewIngredient(
+                newIngredient.name,
+                newIngredient.imageUrl,
+                newIngredient.genre,
+                units.find((unit) => unit.id === parseInt(e.target.value)) ||
+                  null
+              )
+            }
+            className="w-full md:w-1/3 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+          >
+            <option value="">単位を選択</option>
+            {units.map((unit) => (
+              <option key={unit.id} value={unit.id}>
+                {unit.name}
+              </option>
+            ))}
+          </select>
           <select
             value={newIngredient.genre?.id || ""}
             onChange={(e) =>
@@ -166,7 +228,8 @@ const AdminIngredients = () => {
                 newIngredient.imageUrl,
                 ingredientGenres.find(
                   (g) => g.id === parseInt(e.target.value)
-                ) || null
+                ) || null,
+                newIngredient.unit
               )
             }
             className="w-full md:w-1/3 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
@@ -182,7 +245,12 @@ const AdminIngredients = () => {
             type="file"
             onChange={(e) => {
               const file = e.target.files ? e.target.files[0] : null;
-              setNewIngredient(newIngredient.name, file, newIngredient.genre);
+              setNewIngredient(
+                newIngredient.name,
+                file,
+                newIngredient.genre,
+                newIngredient.unit
+              );
             }}
             className="w-full md:w-1/3 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -195,6 +263,82 @@ const AdminIngredients = () => {
         </div>
         {inputError && <p className="text-red-500 mt-4">{inputError}</p>}
       </div>
+
+      {isModalOpen && editingIngredient && (
+        <div className={styles.modal_block}>
+          <div className={styles.modal_block__inner}>
+            <h2 className={styles.modal_block__title}>Edit Ingredient</h2>
+
+            {/* 名前編集 */}
+            <input
+              type="text"
+              value={editingIngredient.name}
+              onChange={(e) =>
+                setEditingIngredient({
+                  ...editingIngredient,
+                  name: e.target.value,
+                })
+              }
+            />
+
+            {/* ジャンル編集 */}
+            <select
+              value={editingIngredient.genre?.id || ""}
+              onChange={(e) =>
+                setEditingIngredient({
+                  ...editingIngredient,
+                  genre:
+                    ingredientGenres.find(
+                      (g) => g.id === parseInt(e.target.value)
+                    ) || editingIngredient.genre,
+                })
+              }
+            >
+              {ingredientGenres.map((genre) => (
+                <option key={genre.id} value={genre.id}>
+                  {genre.name}
+                </option>
+              ))}
+            </select>
+
+            {/* 単位編集 */}
+            <select
+             value={newIngredient.unit?.id || ""}
+              onChange={(e) =>
+                setEditingIngredient({
+                  ...editingIngredient,
+                  unit:
+                    units.find((u) => u.id === parseInt(e.target.value)) ||
+                    editingIngredient.unit,
+                })
+              }
+            >
+              {units.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.name}
+                </option>
+              ))}
+            </select>
+
+            {/* 画像編集 */}
+            <input
+              type="file"
+              onChange={(e) => {
+                const file = e.target.files ? e.target.files[0] : null;
+                if (file) {
+                  setEditingIngredient({
+                    ...editingIngredient,
+                    imageUrl: file,
+                  });
+                }
+              }}
+            />
+
+            <button onClick={saveEditedIngredient}>Save</button>
+            <button onClick={closeEditModal}>×</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

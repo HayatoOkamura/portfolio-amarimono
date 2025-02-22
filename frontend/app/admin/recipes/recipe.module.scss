@@ -1,0 +1,10 @@
+.modal_block {
+  overflow: auto;
+  position: fixed;
+  background: #00000061;
+  display: flex;
+  inset: 0;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 50px;
+}

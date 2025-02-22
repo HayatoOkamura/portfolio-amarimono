@@ -35,7 +35,7 @@ EXPOSE 8080
 # アプリケーションを実行
 
 # migrationsを使用しない場合はこちら(データベースを更新しないので実行が早い)
-# CMD ["go", "run", "main.go"]
+CMD ["go", "run", "main.go"]
 
 # migrationsを使用する場合はこちら(データベースを更新するが実行が遅い)
-CMD ["/bin/sh", "-c", "migrate -path /app/db/migrations -database 'postgres://postgres:password@db:5432/db?sslmode=disable' up && ./main"]
+# CMD ["/bin/sh", "-c", "migrate -path /app/db/migrations -database 'postgres://postgres:password@db:5432/db?sslmode=disable' up && ./main"]

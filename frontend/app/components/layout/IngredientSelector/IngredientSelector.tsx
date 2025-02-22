@@ -11,8 +11,7 @@ const IngredientSelector = () => {
   const {
     ingredients,
     fetchIngredients,
-    increaseIngredientQuantity,
-    decreaseIngredientQuantity,
+    updateQuantity,
   } = useIngredientStore();
 
   const { ingredientGenres, fetchIngredientGenres } = useGenreStore();
@@ -25,7 +24,7 @@ const IngredientSelector = () => {
 
   const genres = [
     { id: 0, name: "すべて" }, // "すべて" を追加
-    ...ingredientGenres,      // Zustand で管理するジャンルを展開
+    ...ingredientGenres, // Zustand で管理するジャンルを展開
   ];
 
   const filteredIngredients =
@@ -51,8 +50,7 @@ const IngredientSelector = () => {
           <IngredientCard
             key={ingredient.id}
             ingredient={ingredient}
-            increaseQuantity={increaseIngredientQuantity}
-            decreaseQuantity={decreaseIngredientQuantity}
+            updateQuantity={updateQuantity}
           />
         ))}
       </div>

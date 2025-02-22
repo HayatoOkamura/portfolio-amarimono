@@ -26,8 +26,8 @@ func main() {
 
 	// CORS設定を追加
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"}, // フロントエンドのオリジンを指定
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowHeaders:     []string{"*"},
 		AllowCredentials: true,
 	}))
@@ -35,13 +35,18 @@ func main() {
 	// 静的ファイルを提供
 	r.Static("/uploads", "./uploads")
 
-		// DB接続
-		dbConn := db.GetDB()
+	// DB接続
+	dbConn := db.GetDB()
 
 	// `RecipeHandler` を初期化
-	recipeHandler := &handlers.RecipeHandler{
-		FetchRecipes: db.FetchRecipes, // `db.FetchRecipes` を関数として渡す
-	}
+	recipeHandler := handlers.NewRecipeHandler(dbConn)
+
+	// ハンドラの初期化
+	likeHandler := handlers.NewLikeHandler(dbConn)
+
+	// `UserHandler` を初期化
+	userHandler := handlers.NewUserHandler(dbConn)
+
 	adminHandler := &handlers.AdminHandler{
 		DB: dbConn,
 	}
@@ -49,8 +54,17 @@ func main() {
 		DB: dbConn,
 	}
 
+	// いいね機能のエンドポイント
+	r.POST("/api/likes/:user_id/:recipe_id", likeHandler.ToggleUserLike) // レシピにいいねを追加
+	r.GET("/api/likes/:user_id", likeHandler.GetUserLikes)               // ユーザーのお気に入りレシピを取得
+
 	// `/api/recipes` エンドポイントの登録
-	r.POST("/api/recipes", recipeHandler.GenerateRecipes)
+	r.POST("/api/recipes", recipeHandler.SerchRecipes)
+	r.GET("/api/recipes/:id", recipeHandler.GetRecipeByID) // 特定のレシピ取得
+	r.GET("/api/user/recipes", recipeHandler.GetUserRecipes) // 特定のレシピ取得
+
+	// ✅ ユーザー登録エンドポイント
+	r.POST("/api/users", userHandler.CreateUser)
 
 	// ジャンル取得エンドポイント
 	r.GET("/api/recipe_genres", genreHandler.ListRecipeGenres)
@@ -61,10 +75,13 @@ func main() {
 	{
 		admin.GET("/ingredients", adminHandler.ListIngredients)         // 具材一覧
 		admin.POST("/ingredients", adminHandler.AddIngredient)          // 具材追加
+		admin.PATCH("/ingredients/:id", adminHandler.UpdateIngredient)  // 具材更新
 		admin.DELETE("/ingredients/:id", adminHandler.DeleteIngredient) //具材削除
 		admin.GET("/recipes", adminHandler.ListRecipes)                 // レシピ一覧
 		admin.POST("/recipes", adminHandler.AddRecipe)                  // レシピ追加
+		admin.PUT("/recipes/:id", adminHandler.UpdateRecipe)            // レシピ追加
 		admin.DELETE("/recipes/:id", adminHandler.DeleteRecipe)         //具材削除
+		admin.GET("/units", adminHandler.ListUnits)                     // レシピ一覧
 	}
 
 	// simulateAddIngredient(adminHandler)

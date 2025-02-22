@@ -1,23 +1,24 @@
 /* eslint-disable */
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { Ingredient, Genre } from "../types";
+import { Ingredient, Genre, Unit, NewIngredient, EditIngredient } from "../types";
 import {
   fetchIngredientsService,
   addIngredientService,
   deleteIngredientService,
+  updateIngredientService,
 } from "../hooks/ingredients";
 
 interface IngredientStore {
   ingredients: Ingredient[];
-  error: string;
-  newIngredient: { name: string; imageUrl: File | null; genre: Genre | null };
+  error: string | null;
+  newIngredient: NewIngredient;
   fetchIngredients: () => Promise<void>;
-  addIngredient: (name: string, imageUrl: File, genre: Genre) => Promise<void>;
+  addIngredient: (name: string, imageUrl: File, genre: Genre, unit: Unit) => Promise<void>;
   deleteIngredient: (id: number) => Promise<void>;
-  setNewIngredient: (name: string, imageUrl: File | null, genre: Genre | null) => void;
-  increaseIngredientQuantity: (id: number) => void;
-  decreaseIngredientQuantity: (id: number) => void;
+  setNewIngredient: (name: string, imageUrl: File | null, genre: Genre | null, unit: Unit | null) => void;
+  editIngredient: (updatedData: EditIngredient) => Promise<void>;
+  updateQuantity: (id: number, delta: number) => void;
 }
 
 const useIngredientStore = create<IngredientStore>()(
@@ -25,7 +26,22 @@ const useIngredientStore = create<IngredientStore>()(
     (set, get) => ({
       ingredients: [],
       error: "",
-      newIngredient: { name: "", imageUrl: null, genre: null },
+      newIngredient: { name: "", imageUrl: null, genre: null, unit: null },
+
+      editIngredient: async (updatedData: EditIngredient) => { 
+        try {
+          const updatedIngredient = await updateIngredientService(updatedData.id, updatedData);
+
+          // 更新した具材情報をingredientsリストに反映
+          set((state) => ({
+            ingredients: state.ingredients.map((ingredient) =>
+              ingredient.id === updatedData.id ? { ...ingredient, ...updatedIngredient } : ingredient
+            ),
+          }));
+        } catch (err: any) {
+          set({ error: err.message });
+        }
+      },
 
       fetchIngredients: async () => {
         try {
@@ -36,17 +52,14 @@ const useIngredientStore = create<IngredientStore>()(
         }
       },
 
-      addIngredient: async (name, imageUrl, genre) => {
+      addIngredient: async (name, imageUrl, genre, unit) => {
         try {
-          const newIngredient = await addIngredientService(name, imageUrl, genre);
-          console.log("newIngredient", newIngredient);
-          
-          
+          const newIngredient = await addIngredientService(name, imageUrl, genre, unit);
+
           set((state) => ({
             ingredients: [...state.ingredients, newIngredient],
-            newIngredient: { name: "", imageUrl: null, genre: null },
-            error: "",
           }));
+
           await get().fetchIngredients(); // Ingredient added, update list
         } catch (err: any) {
           set({ error: err.message });
@@ -67,24 +80,26 @@ const useIngredientStore = create<IngredientStore>()(
         }
       },
 
-      setNewIngredient: (name, imageUrl, genre) => {
-        set({ newIngredient: { name, imageUrl, genre } });
+      setNewIngredient: (name, imageUrl, genre, unit) => {
+        set((state) => ({
+          newIngredient: {
+            ...state.newIngredient,
+            name,
+            imageUrl,
+            genre,
+            unit,
+          },
+        }));
       },
 
-      increaseIngredientQuantity: (id) =>
+      updateQuantity: (id, delta) =>
         set((state) => ({
           ingredients: state.ingredients.map((ingredient) =>
             ingredient.id === id
-              ? { ...ingredient, quantity: ingredient.quantity + 1 }
-              : ingredient
-          ),
-        })),
-
-      decreaseIngredientQuantity: (id) =>
-        set((state) => ({
-          ingredients: state.ingredients.map((ingredient) =>
-            ingredient.id === id && ingredient.quantity > 0
-              ? { ...ingredient, quantity: ingredient.quantity - 1 }
+              ? {
+                ...ingredient,
+                quantity: Math.max(ingredient.quantity + delta, 0), // 負の値にならないよう制御
+              }
               : ingredient
           ),
         })),

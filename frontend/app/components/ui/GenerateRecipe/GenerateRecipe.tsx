@@ -1,13 +1,14 @@
 /* eslint-disable */
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import styles from "./GenerateRecipe.module.scss";
+import { backendUrl } from "@/app/utils/apiUtils";
 import { useRouter } from "next/navigation";
 import useRecipeStore from "@/app/stores/recipeStore";
 import useIngredientStore from "@/app/stores/ingredientStore";
-import { fetchRecipesAPI } from "@/app/hooks/useRecipes";
+import { fetchRecipesAPI } from "@/app/hooks/recipes";
 
 const GenerateRecipe = () => {
   const [loading, setLoading] = useState(false);
@@ -16,9 +17,6 @@ const GenerateRecipe = () => {
   const { setGeneratedRecipes } = useRecipeStore();
   const { ingredients } = useIngredientStore();
   const router = useRouter();
-
-  const backendUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
   const fetchRecipes = async () => {
     setLoading(true);
@@ -30,12 +28,10 @@ const GenerateRecipe = () => {
         .map(({ id, quantity }) => ({ id, quantity }));
 
       const response = await fetchRecipesAPI(filteredIngredients); // 新規関数の使用
-
-      console.log("取得レシピ", response);
-
+      console.log("取得内容02: ", response);
+      
+      
       setGeneratedRecipes(response); // レシピを更新
-
-      console.log("response01", response);
 
       // レシピをURLのクエリパラメータに追加
       router.push("/recipes");
@@ -57,7 +53,7 @@ const GenerateRecipe = () => {
       <div className={styles.container_block__inner}>
         {selectedIngredients.length > 0 && (
           <ul className={styles.ingredients_list}>
-            {selectedIngredients.map((ingredient) => (
+            {selectedIngredients.map((ingredient: any) => (
               <li key={ingredient.id} className={styles.ingredients_list__item}>
                 <div className={styles.ingredients_list__image}>
                   <Image
@@ -77,6 +73,7 @@ const GenerateRecipe = () => {
                 -
                 <p className={styles.ingredients_list__quantity}>
                   {ingredient.quantity}
+                  {ingredient.unit.name}
                 </p>
               </li>
             ))}
