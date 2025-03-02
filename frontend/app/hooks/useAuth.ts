@@ -2,8 +2,10 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/app/stores/userStore";
 
+
+// ログインの検査
 export const useAuth = () => {
-  const { user, fetchUser } = useUserStore();
+  const { user, fetchUser, isLoading } = useUserStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -12,13 +14,14 @@ export const useAuth = () => {
         await fetchUser();
       }
 
-      if (user === undefined) {
-        router.push("/login/"); // ユーザー情報が取得できていない場合にリダイレクト
+      if (!user && !isLoading) {
+        router.push("/login/");
       }
     };
 
     checkUser();
-  }, [user, fetchUser, router]);
+  }, [user, fetchUser, isLoading, router]);
 
-  return { user };
+  return { user, isLoading };
 };
+

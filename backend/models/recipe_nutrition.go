@@ -4,13 +4,10 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-
-	"gorm.io/gorm"
 )
 
 // 栄養基準値のモデル
 type NutritionStandard struct {
-	gorm.Model
 	AgeGroup      string         `gorm:"type:varchar(50);not null"` // 年齢層 (例: "18-29", "30-49")
 	Gender        string         `gorm:"type:varchar(10);not null"` // "male" または "female"
 	Calories      float64        `gorm:"not null"`                  // kcal
@@ -19,7 +16,6 @@ type NutritionStandard struct {
 	Carbohydrates float64        `gorm:"not null"`                  // g
 	Sugar         float64        `gorm:"not null"`                  // g
 	Salt          float64        `gorm:"not null"`                  // g
-	DeletedAt     gorm.DeletedAt `gorm:"index"`
 }
 
 // 栄養成分のJSONB型

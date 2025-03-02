@@ -1,29 +1,56 @@
 /* eslint-disable */
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { Recipe } from "../types";
+import { Recipe, NewRecipe } from "../types";
 import {
   fetchRecipesService,
   addRecipeService,
   deleteRecipeService,
   updateRecipeService,
-  fetchUserRecipes
+  fetchUserRecipes,
 } from "../hooks/recipes";
 
 interface RecipeStore {
   recipes: Recipe[];
   generatedRecipes: Recipe[];
   error: string;
+  newRecipe: NewRecipe;
   fetchRecipes: () => Promise<void>;
   fetchUserRecipes: (token: string) => Promise<void>;
   setGeneratedRecipes: (recipes: Recipe[]) => void;
   setRecipes: (recipes: Recipe[]) => void;
   clearRecipes: () => void;
   clearGeneratedRecipes: () => void;
+  setNewRecipe: (updates: Partial<NewRecipe>) => void;
+  resetNewRecipe: () => void;
   addRecipe: (formData: FormData, userId?: string, isPublic?: boolean) => Promise<void>;
   deleteRecipe: (id: string) => Promise<void>;
   editRecipe: (id: string, formData: FormData) => Promise<void>;
 }
+
+const initialNewRecipe: NewRecipe = {
+  name: "",
+  instructions: [{ stepNumber: 1, description: "", image: null }],
+  image: null,
+  genre: "すべて",
+  cookingTime: 0,
+  reviews: 0,
+  costEstimate: "",
+  summary: "",
+  catchphrase: "",
+  nutrition: {
+    calories: 0,
+    carbohydrates: 0,
+    fat: 0,
+    protein: 0,
+    sugar: 0,
+    salt: 0,
+  },
+  faq: [{ question: "", answer: "" }],
+  selectedIngredients: [],
+  userId: "",
+  isPublic: true,
+};
 
 const useRecipeStore = create<RecipeStore>()(
   persist(
@@ -31,6 +58,7 @@ const useRecipeStore = create<RecipeStore>()(
       recipes: [],
       generatedRecipes: [],
       error: "",
+      newRecipe: initialNewRecipe,
 
       setRecipes: (recipes) => set({ recipes }),
       setGeneratedRecipes: (recipes) => set({ generatedRecipes: recipes }),
@@ -38,10 +66,39 @@ const useRecipeStore = create<RecipeStore>()(
       clearRecipes: () => set({ recipes: [] }),
       clearGeneratedRecipes: () => set({ generatedRecipes: [] }),
 
+      setNewRecipe: (updates) =>
+        set((state) => ({
+          newRecipe: { ...state.newRecipe, ...updates },
+        })),
+
+      resetNewRecipe: () =>
+        set({
+          newRecipe: {
+            name: "",
+            instructions: [{ stepNumber: 1, description: "", image: null }],
+            image: null,
+            genre: "すべて",
+            cookingTime: 0,
+            reviews: 0,
+            costEstimate: "",
+            summary: "",
+            catchphrase: "",
+            nutrition: {
+              calories: 0,
+              carbohydrates: 0,
+              fat: 0,
+              protein: 0,
+              sugar: 0,
+              salt: 0,
+            },
+            faq: [{ question: "", answer: "" }],
+            selectedIngredients: [],
+          },
+        }),
+
       fetchRecipes: async () => {
         try {
           const recipes = await fetchRecipesService();
-
 
           set({ recipes, error: "" });
         } catch (err) {
@@ -50,10 +107,9 @@ const useRecipeStore = create<RecipeStore>()(
       },
 
       fetchUserRecipes: async (userId) => {
-        console.log("userId", userId);
-        
         try {
           const data = await fetchUserRecipes(userId);
+          
           set({ recipes: data.recipes, error: "" });
         } catch (err) {
           set({ error: "Failed to fetch user recipes" });

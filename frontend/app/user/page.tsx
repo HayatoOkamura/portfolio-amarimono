@@ -4,8 +4,9 @@
 import { useAuth } from "@/app/hooks/useAuth";
 
 export default function UserPage() {
-  const { user } = useAuth();
-  if (!user) return <p>Loading...</p>;
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <p>Loading...</p>;
+  if (!user) return <p>Redirecting to login...</p>;
 
   return (
     <div>

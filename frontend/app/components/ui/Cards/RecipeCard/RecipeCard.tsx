@@ -28,12 +28,18 @@ interface RecipeCardProps {
     ingredients: Ingredient[];
   };
   isFavoritePage?: boolean;
+  path: string;
 }
 
 
-const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, isFavoritePage }) => {
+const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, isFavoritePage, path }) => {
   useEffect(() => {
     console.log("テスト", recipe);
+    recipe.ingredients.map((ing) => {
+      console.log(ing);
+      
+    })
+
   }, [recipe]);
   return (
     <div className={styles.card_block}>
@@ -69,7 +75,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, isFavoritePage }) => {
 
          {/* ✅ 詳しく見るボタン（お気に入りページ限定） */}
          {isFavoritePage && recipe.id && (
-          <Link href={`/recipes/${recipe.id}`}>
+          <Link href={`${path}${recipe.id}`}>
             <button className={styles.details_button}>詳しく見る</button>
           </Link>
         )}

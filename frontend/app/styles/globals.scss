@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 :root {
-  --primary-bg-color: #F7F7F7;
+  --primary-bg-color: #EFF1F5;
   --secondary-bg-color: #F7DEDC;
 
   --primary-font-color: #2d2d2d;
@@ -24,8 +24,10 @@ body {
   color: var(--primary-font-color);
   background: var(--primary-bg-color);
   font-family: "Noto sans JP", sans-serif;
+  overflow: hidden;
 }
 
 main {
+  height: calc(100% - 65px);
   overflow-y: auto;
 }

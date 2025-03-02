@@ -1,13 +1,15 @@
 .container_block {
-  display: flex;
-  flex-direction: row;
   height: 100vh;
-  overflow: hidden;
-  width: 100%;
-  background: var(--primary-bg-color);
-  justify-content: space-between;
+  display: flex;
+  &__inner {
+    height: 100%;
+    overflow: hidden;
+    width: 100%;
+    background: var(--primary-bg-color);
+    justify-content: space-between;
 
-  @media (max-width: 768px) {
-    flex-direction: column;
+    @media (max-width: 768px) {
+      flex-direction: column;
+    }
   }
 }

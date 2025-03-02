@@ -1,16 +1,42 @@
 .container_block {
-  padding: 50px 30px;
   width: 100%;
 
-  &__category {
-    display: flex;
-    gap: 16px;
+  .category_block {
+    &__title {
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.5;
+      letter-spacing: 0.03em;
+    }
+
+    &__contents {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
   }
 
-  &__ingredient {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 24px;
+  .ingredient_block {
     margin-top: 32px;
+
+    &__title {
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.5;
+      letter-spacing: 0.03em;
+    }
+
+    &__wrapper {
+      margin-top: 12px;
+      overflow-y: auto;
+    }
+
+    &__contents {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+      padding-bottom: 120px;
+    }
   }
 }

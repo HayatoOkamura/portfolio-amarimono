@@ -1,28 +1,47 @@
 .container_block {
-  position: sticky;
-  top: 0;
-  right: 0;
   background: #fff;
-  height: 100vh;
+  height: 100%;
   width: 300px;
-  padding: 50px 20px;
+  padding: 20px;
+  border-radius: 15px;
+  
   &__inner {
     display: flex;
     flex-direction: column;
-    align-items: center;
     height: 100%;
+  }
+
+  &__title {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.5;
+    letter-spacing: 0.03em;
+  }
+
+  &__contents {
+    margin-top: 12px;
+    height: 100%;
+    overflow-y: auto;
+    margin-bottom: 30px;
   }
 
   &__btn {
     color: #fff;
     font-size: 1rem;
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: 0.03em;
     line-height: 1.5;
     background: var(--accent-color);
     width: 170px;
     border-radius: 10px;
     margin-top: auto;
+    align-self: center;
+    transition: opacity .2s;
+
+    &:hover {
+      opacity: .8;
+    }
+
     button {
       text-align: center;
       padding: 10px 15px 11px;
@@ -37,12 +56,12 @@
       background: #fff;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 8px;
       border-radius: 5px;
-      padding: 5px;
+      padding: 10px 0;
 
       + .ingredients_list__item {
-        margin-top: 10px;
+        border-top: 1px solid #e5e7eb;
       }
     }
     
@@ -70,6 +89,7 @@
       font-weight: 500;
       letter-spacing: 0.03em;
       line-height: 1.5;
+      margin-left: auto;
     }
   }
 }

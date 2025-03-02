@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"portfolio-amarimono/handlers/utils"
 	"portfolio-amarimono/models"
 
 	"github.com/gin-gonic/gin"
@@ -22,25 +22,6 @@ import (
 
 type AdminHandler struct {
 	DB *gorm.DB
-}
-
-// 画像保存処理
-func saveImage(c *gin.Context, file *multipart.FileHeader, dir string) (string, error) {
-	saveDir := filepath.Join(".", "uploads", dir)
-	if _, err := os.Stat(saveDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(saveDir, os.ModePerm); err != nil {
-			return "", err
-		}
-	}
-
-	// 一意のファイル名を生成（タイムスタンプ + 元のファイル名）
-	uniqueFilename := fmt.Sprintf("%d-%s", time.Now().UnixNano(), file.Filename)
-	savePath := filepath.Join(saveDir, uniqueFilename)
-
-	if err := c.SaveUploadedFile(file, savePath); err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("http://localhost:8080/static/%s", uniqueFilename), nil
 }
 
 // レシピ名をフォルダ名として使用できる形式に変換
@@ -268,10 +249,11 @@ func (h *AdminHandler) DeleteIngredient(c *gin.Context) {
 	// 具材を使用しているレシピを削除
 	err := h.DB.Transaction(func(tx *gorm.DB) error {
 		// 1. 該当する ingredient_id を持つ recipe_id を中間テーブルから取得
-		var recipeIDs []int
+		var recipeIDs []string
 		if err := tx.Table("recipe_ingredients").
 			Select("recipe_id").
 			Where("ingredient_id = ?", id).
+			Where("recipe_id IS NOT NULL").
 			Find(&recipeIDs).Error; err != nil {
 			log.Println("Error finding recipe IDs associated with ingredient ID:", err)
 			return err
@@ -346,25 +328,22 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 
 	// 認証済みのユーザー情報を取得（例: JWTから取得）
 	userIDStr := c.PostForm("userId")
-	if userIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
-		return
+	log.Println("🚨🚨🚨", userIDStr)
+	if userIDStr != "" {
+		userID, err := uuid.Parse(userIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+			return
+		}
+		recipe.UserID = &userID
 	}
-
-	// UUID のバリデーション
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
-		return
-	}
-	recipe.UserID = &userID
 
 	// `public` フラグの処理
-	publicStr := c.PostForm("public")
+	publicStr := c.PostForm("isPublic")
 	if publicStr == "false" {
-		recipe.Public = false
+		recipe.IsPublic = false
 	} else {
-		recipe.Public = true // デフォルトで公開
+		recipe.IsPublic = true // デフォルトで公開
 	}
 
 	// レシピ名の取得とバリデーション
@@ -385,14 +364,6 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 		return
 	}
 	recipe.CookingTime = cookingTime
-
-	// レビュー
-	reviews, err := strconv.ParseFloat(c.PostForm("reviews"), 64)
-	if err != nil || reviews < 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid reviews"})
-		return
-	}
-	recipe.Reviews = reviews
 
 	// コストの見積もり
 	costEstimate := c.PostForm("costEstimate")
@@ -473,7 +444,7 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 			if err == nil {
 				// 画像の保存先フォルダを作成
 				savePath := filepath.Join(recipeFolder, "instructions")
-				imageURL, err := saveImage(c, imageFile, savePath)
+				imageURL, err := utils.SaveImage(c, imageFile, savePath)
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save instruction image"})
 					return
@@ -493,7 +464,7 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	// メイン画像の保存
 	imageFile, err := c.FormFile("image")
 	if err == nil {
-		imageURL, err := saveImage(c, imageFile, recipeFolder)
+		imageURL, err := utils.SaveImage(c, imageFile, recipeFolder)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save main image"})
 			return
@@ -636,7 +607,6 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 	// フォームデータ取得
 	name := c.PostForm("name")
 	cookingTime, _ := strconv.Atoi(c.PostForm("cookingTime"))
-	reviews, _ := strconv.ParseFloat(c.PostForm("reviews"), 64)
 	costEstimate := c.PostForm("costEstimate")
 	summary := c.PostForm("summary")
 	catchphrase := c.PostForm("catchphrase")
@@ -648,7 +618,7 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 
 	// 画像の保存処理
 	if imageFile, err := c.FormFile("image"); err == nil {
-		imageURL, err := saveImage(c, imageFile, recipeFolder)
+		imageURL, err := utils.SaveImage(c, imageFile, recipeFolder)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save main image"})
 			return
@@ -668,7 +638,7 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 			fileKey := fmt.Sprintf("instruction_image_%d", i)
 			if imageFile, err := c.FormFile(fileKey); err == nil {
 				savePath := filepath.Join(recipeFolder, "instructions")
-				imageURL, err := saveImage(c, imageFile, savePath)
+				imageURL, err := utils.SaveImage(c, imageFile, savePath)
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save instruction image"})
 					return
@@ -699,7 +669,6 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 	if err := tx.Model(&recipe).Updates(models.Recipe{
 		Name:         name,
 		CookingTime:  cookingTime,
-		Reviews:      reviews,
 		CostEstimate: costEstimate,
 		Summary:      summary,
 		Nutrition:    recipe.Nutrition,

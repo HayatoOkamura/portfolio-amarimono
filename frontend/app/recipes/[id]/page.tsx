@@ -54,16 +54,16 @@ const RecipeDetailPage = () => {
     checkLikeStatus();
   }, [recipe, user]);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (!error && data.user) {
-        setUser(data.user);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchUser = async () => {
+  //     const { data, error } = await supabase.auth.getUser();
+  //     if (!error && data.user) {
+  //       setUser(data.user);
+  //     }
+  //   };
 
-    fetchUser();
-  }, []);
+  //   fetchUser();
+  // }, []);
 
   const handleLike = async () => {
     if (!user) {
@@ -99,7 +99,7 @@ const RecipeDetailPage = () => {
   return (
     <div className={styles.recipe_block}>
       <div className={styles.recipe_block__inner}>
-        <button onClick={handleLike}>{isLiked ? "♡" : "🩷"}</button>
+        <button onClick={handleLike}>{isLiked ? "🩷" : "♡"}</button>
         <div className={styles.description_block}>
           <div className={styles.description_block__img}>
             <Image

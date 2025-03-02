@@ -1,10 +1,10 @@
+/* eslint-disable */
 "use client";
 
 import { Noto_Sans_JP } from "next/font/google";
 import "@/styles/globals.scss";
 import Container from "./components/layout/Container/Container";
 import { useEffect } from "react";
-import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import { useUserStore } from "@/app/stores/userStore";
 
 const notoSansJp = Noto_Sans_JP({
@@ -21,16 +21,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { setUser } = useUserStore();
+  const { setUser, fetchUser } = useUserStore();
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) setUser(user);
-    };
-
+    console.log("ユーザー取得");
     fetchUser();
   }, [setUser]);
 

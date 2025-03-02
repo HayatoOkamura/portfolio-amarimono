@@ -8,7 +8,6 @@ import { backendUrl } from "@/app/utils/apiUtils";
 import { useRouter } from "next/navigation";
 import useRecipeStore from "@/app/stores/recipeStore";
 import useIngredientStore from "@/app/stores/ingredientStore";
-import { fetchRecipesAPI } from "@/app/hooks/recipes";
 
 const GenerateRecipe = () => {
   const [loading, setLoading] = useState(false);
@@ -18,29 +17,21 @@ const GenerateRecipe = () => {
   const { ingredients } = useIngredientStore();
   const router = useRouter();
 
-  const fetchRecipes = async () => {
-    setLoading(true);
-    setError("");
-
+  const handleRecipe = async () => {
     try {
       const filteredIngredients = ingredients
         .filter((ingredient) => ingredient.quantity > 0)
         .map(({ id, quantity }) => ({ id, quantity }));
 
-      const response = await fetchRecipesAPI(filteredIngredients); // 新規関数の使用
-      console.log("取得内容02: ", response);
-      
-      
-      setGeneratedRecipes(response); // レシピを更新
+      if (filteredIngredients.length === 0) {
+        alert("具材が選択されていません。");
+        return; // 処理を中断
+      }
 
-      // レシピをURLのクエリパラメータに追加
       router.push("/recipes");
     } catch (err: any) {
-      setError(err.message || "An unknown error occurred.");
       setRecipes([]);
       setGeneratedRecipes([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -49,45 +40,50 @@ const GenerateRecipe = () => {
   );
 
   return (
-    <div className={styles.container_block}>
+    <section className={styles.container_block}>
       <div className={styles.container_block__inner}>
-        {selectedIngredients.length > 0 && (
-          <ul className={styles.ingredients_list}>
-            {selectedIngredients.map((ingredient: any) => (
-              <li key={ingredient.id} className={styles.ingredients_list__item}>
-                <div className={styles.ingredients_list__image}>
-                  <Image
-                    fill
-                    src={
-                      ingredient.imageUrl
-                        ? `${backendUrl}/${ingredient.imageUrl}`
-                        : "/default-image.jpg"
-                    }
-                    alt={ingredient.name}
-                    unoptimized
-                  />
-                </div>
-                <p className={styles.ingredients_list__name}>
-                  {ingredient.name}
-                </p>
-                -
-                <p className={styles.ingredients_list__quantity}>
-                  {ingredient.quantity}
-                  {ingredient.unit.name}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
+        <h2 className={styles.container_block__title}>選択した具材</h2>
+        <div className={styles.container_block__contents}>
+          {selectedIngredients.length > 0 && (
+            <ul className={styles.ingredients_list}>
+              {selectedIngredients.map((ingredient: any) => (
+                <li
+                  key={ingredient.id}
+                  className={styles.ingredients_list__item}
+                >
+                  <div className={styles.ingredients_list__image}>
+                    <Image
+                      fill
+                      src={
+                        ingredient.imageUrl
+                          ? `${backendUrl}/${ingredient.imageUrl}`
+                          : "/default-image.jpg"
+                      }
+                      alt={ingredient.name}
+                      unoptimized
+                    />
+                  </div>
+                  <p className={styles.ingredients_list__name}>
+                    {ingredient.name}
+                  </p>
+                  <p className={styles.ingredients_list__quantity}>
+                    {ingredient.quantity}
+                    {ingredient.unit.name}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <div className={styles.container_block__btn}>
-          <button onClick={fetchRecipes}>
+          <button onClick={handleRecipe}>
             {loading ? <p>レシピを検索中...</p> : <p>レシピを検索</p>}
           </button>
         </div>
       </div>
 
       {error && <p className="text-red-500">{error}</p>}
-    </div>
+    </section>
   );
 };
 

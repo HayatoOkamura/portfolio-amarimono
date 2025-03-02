@@ -15,7 +15,8 @@ export const fetchIngredientsService = async (): Promise<Ingredient[]> => {
     unit: {
       id: ingredient.unit.id,
       name: ingredient.unit.name,
-      abbreviation: ingredient.unit.abbreviation,
+      description: ingredient.unit.description,
+      step: ingredient.unit.step
     }
   }));
 };

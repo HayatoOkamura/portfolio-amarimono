@@ -1,23 +1,31 @@
-# ベースイメージを指定
-FROM node:20.18.0
-
-# 作業ディレクトリを設定
+# 1. ビルド用のコンテナ
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# # キャッシュ利用で効率化するために別でコピー
+# パッケージ関連のファイルをコピー
 COPY package.json package-lock.json ./
 
 # 依存関係をインストール
-RUN npm install --frozen-lockfile --prefer-offline
+RUN npm ci
 
-# # ソースコードをコピー
+# ソースコードをコピー
 COPY . .
 
-# # アプリケーションをビルド
+# Next.js のビルドを実行
 RUN npm run build
 
-# # ポート番号を指定
-EXPOSE 3000
+# 2. 本番用の軽量コンテナ
+FROM node:20-alpine
+WORKDIR /app
 
-# # アプリケーションを起動
-CMD ["npm","run","dev"]
+# 必要なファイルをコピー（package.json, package-lock.json, .next, public）
+COPY --from=builder /app/package.json .
+COPY --from=builder /app/package-lock.json .
+COPY --from=builder /app/.next .next
+COPY --from=builder /app/public ./public
+
+# 本番環境の依存関係をインストール
+RUN npm ci --omit=dev  
+
+# Next.js を起動
+CMD ["npm", "run", "dev"]

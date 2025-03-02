@@ -8,19 +8,34 @@ import IngredientCard from "../../ui/Cards/IngredientCard/IngredientCard";
 import CategoryCard from "../../ui/Cards/CategoryCard/CategoryCard";
 
 const IngredientSelector = () => {
-  const {
-    ingredients,
-    fetchIngredients,
-    updateQuantity,
-  } = useIngredientStore();
+  const { ingredients, fetchIngredients, updateQuantity } =
+    useIngredientStore();
 
   const { ingredientGenres, fetchIngredientGenres } = useGenreStore();
   const [selectedGenre, setSelectedGenre] = useState<string>("すべて");
+  const [height, setHeight] = useState("auto");
 
   useEffect(() => {
     fetchIngredients();
     fetchIngredientGenres();
   }, [fetchIngredients, fetchIngredientGenres]);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      const element = document.getElementById("target");
+      console.log(element);
+      
+      if (element) {
+        const topOffset = element.getBoundingClientRect().top;
+        setHeight(`${window.innerHeight - topOffset}px`);
+      }
+    };
+
+    window.addEventListener("resize", updateHeight);
+    updateHeight(); // 初回設定
+
+    return () => window.removeEventListener("resize", updateHeight);
+  }, []);
 
   const genres = [
     { id: 0, name: "すべて" }, // "すべて" を追加
@@ -35,25 +50,38 @@ const IngredientSelector = () => {
   return (
     <div className={styles.container_block}>
       {/* カテゴリカード */}
-      <div className={styles.container_block__category}>
-        {genres.map((genre) => (
-          <CategoryCard
-            key={genre.id}
-            genre={genre.name}
-            onClick={() => setSelectedGenre(genre.name)}
-          />
-        ))}
-      </div>
+
+      <section className={styles.category_block}>
+        <h2 className={styles.category_block__title}>具材カテゴリー</h2>
+        <div className={styles.category_block__contents}>
+          {genres.map((genre) => (
+            <CategoryCard
+              key={genre.id}
+              genre={genre}
+              onClick={() => setSelectedGenre(genre.name)}
+            />
+          ))}
+        </div>
+      </section>
       {/* 具材一覧 */}
-      <div className={styles.container_block__ingredient}>
-        {filteredIngredients.map((ingredient) => (
-          <IngredientCard
-            key={ingredient.id}
-            ingredient={ingredient}
-            updateQuantity={updateQuantity}
-          />
-        ))}
-      </div>
+      <section className={styles.ingredient_block}>
+        <h2 className={styles.ingredient_block__title}>具材一覧</h2>
+        <div
+          className={styles.ingredient_block__wrapper}
+          id="target"
+          style={{ height }}
+        >
+          <div className={styles.ingredient_block__contents}>
+            {filteredIngredients.map((ingredient) => (
+              <IngredientCard
+                key={ingredient.id}
+                ingredient={ingredient}
+                updateQuantity={updateQuantity}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

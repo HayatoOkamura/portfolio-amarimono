@@ -1,5 +1,3 @@
-import { UUID } from "crypto";
-
 export interface Genre {
   id: number;
   name: string;
@@ -8,7 +6,8 @@ export interface Genre {
 export interface Unit {
   id: number;
   name: string;
-  abbreviation: string;
+  description: string;
+  step: number;
 }
 
 export interface Ingredient {
@@ -42,7 +41,7 @@ export interface FAQ {
 }
 
 export interface Recipe {
-  id: UUID;
+  id: string;
   name: string;
   imageUrl?: string;
   instructions: Instruction[];
@@ -56,7 +55,24 @@ export interface Recipe {
   nutrition: Nutrition;
   faq: FAQ[];
   userId?: string;
-  public?: boolean;
+  isPublic?: boolean;
+}
+
+export interface NewRecipe {
+  name: string;
+  instructions: NewRecipeInstructions[];
+  image: File | null;
+  genre: number | string;
+  cookingTime: number;
+  reviews: number;
+  costEstimate: string;
+  summary: string;
+  catchphrase: string;
+  nutrition: Nutrition;
+  faq: { question: string; answer: string }[];
+  selectedIngredients: { id: number; quantity: number }[];
+  userId?: string;
+  isPublic?: boolean;
 }
 
 export interface NewRecipeInstructions {
@@ -104,3 +120,12 @@ export interface RecipeResponse {
   message: string;
   recipe: Recipe;
 }
+
+export interface UserData {
+  id: string;
+  email: string;
+  username?: string;
+  profileImage?: File | null;
+  age?: number | "" | null;
+  gender?: string | null;
+};

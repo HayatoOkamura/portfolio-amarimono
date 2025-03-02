@@ -60,11 +60,15 @@ func main() {
 
 	// `/api/recipes` エンドポイントの登録
 	r.POST("/api/recipes", recipeHandler.SerchRecipes)
-	r.GET("/api/recipes/:id", recipeHandler.GetRecipeByID) // 特定のレシピ取得
-	r.GET("/api/user/recipes", recipeHandler.GetUserRecipes) // 特定のレシピ取得
+	r.GET("/api/recipes/:id", recipeHandler.GetRecipeByID)          // レシピ詳細を取得
+	r.GET("/api/recipes/search", recipeHandler.SearchRecipesByName) // レシピ名付検索
+	r.GET("/api/user/recipes", recipeHandler.GetUserRecipes)        // 特定のレシピ取得
 
 	// ✅ ユーザー登録エンドポイント
 	r.POST("/api/users", userHandler.CreateUser)
+
+	// ✅ ユーザー情報取得エンドポイント（新規追加）
+	r.GET("/api/users/:id", userHandler.GetUserProfile)
 
 	// ジャンル取得エンドポイント
 	r.GET("/api/recipe_genres", genreHandler.ListRecipeGenres)

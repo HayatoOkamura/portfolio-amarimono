@@ -10,6 +10,7 @@ export const fetchUnitsService = async (): Promise<Unit[]> => {
   return data.map((unit: any) => ({
     id: unit.id,
     name: unit.name,
-    abbreviation: unit.abbreviation,
+    description: unit.description,
+    step: unit.step
   }));
 };

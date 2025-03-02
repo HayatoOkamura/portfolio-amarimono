@@ -3,8 +3,8 @@
 import React from "react";
 import styles from "./IngredientCard.module.scss";
 import { backendUrl } from "@/app/utils/apiUtils";
+import { Unit } from "@/app/types";
 import Image from "next/image";
-import useUnitStep from "@/app/hooks/useUnitStep";
 
 export interface IngredientCardProps {
   ingredient: {
@@ -14,10 +14,7 @@ export interface IngredientCardProps {
       id: number;
       name: string;
     };
-    unit: {
-      id: number;
-      name: string;
-    };
+    unit: Unit
     imageUrl?: string | null;
     quantity: number;
   };
@@ -28,9 +25,6 @@ const IngredientCard: React.FC<IngredientCardProps> = ({
   ingredient,
   updateQuantity,
 }) => {
-  const getStep = useUnitStep();
-  const step = getStep(ingredient.unit.id);
-
   return (
     <li className={styles.card_block}>
       <div className={styles.card_block__image}>
@@ -48,22 +42,21 @@ const IngredientCard: React.FC<IngredientCardProps> = ({
       <p className={styles.card_block__name}>{ingredient.name}</p>
       <p className={styles.card_block__genre}>{ingredient.genre.name}</p>
       <div className={styles.card_block__controls}>
-      <button
-          onClick={() => updateQuantity(ingredient.id, step)}
+        <button
+          onClick={() => updateQuantity(ingredient.id, ingredient.unit.step)}
           aria-label={`Increase quantity of ${ingredient.name}`}
-        >
-          +
-        </button>
+          className={`${styles.card_block__button} ${styles['card_block__button--plus']}`}
+        />
+
         <span>
           {ingredient.quantity}
           {ingredient.unit.name}
         </span>
         <button
-          onClick={() => updateQuantity(ingredient.id, -step)}
+          onClick={() => updateQuantity(ingredient.id, -ingredient.unit.step)}
           aria-label={`Decrease quantity of ${ingredient.name}`}
-        >
-          -
-        </button>
+          className={`${styles.card_block__button} ${styles["card_block__button--minus"]}`}
+        />
       </div>
     </li>
   );

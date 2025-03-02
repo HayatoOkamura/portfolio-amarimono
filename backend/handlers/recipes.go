@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type RecipeHandler struct {
@@ -71,12 +72,11 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		quantityMap[ing.IngredientID] = ing.QuantityRequired
 	}
 
-	// サブクエリ：すべての指定具材が含まれるレシピを取得
+	// サブクエリ：指定具材が含まれるレシピを取得
 	subQuery := h.DB.Table("recipe_ingredients").
 		Select("recipe_id").
 		Where("ingredient_id IN ?", extractIngredientIDs(ingredients)).
-		Group("recipe_id").
-		Having("COUNT(recipe_id) = ?", len(ingredients))
+		Group("recipe_id")
 
 	// レシピと関連具材をロード
 	var recipes []models.Recipe
@@ -94,8 +94,7 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 	// 結果をフィルタリング
 	var result []models.Recipe
 	for _, recipe := range recipes {
-		allIngredientsMatch := true
-		var matchedIngredients []models.RecipeIngredient
+		meetsRequirements := true
 
 		// レシピの具材を順番にチェック
 		for _, recipeIng := range recipe.Ingredients {
@@ -103,20 +102,18 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 			if reqQuantity, ok := quantityMap[recipeIng.IngredientID]; ok {
 				// 数量が一致しない場合
 				if reqQuantity < recipeIng.QuantityRequired {
-					allIngredientsMatch = false
+					meetsRequirements = false
 					break
 				}
-				// 一致する具材をマッチングリストに追加
-				matchedIngredients = append(matchedIngredients, recipeIng)
 			} else {
 				// レシピに必要な具材がリクエストに含まれていない場合
-				allIngredientsMatch = false
+				meetsRequirements = false
 				break
 			}
 		}
 
 		// 全ての具材が一致した場合にのみレシピを結果に追加
-		if allIngredientsMatch {
+		if meetsRequirements {
 			result = append(result, recipe)
 		}
 	}
@@ -128,6 +125,32 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, result)
+}
+
+func (h *RecipeHandler) SearchRecipesByName(c *gin.Context) {
+	query := c.Query("q")
+
+	if query == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "検索ワードが必要です"})
+		return
+	}
+
+	var recipes []models.Recipe
+	err := h.DB.Preload("Ingredients.Ingredient").
+		Preload("Ingredients.Ingredient.Unit").
+		Preload("Ingredients.Ingredient.Genre").
+		Preload("Genre").
+		Where("LOWER(name) LIKE LOWER(?)", "%"+query+"%").
+		Order(clause.Expr{SQL: "POSITION(LOWER(?) IN LOWER(name))", Vars: []interface{}{query}}).
+		Find(&recipes).Error
+
+	if err != nil {
+		log.Printf("検索クエリエラー: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "データベースエラー"})
+		return
+	}
+
+	c.JSON(http.StatusOK, recipes)
 }
 
 // GetRecipeByID /api/recipes/:id (GET) レシピをIDで取得
@@ -187,16 +210,20 @@ func (h *RecipeHandler) GetRecipeByID(c *gin.Context) {
 // GetUserRecipes ユーザーが登録したレシピ一覧を取得
 func (h *RecipeHandler) GetUserRecipes(c *gin.Context) {
 	userIDStr := c.Query("userId") // クエリパラメータから取得
-	log.Println("😇😇😇", userIDStr)
 	if userIDStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing userId"})
 		return
 	}
 
+	log.Println("👿👿👿👿", userIDStr)
 	var recipes []models.Recipe
 
 	// ユーザーのレシピだけを取得
-	if err := h.DB.Where("user_id = ?", userIDStr).Find(&recipes).Error; err != nil {
+	if err := h.DB.
+		Preload("Genre").
+		Preload("Ingredients.Ingredient.Unit").
+		Where("user_id = ?", userIDStr).
+		Find(&recipes).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
 		return
 	}

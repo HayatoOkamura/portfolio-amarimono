@@ -8,7 +8,6 @@ import Image from "next/image";
 import useRecipeStore from "../../stores/recipeStore";
 import useIngredientStore from "../../stores/ingredientStore";
 import useGenreStore from "../../stores/genreStore";
-import useUnitStep from "../../hooks/useUnitStep";
 import { v4 as uuidv4 } from "uuid";
 import { Ingredient, Instruction } from "@/app/types";
 import RegistrationForm from "@/app/components/ui/RegistrationForm/RecipeRegistration";
@@ -19,22 +18,8 @@ const AdminRecipes = () => {
 
   const { ingredients, fetchIngredients } = useIngredientStore();
   const { recipeGenres, fetchRecipeGenres, error } = useGenreStore();
-  const getUnitStep = useUnitStep();
-
   const [editingRecipe, setEditingRecipe] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-
-  useEffect(() => {
-    recipes.map((recipe) => {
-      console.log("レシピ！", recipe);
-      console.log("レシピ！02", editingRecipe);
-    });
-  }, [editingRecipe]);
-  useEffect(() => {
-    recipes.map((recipe) => {
-      console.log("レシピ01", recipe);
-    });
-  }, [recipes]);
 
   useEffect(() => {
     fetchRecipes();
@@ -98,7 +83,6 @@ const AdminRecipes = () => {
       const formData = new FormData();
       formData.append("name", editingRecipe.name);
       formData.append("cookingTime", editingRecipe.cookingTime.toString());
-      formData.append("reviews", editingRecipe.reviews.toString());
       formData.append("costEstimate", editingRecipe.costEstimate);
       formData.append("summary", editingRecipe.summary);
       formData.append("catchphrase", editingRecipe.catchphrase);
@@ -134,7 +118,7 @@ const AdminRecipes = () => {
     <div className="container mx-auto p-8">
       <h2 className="text-3xl font-bold mb-6 text-center">Recipe List</h2>
 
-      <RegistrationForm />
+      <RegistrationForm isAdmin={true} />
 
       <ul className="grid grid-cols-3 gap-3">
         {Array.isArray(recipes) &&
@@ -167,7 +151,6 @@ const AdminRecipes = () => {
               )}
 
               <p>Cooking Time: {recipe.cookingTime} minutes</p>
-              <p>Reviews: {recipe.reviews} ★</p>
               <p>Cost: {recipe.costEstimate}</p>
               <p>Summary: {recipe.summary}</p>
               <p>Catchphrase: {recipe.catchphrase}</p>
@@ -316,13 +299,12 @@ const AdminRecipes = () => {
             <h3 className="text-lg font-semibold mt-2">Ingredients</h3>
             {Array.isArray(editingRecipe.ingredients) &&
               editingRecipe.ingredients.map((ingredient: any) => {
-                const step = getUnitStep(ingredient.unit?.id || 1);
                 return (
                   <div key={ingredient.id} className="flex items-center mb-2">
                     <span className="mr-2 font-medium">{ingredient.name}</span>
                     <button
                       onClick={() =>
-                        updateIngredientQuantity(ingredient.id, step)
+                        updateIngredientQuantity(ingredient.id, ingredient.unit.step)
                       }
                       className="bg-green-500 text-white px-2 py-1 rounded ml-2"
                     >
@@ -331,7 +313,7 @@ const AdminRecipes = () => {
                     <span className="mx-4">{ingredient.quantity}</span>
                     <button
                       onClick={() =>
-                        updateIngredientQuantity(ingredient.id, -step)
+                        updateIngredientQuantity(ingredient.id, -ingredient.unit.step)
                       }
                       className="bg-red-500 text-white px-2 py-1 rounded"
                     >
@@ -351,21 +333,6 @@ const AdminRecipes = () => {
                 setEditingRecipe({
                   ...editingRecipe,
                   cookingTime: Number(e.target.value),
-                })
-              }
-              className="border p-2 w-full mb-2 rounded"
-            />
-
-            <h3>Review</h3>
-            <input
-              type="number"
-              placeholder="Reviews (1.0 - 5.0)"
-              step="0.1"
-              value={editingRecipe?.reviews || ""}
-              onChange={(e) =>
-                setEditingRecipe({
-                  ...editingRecipe,
-                  reviews: Number(e.target.value),
                 })
               }
               className="border p-2 w-full mb-2 rounded"

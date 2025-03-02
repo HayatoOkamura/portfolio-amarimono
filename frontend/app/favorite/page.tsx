@@ -24,7 +24,7 @@ const FavoritesPage = () => {
 
   if (loading) return <p>Loading...</p>;
 
-  if (favoriteRecipes.length < 0) {
+  if (favoriteRecipes.length > 0) {
     return (
       <div className={styles.container_block}>
         <div className={styles.recipe_list}>
@@ -50,6 +50,7 @@ const FavoritesPage = () => {
                   })),
                 }}
                 isFavoritePage={true}
+                path="/recipes/"
               />
             </div>
           ))}

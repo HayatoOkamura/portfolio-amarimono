@@ -14,7 +14,7 @@ type Recipe struct {
 	Ingredients  []RecipeIngredient `json:"ingredients" gorm:"foreignKey:RecipeID" binding:"required,dive"`
 
 	CookingTime  int           `json:"cooking_time"`
-	Reviews      float64       `json:"reviews" gorm:"type:numeric(2,1);default:0"`
+	// Reviews      float64       `json:"reviews" gorm:"type:numeric(2,1);default:0"`
 	CostEstimate string        `json:"cost_estimate"`
 	Summary      string        `json:"summary"`
 	Nutrition    NutritionInfo `json:"nutrition" gorm:"type:jsonb"`
@@ -22,8 +22,8 @@ type Recipe struct {
 	FAQ          JSONBFaq      `json:"faq" gorm:"type:jsonb"`
 	Likes        []Like        `json:"likes"`
 
-	UserID *uuid.UUID `gorm:"type:uuid"`
-	Public bool       `gorm:"default:true;not null"`
+	UserID   *uuid.UUID `json:"user_id" gorm:"type:uuid"`
+	IsPublic bool       `json:"isPublic" gorm:"default:true;not null"`
 }
 
 type RecipeIngredient struct {
