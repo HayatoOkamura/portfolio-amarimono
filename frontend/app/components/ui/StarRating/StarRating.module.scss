@@ -1,0 +1,33 @@
+.star_block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  &.align_center {
+    align-items: center;
+  }
+
+  &__stars {
+    display: flex;
+    gap: 2px;
+  }
+
+  &__star {
+    position: relative;
+    font-size: 24px;
+    color: #ccc; // グレーの星
+    line-height: 1;
+  }
+
+  &__yellow {
+    font-size: 24px;
+    position: absolute;
+    inset: 0;
+    color: gold;
+
+    &.partial_star {
+      color: gold; // 部分的に黄色の星
+      // clip-path: inset(0 50% 0 0); // デフォルトでは半分黄色
+    }
+  }
+}

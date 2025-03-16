@@ -314,7 +314,7 @@ func (h *AdminHandler) ListRecipes(c *gin.Context) {
 	var recipes []models.Recipe
 
 	// ingredientsを一緒にロードするためにPreloadを使用
-	if err := h.DB.Preload("Genre").Preload("Ingredients.Ingredient.Unit").Find(&recipes).Error; err != nil {
+	if err := h.DB.Preload("Genre").Preload("Ingredients.Ingredient.Unit").Preload("Reviews").Find(&recipes).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes", "details": err.Error()})
 		return
 	}
@@ -366,9 +366,9 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	recipe.CookingTime = cookingTime
 
 	// コストの見積もり
-	costEstimate := c.PostForm("costEstimate")
-	if costEstimate == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cost estimate is required"})
+	costEstimate, err := strconv.Atoi(c.PostForm("costEstimate"))
+	if err != nil || costEstimate < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cooking time"})
 		return
 	}
 	recipe.CostEstimate = costEstimate
@@ -607,7 +607,7 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 	// フォームデータ取得
 	name := c.PostForm("name")
 	cookingTime, _ := strconv.Atoi(c.PostForm("cookingTime"))
-	costEstimate := c.PostForm("costEstimate")
+	costEstimate, _ := strconv.Atoi(c.PostForm("costEstimate"))
 	summary := c.PostForm("summary")
 	catchphrase := c.PostForm("catchphrase")
 	genreID, err := strconv.Atoi(c.PostForm("genre"))

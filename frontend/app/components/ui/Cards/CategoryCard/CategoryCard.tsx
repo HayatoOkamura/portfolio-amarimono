@@ -12,8 +12,6 @@ type CategoryCardProps = {
 };
 
 const CategoryCard: React.FC<CategoryCardProps> = ({ genre, onClick }) => {
-  console.log(genre);
-
   return (
     <button
       className={styles.card_block}

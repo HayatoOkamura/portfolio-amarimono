@@ -7,7 +7,8 @@ import useIngredientStore from "@/app/stores/ingredientStore";
 import useGenreStore from "@/app/stores/genreStore";
 import { useUserStore } from "@/app/stores/userStore";
 import { Nutrition } from "@/app/types";
-import CookingTimeSlider from "../CookingTimeSlider/CookingTimeSlider";
+import CookingTimeSlider from "@/app/components/ui/RegistarSlider/CookingTime/CookingTime";
+import CostEstimateSlider from "@/app/components/ui/RegistarSlider/CostEstimate/CostEstimate";
 
 const RecipeRegistration: React.FC<{ isAdmin?: boolean }> = ({
   isAdmin = false,
@@ -15,7 +16,7 @@ const RecipeRegistration: React.FC<{ isAdmin?: boolean }> = ({
   const { fetchRecipes, addRecipe, setNewRecipe, newRecipe, resetNewRecipe } =
     useRecipeStore();
   const { ingredients, fetchIngredients } = useIngredientStore();
-  const [cookingTime, setCookingTime] = useState(0);
+  const [costEstimate] = useState(0);
   const { recipeGenres, fetchRecipeGenres, error } = useGenreStore();
   const { user } = useUserStore();
 
@@ -24,7 +25,7 @@ const RecipeRegistration: React.FC<{ isAdmin?: boolean }> = ({
     fetchIngredients();
     fetchRecipeGenres();
   }, [fetchRecipes, fetchIngredients, fetchRecipeGenres]);
-
+  
   const handleAddRecipe = async () => {
     console.log(newRecipe);
     if (
@@ -49,7 +50,7 @@ const RecipeRegistration: React.FC<{ isAdmin?: boolean }> = ({
     formData.append("name", newRecipe.name);
     formData.append("cookingTime", newRecipe.cookingTime.toString());
     formData.append("genre", newRecipe.genre.toString());
-    formData.append("costEstimate", newRecipe.costEstimate);
+    formData.append("costEstimate", newRecipe.costEstimate.toString());
     formData.append("summary", newRecipe.summary);
     formData.append("catchphrase", newRecipe.catchphrase);
     formData.append("nutrition", JSON.stringify(newRecipe.nutrition));
@@ -214,15 +215,17 @@ const RecipeRegistration: React.FC<{ isAdmin?: boolean }> = ({
         }
       />
       {/* <button onClick={() => console.log("送信する値:", cookingTime)}>送信</button> */}
-      <input
-        type="text"
-        placeholder="Cost Estimate (例: 1000円以内)"
-        value={newRecipe.costEstimate}
-        onChange={(e) =>
-          setNewRecipe({ ...newRecipe, costEstimate: e.target.value })
-        }
-        className="border p-2 mb-2 w-full rounded text-gray-700"
+      <h2>レシピ登録</h2>
+      <CostEstimateSlider
+        costEstimate={newRecipe.costEstimate}
+        setCostEstimate={(estimate) => {
+          setNewRecipe({ ...newRecipe, costEstimate: estimate })
+        }}
       />
+      <p>
+        選択された予算:{" "}
+        {costEstimate ? `${costEstimate.toLocaleString()}円以内` : "未選択"}
+      </p>
 
       <textarea
         placeholder="Recipe Summary"

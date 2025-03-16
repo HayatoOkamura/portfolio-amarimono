@@ -84,6 +84,7 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		Preload("Ingredients.Ingredient.Unit").
 		Preload("Ingredients.Ingredient.Genre").
 		Preload("Genre").
+		Preload("Reviews").
 		Where("id IN (?)", subQuery).
 		Find(&recipes).Error; err != nil {
 		log.Printf("Failed to fetch recipes: %v", err)
@@ -91,9 +92,32 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		return
 	}
 
+	// 栄養情報の標準値を取得
+	var standard models.NutritionStandard
+	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
+		log.Printf("Failed to fetch nutrition standard: %v", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
+		return
+	}
+
 	// 結果をフィルタリング
 	var result []models.Recipe
 	for _, recipe := range recipes {
+		// 栄養情報がない場合、スキップ
+		if recipe.Nutrition == (models.NutritionInfo{}) {
+			continue
+		}
+
+		// 栄養素の割合を計算
+		nutritionPercentage := map[string]float64{
+			"calories":      (float64(recipe.Nutrition.Calories) / standard.Calories) * 100,
+			"carbohydrates": (float64(recipe.Nutrition.Carbohydrates) / standard.Carbohydrates) * 100,
+			"fat":           (float64(recipe.Nutrition.Fat) / standard.Fat) * 100,
+			"protein":       (float64(recipe.Nutrition.Protein) / standard.Protein) * 100,
+			"salt":          (float64(recipe.Nutrition.Salt) / standard.Salt) * 100,
+			"sugar":         (float64(recipe.Nutrition.Sugar) / standard.Sugar) * 100,
+		}
+
 		meetsRequirements := true
 
 		// レシピの具材を順番にチェック
@@ -114,6 +138,7 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 
 		// 全ての具材が一致した場合にのみレシピを結果に追加
 		if meetsRequirements {
+			recipe.NutritionPercentage = nutritionPercentage
 			result = append(result, recipe)
 		}
 	}
@@ -167,6 +192,7 @@ func (h *RecipeHandler) GetRecipeByID(c *gin.Context) {
 	if err := h.DB.
 		Preload("Genre").
 		Preload("Ingredients.Ingredient.Unit").
+		Preload("Reviews").
 		Where("id = ?", id).
 		First(&recipe).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Recipe not found"})
@@ -196,14 +222,12 @@ func (h *RecipeHandler) GetRecipeByID(c *gin.Context) {
 		"sugar":         (float64(recipe.Nutrition.Sugar) / standard.Sugar) * 100,
 	}
 
-	log.Println("✅✅✅", recipe)
-
-	log.Println("✅✅✅", nutritionPercentage)
+	// Recipe structのNutritionPercentageフィールドに設定
+	recipe.NutritionPercentage = nutritionPercentage
 
 	// JSONレスポンスを返す
 	c.JSON(http.StatusOK, gin.H{
-		"recipe":          recipe,
-		"nutrition_ratio": nutritionPercentage,
+		"recipe": recipe,
 	})
 }
 

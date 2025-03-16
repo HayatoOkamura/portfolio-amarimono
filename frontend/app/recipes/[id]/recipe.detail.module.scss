@@ -167,7 +167,30 @@
     }
   }
 
-  .modal {
+  .review_modal {
+    &__inner {
+    }
+
+    &__close {
+    }
+
+    &__stars {
+    }
+
+    &__star {
+      span {
+        &.yellow {
+          background: #ffe600;
+        }
+
+        &.gray {
+          background: #ccc;
+        }
+      }
+    }
+  }
+
+  .login_modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -184,9 +207,8 @@
       border-radius: 8px;
       text-align: center;
       width: 300px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-  
+
     &__close {
       background: none;
       border: none;
@@ -196,7 +218,7 @@
       right: 10px;
       top: 10px;
     }
-  
+
     &__login {
       background-color: #ff6b6b;
       color: white;

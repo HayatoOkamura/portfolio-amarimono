@@ -13,12 +13,11 @@ const ListMyRecipe = () => {
 
   useEffect(() => {
     if (user?.id) {
-      fetchUserRecipes(user.id); // token ではなく user.id を使用
+      fetchUserRecipes(user.id);
     } else {
       return;
     }
   }, [user?.id, fetchUserRecipes]);
-  console.log("レシピyes", recipes);
 
   if (!user) return <p>Loading...</p>;
 
@@ -30,21 +29,22 @@ const ListMyRecipe = () => {
           {recipes.length > 0 ? (
             recipes.map((recipe) => (
               <RecipeCard
-              recipe={{
-                ...recipe,
-                ingredients: recipe.ingredients.map((ingredient) => ({
-                  ...ingredient,
-                  name: ingredient.name, // nameを解決
-                  quantity: ingredient.quantity,
-                  unit:
-                    typeof ingredient.unit === "string"
-                      ? { id: 0, name: ingredient.unit } // unit が string なら仮の id を付与
-                      : ingredient.unit, // 既にオブジェクトならそのまま
-                })),
-              }}
-              isFavoritePage={true}
-              path="/recipes/my/"
-            />
+                key={recipe.id}
+                recipe={{
+                  ...recipe,
+                  ingredients: recipe.ingredients.map((ingredient) => ({
+                    ...ingredient,
+                    name: ingredient.name,
+                    quantity: ingredient.quantity,
+                    unit:
+                      typeof ingredient.unit === "string"
+                        ? { id: 0, name: ingredient.unit }
+                        : ingredient.unit,
+                  })),
+                }}
+                isFavoritePage={true}
+                path="/recipes/my/"
+              />
             ))
           ) : (
             <p>No recipes found.</p>

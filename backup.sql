@@ -254,7 +254,8 @@ ALTER TABLE public.schema_migrations OWNER TO postgres;
 CREATE TABLE public.units (
     id integer NOT NULL,
     name character varying(20) NOT NULL,
-    description character varying(100)
+    description character varying(100),
+    step integer DEFAULT 1 NOT NULL
 );
 
 
@@ -288,7 +289,11 @@ ALTER SEQUENCE public.units_id_seq OWNED BY public.units.id;
 
 CREATE TABLE public.users (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    email text NOT NULL
+    email text NOT NULL,
+    username character varying(255),
+    profile_image text,
+    age integer,
+    gender character varying(20)
 );
 
 
@@ -334,12 +339,15 @@ ALTER TABLE ONLY public.units ALTER COLUMN id SET DEFAULT nextval('public.units_
 --
 
 COPY public.ingredient_genres (id, name) FROM stdin;
-1	Vegetable
-2	Fruit
-3	Meat
-4	Dairy
-5	Grain
-6	Spices
+1	野菜
+2	肉
+3	魚介
+4	主食・粉
+5	調味料
+6	スパイス
+7	卵・乳・豆
+8	デザート
+9	その他
 \.
 
 
@@ -348,9 +356,8 @@ COPY public.ingredient_genres (id, name) FROM stdin;
 --
 
 COPY public.ingredients (id, name, image_url, quantity, unit_id, genre_id) FROM stdin;
-1	Tomato	https://example.com/tomato.jpg	10	3	1
-2	Pasta	https://example.com/pasta.jpg	20	1	5
-3	Egg	https://example.com/egg.jpg	12	3	4
+6	test01	uploads/recipe/1740827444818314462-名称未設定のデザイン (4).png	0	5	1
+7	test02	uploads/recipe/1740827457230752509-名称未設定のデザイン (4).png	0	20	8
 \.
 
 
@@ -376,11 +383,15 @@ COPY public.nutrition_standards (id, age_group, gender, calories, protein, fat, 
 --
 
 COPY public.recipe_genres (id, name) FROM stdin;
-1	Italian
-2	French
-3	Asian
-4	Mexican
-5	Vegetarian
+1	主菜
+2	副菜
+3	汁物
+4	ご飯物
+5	デザート
+6	旬魚・あじ
+7	旬野菜・きゅうり
+8	その他
+9	その他
 \.
 
 
@@ -389,23 +400,10 @@ COPY public.recipe_genres (id, name) FROM stdin;
 --
 
 COPY public.recipe_ingredients (ingredient_id, quantity_required, recipe_id) FROM stdin;
-2	100	\N
-3	2	\N
-1	3	\N
-1	1	5cd6c366-d1e1-4ce5-9d3d-37faa96e7acb
-2	50	5cd6c366-d1e1-4ce5-9d3d-37faa96e7acb
-2	100	5d6e5e7a-a9ff-4a60-a746-663571211e0f
-3	1	5d6e5e7a-a9ff-4a60-a746-663571211e0f
-2	150	301f9d4c-0006-474d-9d98-0b050bff4f89
-1	2	04ba6dc3-8594-4f2a-8ce4-9676ffba2584
-3	1	04ba6dc3-8594-4f2a-8ce4-9676ffba2584
-2	100	6180b878-90c7-4be3-848f-a854616abd58
-3	1	6180b878-90c7-4be3-848f-a854616abd58
-2	100	6f7ae6da-c254-472a-89a0-0fc2430f8074
-3	1	6f7ae6da-c254-472a-89a0-0fc2430f8074
-2	50	ba7e3bfc-b467-4a1e-a69f-76b3516d0f99
-3	1	ba7e3bfc-b467-4a1e-a69f-76b3516d0f99
-2	50	0feb4047-e875-4e96-95e2-e58d4476dc17
+6	2	eb23806c-9957-4a11-b8d0-91a60fd20106
+7	3	eb23806c-9957-4a11-b8d0-91a60fd20106
+6	2	3f08c9fa-595f-494d-a099-0df62fcb1777
+7	2	3f08c9fa-595f-494d-a099-0df62fcb1777
 \.
 
 
@@ -414,14 +412,8 @@ COPY public.recipe_ingredients (ingredient_id, quantity_required, recipe_id) FRO
 --
 
 COPY public.recipes (name, image_url, genre_id, instructions, cooking_time, reviews, cost_estimate, summary, nutrition, faq, catchphrase, id, user_id, is_public) FROM stdin;
-user11	user11/1740522765336232550-名称未設定のデザイン (4).png	4	[{"image_url": "user11/instructions/1740522765261586592-名称未設定のデザイン (4).png", "stepNumber": 1, "description": "user11"}]	1	1.0	user11	user11	{"fat": 0, "salt": 0, "sugar": 0, "protein": 0, "calories": -1, "carbohydrates": 0}	[{"answer": "user11", "question": "user11"}]	user11	0feb4047-e875-4e96-95e2-e58d4476dc17	5e4a4e1e-7fb7-4283-8c0c-4f882ad149e2	t
-test01	test01/1740505817194192002-名称未設定のデザイン (4).png	4	[{"image_url": "test01/instructions/1740505817106465877-名称未設定のデザイン (3).png", "stepNumber": 1, "description": "test01"}]	1	1.0	test01	test01	{"fat": 0, "salt": 0, "sugar": 0, "protein": 0, "calories": 2, "carbohydrates": 0}	[{"answer": "test01", "question": "test01"}]	test01	5cd6c366-d1e1-4ce5-9d3d-37faa96e7acb	\N	t
-user01	user01/1740505869662427429-名称未設定のデザイン (4).png	1	[{"image_url": "user01/instructions/1740505869600334137-名称未設定のデザイン (4).png", "stepNumber": 1, "description": "user01"}]	1	1.0	user01	user01	{"fat": 0, "salt": 0, "sugar": 0, "protein": 0, "calories": 1, "carbohydrates": 0}	[{"answer": "user01", "question": "user01user01"}]	user01	5d6e5e7a-a9ff-4a60-a746-663571211e0f	\N	t
-user02	user02/1740517069045048596-名称未設定のデザイン (2).png	3	[{"image_url": "user02/instructions/1740517068864467763-名称未設定のデザイン (1).png", "stepNumber": 1, "description": "user02"}]	1	1.0	user02	user02	{"fat": 0, "salt": 0, "sugar": 0, "protein": 0, "calories": 3, "carbohydrates": 0}	[{"answer": "user02", "question": "user02"}]	user02	301f9d4c-0006-474d-9d98-0b050bff4f89	\N	t
-user03	user03/1740517183902631719-名称未設定のデザイン (1).jpg	5	[{"image_url": "user03/instructions/1740517183816486885-名称未設定のデザイン (3).png", "stepNumber": 1, "description": "user03"}]	1	1.0	user03	user03	{"fat": 0, "salt": 0, "sugar": -2, "protein": 0, "calories": 0, "carbohydrates": 0}	[{"answer": "user03", "question": "user03"}]	user03	04ba6dc3-8594-4f2a-8ce4-9676ffba2584	\N	t
-test03	test03/1740517665367404927-名称未設定のデザイン (4).png	2	[{"image_url": "test03/instructions/1740517665237938594-名称未設定のデザイン (2).png", "stepNumber": 1, "description": "test03"}]	1	1.0	test03	test03	{"fat": 0, "salt": 0, "sugar": 0, "protein": 0, "calories": -2, "carbohydrates": 0}	[{"answer": "test03", "question": "test03"}]	test03	6180b878-90c7-4be3-848f-a854616abd58	\N	t
-user04	user04/1740517714828411714-名称未設定のデザイン (5).png	2	[{"image_url": "user04/instructions/1740517714757917089-名称未設定のデザイン (3).png", "stepNumber": 1, "description": "user04"}]	1	1.0	user04user04	user04	{"fat": 0, "salt": 0, "sugar": 0, "protein": 0, "calories": 2, "carbohydrates": 0}	[{"answer": "user04", "question": "user04"}]	user04	6f7ae6da-c254-472a-89a0-0fc2430f8074	\N	t
-user10	user10/1740522335357462712-名称未設定のデザイン (3).png	3	[{"image_url": "user10/instructions/1740522335238788087-名称未設定のデザイン (2).png", "stepNumber": 1, "description": "user10"}]	1	1.0	user10	user10	{"fat": 0, "salt": 0, "sugar": 0, "protein": 0, "calories": -1, "carbohydrates": 0}	[{"answer": "user10", "question": "user10"}]	user10	ba7e3bfc-b467-4a1e-a69f-76b3516d0f99	5e4a4e1e-7fb7-4283-8c0c-4f882ad149e2	t
+test01	test01/1740845138413611716-名称未設定のデザイン (5).png	5	[{"image_url": "test01/instructions/1740845138219049508-名称未設定のデザイン (2).png", "stepNumber": 1, "description": "test01"}]	25	0.0	test01	test01	{"fat": 0, "salt": 0, "sugar": 2, "protein": 0, "calories": 0, "carbohydrates": 0}	[{"answer": "test01", "question": "test01"}]	test01	eb23806c-9957-4a11-b8d0-91a60fd20106	\N	t
+test02	test02/1740882168362827876-名称未設定のデザイン (3).png	4	[{"image_url": "test02/instructions/1740882168278677251-名称未設定のデザイン (3).png", "stepNumber": 1, "description": "test02"}]	25	0.0	test02	test02	{"fat": 0, "salt": 0, "sugar": 0, "protein": 0, "calories": 3, "carbohydrates": 0}	[{"answer": "test02", "question": "test02"}]	test02	3f08c9fa-595f-494d-a099-0df62fcb1777	\N	t
 \.
 
 
@@ -438,12 +430,28 @@ COPY public.schema_migrations (version, dirty) FROM stdin;
 -- Data for Name: units; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.units (id, name, description) FROM stdin;
-1	g	グラム
-2	ml	ミリリットル
-3	個	個数
-4	tbsp	大さじ
-5	tsp	小さじ
+COPY public.units (id, name, description, step) FROM stdin;
+5	個	個数	1
+6	枚	枚数	1
+7	本	本数	1
+8	房	房	1
+9	パック	パック	1
+10	袋	袋	1
+11	束	束	1
+12	株	株	1
+13	缶	缶	1
+14	切れ	切れ	1
+15	尾	尾	1
+16	杯	杯	1
+17	玉	玉	1
+18	丁	丁	1
+19	瓶	瓶	1
+1	g	グラム	50
+3	ml	ミリリットル	50
+2	kg	キログラム	1000
+4	l	リットル	1000
+20	大さじ	大さじ	1
+21	小さじ	小さじ	1
 \.
 
 
@@ -451,8 +459,8 @@ COPY public.units (id, name, description) FROM stdin;
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.users (id, email) FROM stdin;
-5e4a4e1e-7fb7-4283-8c0c-4f882ad149e2	keepsmile.lucky7@gmail.com
+COPY public.users (id, email, username, profile_image, age, gender) FROM stdin;
+40af3740-621f-4925-bcce-2161ca06f45c	keepsmile.lucky7@gmail.com	隼斗	http://localhost:8080/uploads/user/1740705961701413258-名称未設定のデザイン (1).jpg	23	male
 \.
 
 
@@ -460,14 +468,14 @@ COPY public.users (id, email) FROM stdin;
 -- Name: ingredient_genres_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ingredient_genres_id_seq', 6, true);
+SELECT pg_catalog.setval('public.ingredient_genres_id_seq', 15, true);
 
 
 --
 -- Name: ingredients_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ingredients_id_seq', 3, true);
+SELECT pg_catalog.setval('public.ingredients_id_seq', 7, true);
 
 
 --
@@ -481,14 +489,14 @@ SELECT pg_catalog.setval('public.nutritionstandard_id_seq', 1, true);
 -- Name: recipe_genres_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.recipe_genres_id_seq', 5, true);
+SELECT pg_catalog.setval('public.recipe_genres_id_seq', 9, true);
 
 
 --
 -- Name: units_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.units_id_seq', 5, true);
+SELECT pg_catalog.setval('public.units_id_seq', 21, true);
 
 
 --

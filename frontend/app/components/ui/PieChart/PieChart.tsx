@@ -24,7 +24,7 @@ const ResponsivePieChart = ({ value }: { value: number }) => {
   const strokeDasharray = 440;
 
   return (
-    <svg className={styles.svg} viewBox="0 0 150 150" style={{ width: "80%", height: "auto" }}>
+    <svg className={styles.svg} viewBox="0 0 150 150" style={{ width: "100%", height: "auto" }}>
       <circle className={styles.base} cx="75" cy="75" r={radius}></circle>
       <circle
         className={styles.line}

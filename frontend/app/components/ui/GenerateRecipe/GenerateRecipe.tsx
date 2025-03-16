@@ -13,11 +13,13 @@ const GenerateRecipe = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { setRecipes } = useRecipeStore();
-  const { setGeneratedRecipes } = useRecipeStore();
+  const { setGeneratedRecipes, setSearchType } = useRecipeStore();
   const { ingredients } = useIngredientStore();
   const router = useRouter();
 
   const handleRecipe = async () => {
+    setLoading(true);
+    
     try {
       const filteredIngredients = ingredients
         .filter((ingredient) => ingredient.quantity > 0)
@@ -28,10 +30,12 @@ const GenerateRecipe = () => {
         return; // 処理を中断
       }
 
+      setSearchType("ingredients"); 
       router.push("/recipes");
     } catch (err: any) {
       setRecipes([]);
       setGeneratedRecipes([]);
+      setLoading(false);
     }
   };
 

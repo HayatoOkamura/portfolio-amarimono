@@ -6,6 +6,7 @@ import (
 
 	"portfolio-amarimono/db"
 	"portfolio-amarimono/handlers"
+	"portfolio-amarimono/routes"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -53,42 +54,11 @@ func main() {
 	genreHandler := &handlers.GenreHandler{
 		DB: dbConn,
 	}
-
-	// いいね機能のエンドポイント
-	r.POST("/api/likes/:user_id/:recipe_id", likeHandler.ToggleUserLike) // レシピにいいねを追加
-	r.GET("/api/likes/:user_id", likeHandler.GetUserLikes)               // ユーザーのお気に入りレシピを取得
-
-	// `/api/recipes` エンドポイントの登録
-	r.POST("/api/recipes", recipeHandler.SerchRecipes)
-	r.GET("/api/recipes/:id", recipeHandler.GetRecipeByID)          // レシピ詳細を取得
-	r.GET("/api/recipes/search", recipeHandler.SearchRecipesByName) // レシピ名付検索
-	r.GET("/api/user/recipes", recipeHandler.GetUserRecipes)        // 特定のレシピ取得
-
-	// ✅ ユーザー登録エンドポイント
-	r.POST("/api/users", userHandler.CreateUser)
-
-	// ✅ ユーザー情報取得エンドポイント（新規追加）
-	r.GET("/api/users/:id", userHandler.GetUserProfile)
-
-	// ジャンル取得エンドポイント
-	r.GET("/api/recipe_genres", genreHandler.ListRecipeGenres)
-	r.GET("/api/ingredient_genres", genreHandler.ListIngredientGenres)
-
-	// 管理画面用エンドポイント
-	admin := r.Group("/admin")
-	{
-		admin.GET("/ingredients", adminHandler.ListIngredients)         // 具材一覧
-		admin.POST("/ingredients", adminHandler.AddIngredient)          // 具材追加
-		admin.PATCH("/ingredients/:id", adminHandler.UpdateIngredient)  // 具材更新
-		admin.DELETE("/ingredients/:id", adminHandler.DeleteIngredient) //具材削除
-		admin.GET("/recipes", adminHandler.ListRecipes)                 // レシピ一覧
-		admin.POST("/recipes", adminHandler.AddRecipe)                  // レシピ追加
-		admin.PUT("/recipes/:id", adminHandler.UpdateRecipe)            // レシピ追加
-		admin.DELETE("/recipes/:id", adminHandler.DeleteRecipe)         //具材削除
-		admin.GET("/units", adminHandler.ListUnits)                     // レシピ一覧
+	reviewHandler := &handlers.ReviewHandler{
+		DB: dbConn,
 	}
 
-	// simulateAddIngredient(adminHandler)
+	routes.SetupRoutes(r, recipeHandler, likeHandler, userHandler, genreHandler, adminHandler, reviewHandler)
 
 	// サーバーを起動
 	port := os.Getenv("PORT")

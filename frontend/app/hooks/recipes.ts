@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { backendUrl, handleApiResponse } from "../utils/apiUtils";
 import { Recipe, RecipeResponse } from "../types";
+import useRecipeStore from "@/app/stores/recipeStore";
+import { sortRecipes } from "@/app/utils/sortRecipes";
+
 // 一覧
 export const fetchRecipesService = async (): Promise<Recipe[]> => {
   const res = await fetch(`${backendUrl}/admin/recipes`);
@@ -56,7 +59,7 @@ export const fetchRecipesAPI = async (ingredients: { id: number; quantity: numbe
   }));
 
   //ルーディング画面がわかりやすくするために処理
-  await new Promise(resolve => setTimeout(resolve, 3000))
+  await new Promise(resolve => setTimeout(resolve, 500))
 
   const response = await fetch(`${backendUrl}/api/recipes`, {
     method: "POST",
@@ -66,12 +69,11 @@ export const fetchRecipesAPI = async (ingredients: { id: number; quantity: numbe
     body: JSON.stringify(transformedIngredients),
   });
 
-  const responseData = await handleApiResponse(response);
-  console.log("取得内容01: ", responseData);
+  const data = await handleApiResponse(response);
 
 
-  return Array.isArray(responseData)
-    ? responseData.map((recipe: any) => ({
+  return Array.isArray(data)
+    ? data.map((recipe: any) => ({
       id: recipe.id,
       name: recipe.name,
       instructions: recipe.instructions.map((step: any) => ({
@@ -91,7 +93,13 @@ export const fetchRecipesAPI = async (ingredients: { id: number; quantity: numbe
         }
       })),
       cookingTime: recipe.cooking_time,
-      reviews: recipe.reviews,
+      reviews: recipe.reviews.map((review: any) => ({
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment,
+        createAt: review.create_at,
+        updataAt: review.updata_at,
+      })),
       costEstimate: recipe.cost_estimate,
       summary: recipe.summary,
       catchphrase: recipe.catchphrase,
@@ -104,6 +112,14 @@ export const fetchRecipesAPI = async (ingredients: { id: number; quantity: numbe
         salt: recipe.nutrition.salt,
       },
       faq: recipe.faq,
+      nutritionPercentage: {
+        calories: recipe.nutrition_percentage.calories,
+        carbohydrates: recipe.nutrition_percentage.carbohydrates,
+        fat: recipe.nutrition_percentage.fat,
+        protein: recipe.nutrition_percentage.protein,
+        sugar: recipe.nutrition_percentage.sugar,
+        salt: recipe.nutrition_percentage.salt,
+      },
     }))
     : [];
 }
@@ -112,10 +128,7 @@ export const fetchRecipesAPI = async (ingredients: { id: number; quantity: numbe
 export const fetchSearchRecipes = async (query: string): Promise<Recipe[]> => {
   const res = await fetch(`${backendUrl}/api/recipes/search?q=${encodeURIComponent(query)}`);
   const data = await handleApiResponse(res);
-
-  console.log("ウェイ", data);
-
-
+  
   return data.map((recipe: any) => ({
     id: recipe.id,
     name: recipe.name,
@@ -150,43 +163,48 @@ export const fetchSearchRecipes = async (query: string): Promise<Recipe[]> => {
 };
 
 // 取得ID指定
-export const fetchRecipeByIdService = async (id: string): Promise<{ recipe: Recipe; nutritionRatio: Record<string, number> }> => {
+export const fetchRecipeByIdService = async (id: string) => {
   const res = await fetch(`${backendUrl}/api/recipes/${id}`);
   const data = await handleApiResponse(res);
 
   return {
-    recipe: {
-      id: data.recipe.id,
-      name: data.recipe.name,
-      instructions: data.recipe.instructions.map((step: any) => ({
-        stepNumber: step.stepNumber,
-        description: step.description,
-        imageUrl: step.image_url,
-      })),
-      genre: data.recipe.genre,
-      imageUrl: data.recipe.image_url,
-      ingredients: data.recipe.ingredients.map((ingredient: any) => ({
-        id: ingredient.ingredient.id,
-        name: ingredient.ingredient.name,
-        quantity: ingredient.quantity_required,
-        unit: ingredient.ingredient.unit,
-      })),
-      cookingTime: data.recipe.cooking_time,
-      reviews: data.recipe.reviews,
-      costEstimate: data.recipe.cost_estimate,
-      summary: data.recipe.summary,
-      catchphrase: data.recipe.catchphrase,
-      nutrition: {
-        calories: data.recipe.nutrition.calories,
-        carbohydrates: data.recipe.nutrition.carbohydrates,
-        fat: data.recipe.nutrition.fat,
-        protein: data.recipe.nutrition.protein,
-        sugar: data.recipe.nutrition.sugar,
-        salt: data.recipe.nutrition.salt,
-      },
-      faq: data.recipe.faq,
+    id: data.recipe.id,
+    name: data.recipe.name,
+    instructions: data.recipe.instructions.map((step: any) => ({
+      stepNumber: step.stepNumber,
+      description: step.description,
+      imageUrl: step.image_url,
+    })),
+    genre: data.recipe.genre,
+    imageUrl: data.recipe.image_url,
+    ingredients: data.recipe.ingredients.map((ingredient: any) => ({
+      id: ingredient.ingredient.id,
+      name: ingredient.ingredient.name,
+      quantity: ingredient.quantity_required,
+      unit: ingredient.ingredient.unit,
+    })),
+    cookingTime: data.recipe.cooking_time,
+    reviews: data.recipe.reviews,
+    costEstimate: data.recipe.cost_estimate,
+    summary: data.recipe.summary,
+    catchphrase: data.recipe.catchphrase,
+    nutrition: {
+      calories: data.recipe.nutrition.calories,
+      carbohydrates: data.recipe.nutrition.carbohydrates,
+      fat: data.recipe.nutrition.fat,
+      protein: data.recipe.nutrition.protein,
+      sugar: data.recipe.nutrition.sugar,
+      salt: data.recipe.nutrition.salt,
     },
-    nutritionRatio: data.nutrition_ratio, // nutritionRatioを追加して返す
+    faq: data.recipe.faq,
+    nutritionPercentage: {
+      calories: data.recipe.nutrition_percentage.calories,
+      carbohydrates: data.recipe.nutrition_percentage.carbohydrates,
+      fat: data.recipe.nutrition_percentage.fat,
+      protein: data.recipe.nutrition_percentage.protein,
+      sugar: data.recipe.nutrition_percentage.sugar,
+      salt: data.recipe.nutrition_percentage.salt,
+    },
   };
 };
 
@@ -289,7 +307,36 @@ export const updateRecipeService = async (
   }
 };
 
-// お気に入りレシピ
+// お気に入りレシピ登録
+export const handleLikeService = async (
+  userId: string,
+  recipeId: string,
+  setIsLiked: React.Dispatch<React.SetStateAction<boolean>>,
+  setShowLoginModal: React.Dispatch<React.SetStateAction<boolean>>
+) => {
+  if (!userId) {
+    setShowLoginModal(true);
+    return;
+  }
+
+  try {
+    const response = await fetch(`${backendUrl}/api/likes/${userId}/${recipeId}`, {
+      method: "POST",
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      setIsLiked((prev) => !prev);
+      alert(data.message); // "Like added" または "Like removed"
+    } else {
+      console.error("Failed to toggle like");
+    }
+  } catch (error) {
+    console.error("Error toggling like", error);
+  }
+};
+
+// お気に入りレシピ取得
 export const useFavorites = () => {
   const [favoriteRecipes, setFavoriteRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
@@ -370,4 +417,10 @@ export const fetchUserRecipes = async (userId: string) => {
   }
 
   return res.json();
+};
+
+// レシピソート機能
+export const useSortedRecipes = (filteredRecipes: Recipe[]) => {
+  const { sortBy } = useRecipeStore();
+  return sortRecipes(filteredRecipes, sortBy);
 };

@@ -3,6 +3,17 @@ export interface Genre {
   name: string;
 }
 
+export interface Review {
+  id: string;
+  recipeId: string;
+  userId: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+
 export interface Unit {
   id: number;
   name: string;
@@ -48,13 +59,14 @@ export interface Recipe {
   ingredients: Ingredient[];
   genre: Genre;
   cookingTime: number;
-  reviews: number;
-  costEstimate: string;
+  reviews: Review[];
+  costEstimate: number;
   summary: string;
   catchphrase: string;
   nutrition: Nutrition;
   faq: FAQ[];
   userId?: string;
+  nutritionPercentage?: Nutrition;
   isPublic?: boolean;
 }
 
@@ -64,8 +76,8 @@ export interface NewRecipe {
   image: File | null;
   genre: number | string;
   cookingTime: number;
-  reviews: number;
-  costEstimate: string;
+  reviews: Review[];
+  costEstimate: number;
   summary: string;
   catchphrase: string;
   nutrition: Nutrition;
@@ -109,8 +121,8 @@ export interface EditRecipe {
   }[];
   genreId: number;
   cookingTime: number;
-  reviews: number;
-  costEstimate: string;
+  reviews: Review[];
+  costEstimate: number;
   summary: string;
   nutrition: Nutrition;
   faq: FAQ[];

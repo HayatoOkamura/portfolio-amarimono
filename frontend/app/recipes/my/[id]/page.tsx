@@ -8,7 +8,10 @@ import { useEffect, useState } from "react";
 import { Recipe } from "@/app/types";
 import Image from "next/image";
 import { fetchRecipeByIdService } from "@/app/hooks/recipes";
-import { supabase } from "@/app/lib/api/supabase/supabaseClient";
+import { handleLikeService } from "@/app/hooks/recipes";
+import { useUserStore } from "@/app/stores/userStore";
+import { calculateAverageRating } from "@/app/utils/calculateAverageRating";
+import StarRating from "@/app/components/ui/StarRating/StarRating";
 
 const EditMyRecipe = () => {
   const router = useRouter();
@@ -16,19 +19,20 @@ const EditMyRecipe = () => {
   const [nutritionRatio, setNutritionRatio] = useState<Record<string, number>>(
     {}
   );
-  const fullStars = recipe ? Math.floor(recipe.reviews) : 0;
-  const remainder = recipe ? recipe.reviews - fullStars : 0;
+  const [reviewValue, setReviewValue] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user } = useUserStore();
 
   useEffect(() => {
     const id = window.location.pathname.split("/").pop(); // URLからID取得
 
     if (id) {
       fetchRecipeByIdService(id)
-        .then(({ recipe, nutritionRatio }) => {
+        .then((recipe) => {
           setRecipe(recipe);
-          setNutritionRatio(nutritionRatio); // nutritionRatioもセット
         })
         .catch((error) => console.error("Error fetching recipe:", error));
     }
@@ -53,36 +57,46 @@ const EditMyRecipe = () => {
     checkLikeStatus();
   }, [recipe, user]);
 
-  // useEffect(() => {
-  //   const fetchUser = async () => {
-  //     const { data, error } = await supabase.auth.getUser();
-  //     if (!error && data.user) {
-  //       setUser(data.user);
-  //     }
-  //   };
+  const averageRating = recipe
+    ? calculateAverageRating(recipe.reviews || []) // reviewsがundefinedの場合、空の配列を渡す
+    : 0;
 
-  //   fetchUser();
-  // }, []);
+  const fullStars = Math.floor(averageRating);
+  const remainder = averageRating - fullStars;
 
   const handleLike = async () => {
-    if (!recipe) return;
-    try {
-      const response = await fetch(
-        `${backendUrl}/api/likes/${user.id}/${recipe.id}`,
-        {
-          method: "POST",
-        }
-      );
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
 
-      if (response.ok) {
-        const data = await response.json();
-        setIsLiked((prev) => !prev);
-        alert(data.message); // "Like added" または "Like removed"
-      } else {
-        console.error("Failed to toggle like");
-      }
-    } catch (error) {
-      console.error("Error toggling like", error);
+    if (!recipe) return;
+
+    handleLikeService(user.id, recipe.id, setIsLiked, setShowLoginModal);
+  };
+
+  // レビューを送信する関数
+  const handleReviewSubmit = async () => {
+    if (!user || !recipe) return;
+    console.log("ユーザー", user);
+
+    const response = await fetch(`${backendUrl}/api/reviews`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: user.id,
+        recipeId: recipe.id, // レビューがどのレシピに紐づくかを明示する
+        rating: reviewValue,
+        comment: reviewText,
+      }),
+    });
+
+    if (response.ok) {
+      alert("レビューが送信されました");
+    } else {
+      alert("レビュー送信に失敗しました");
     }
   };
 
@@ -93,7 +107,6 @@ const EditMyRecipe = () => {
   return (
     <div className={styles.recipe_block}>
       <div className={styles.recipe_block__inner}>
-        <button onClick={handleLike}>{isLiked ? "♡" : "🩷"}</button>
         <div className={styles.description_block}>
           <div className={styles.description_block__img}>
             <Image
@@ -137,35 +150,13 @@ const EditMyRecipe = () => {
           <h1 className={styles.info_block__name}>{recipe.name}</h1>
           <div className={styles.detail_block}>
             <div className={styles.detail_block__item}>
-              <div className={styles.detail_block__stars}>
-                {[...Array(5)].map((_, index) => {
-                  return (
-                    <div key={index} className={styles.detail_block__star}>
-                      ★{/* 完全に黄色の星 */}
-                      {index < fullStars && (
-                        <span
-                          className={`${styles.detail_block__yellow} ${styles.full_star}`}
-                        >
-                          ★
-                        </span>
-                      )}
-                      {/* 部分的に黄色の星 */}
-                      {index === fullStars && remainder > 0 && (
-                        <span
-                          className={`${styles.detail_block__yellow} ${styles.partial_star}`}
-                          style={{
-                            clipPath: `inset(0 ${100 - remainder * 100}% 0 0)`,
-                          }}
-                        >
-                          ★
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <StarRating
+                reviews={recipe.reviews}
+                className={styles.align_center}
+              />
               <p className={styles.detail_block__text}>
-                {recipe.reviews}(<span>10件</span>)
+                {averageRating.toFixed(1)}{" "}
+                <span>({recipe.reviews?.length ?? 0}件)</span>
               </p>
             </div>
             <div className={styles.detail_block__item}>
@@ -177,43 +168,95 @@ const EditMyRecipe = () => {
               <p>{recipe.costEstimate}</p>
             </div>
           </div>
+          <div className={styles.interaction_block}>
+            <button
+              onClick={handleLike}
+              className={styles.interaction_block__item}
+            >
+              {isLiked ? "お気に入り済み" : "お気に入り"}
+            </button>
+            <div className={styles.interaction_block__item}>
+              <button
+                onClick={() => setShowReviewModal(true)} // レビュー用モーダルを表示
+                className={styles.interaction_block__item}
+              >
+                レビューを投稿
+              </button>
+            </div>
+          </div>
           <p className={styles.info_block__summary}>{recipe.summary}</p>
           <ul className={styles.nutrition_block}>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
                 カロリー{recipe.nutrition.calories}
               </p>
-              <ResponsivePieChart value={nutritionRatio.calories} />
+              <ResponsivePieChart
+                value={
+                  recipe.nutritionPercentage
+                    ? recipe.nutritionPercentage.calories
+                    : 0
+                }
+              />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
                 炭水化物{recipe.nutrition.carbohydrates}
               </p>
-              <ResponsivePieChart value={nutritionRatio.carbohydrates} />
+              <ResponsivePieChart
+                value={
+                  recipe.nutritionPercentage
+                    ? recipe.nutritionPercentage.carbohydrates
+                    : 0
+                }
+              />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
                 脂質{recipe.nutrition.fat}
               </p>
-              <ResponsivePieChart value={nutritionRatio.fat} />
+              <ResponsivePieChart
+                value={
+                  recipe.nutritionPercentage
+                    ? recipe.nutritionPercentage.fat
+                    : 0
+                }
+              />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
                 タンパク質{recipe.nutrition.protein}
               </p>
-              <ResponsivePieChart value={nutritionRatio.protein} />
+              <ResponsivePieChart
+                value={
+                  recipe.nutritionPercentage
+                    ? recipe.nutritionPercentage.protein
+                    : 0
+                }
+              />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
                 塩分{recipe.nutrition.salt}
               </p>
-              <ResponsivePieChart value={nutritionRatio.salt} />
+              <ResponsivePieChart
+                value={
+                  recipe.nutritionPercentage
+                    ? recipe.nutritionPercentage.salt
+                    : 0
+                }
+              />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
                 糖分{recipe.nutrition.sugar}
               </p>
-              <ResponsivePieChart value={nutritionRatio.sugar} />
+              <ResponsivePieChart
+                value={
+                  recipe.nutritionPercentage
+                    ? recipe.nutritionPercentage.sugar
+                    : 0
+                }
+              />
             </li>
           </ul>
           <h3 className={styles.info_block__ingredient}>材料【1人分】</h3>
@@ -231,6 +274,69 @@ const EditMyRecipe = () => {
           </ul>
         </div>
       </div>
+
+      {showReviewModal && (
+        <div className={styles.review_modal}>
+          <div className={styles.review_modal__inner}>
+            <button
+              className={styles.review_modal__close}
+              onClick={() => setShowReviewModal(false)} // モーダルを閉じる
+            >
+              ✖
+            </button>
+            <h2>レビューを投稿</h2>
+            <div className={styles.review_modal__stars}>
+              {[...Array(5)].map((_, index) => (
+                <div
+                  key={index}
+                  onClick={() => setReviewValue(index + 1)}
+                  className={styles.review_modal__star}
+                >
+                  <span
+                    className={
+                      reviewValue > index ? styles["yellow"] : styles["gray"]
+                    }
+                  >
+                    ★
+                  </span>
+                </div>
+              ))}
+            </div>
+            <textarea
+              className={styles.review_modal__textarea}
+              value={reviewText}
+              onChange={(e) => setReviewText(e.target.value)}
+              placeholder="レビューを入力してください"
+            />
+            <button
+              className={styles.review_modal__submit}
+              onClick={handleReviewSubmit}
+            >
+              送信
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showLoginModal && (
+        <div className={styles.login_modal}>
+          <div className={styles.login_modal__inner}>
+            <button
+              className={styles.login_modal__close}
+              onClick={() => setShowLoginModal(false)}
+            >
+              ✖
+            </button>
+            <p>ログインしてください</p>
+            <button
+              className={styles.login_modal__login}
+              onClick={() => router.push("/login/")}
+            >
+              ログイン
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

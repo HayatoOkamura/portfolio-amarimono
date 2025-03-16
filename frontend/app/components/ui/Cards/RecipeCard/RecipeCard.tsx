@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React from "react";
 import Image from "next/image";
 import styles from "./RecipeCard.module.scss";
 import { backendUrl } from "@/app/utils/apiUtils";
@@ -31,16 +31,11 @@ interface RecipeCardProps {
   path: string;
 }
 
-
-const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, isFavoritePage, path }) => {
-  useEffect(() => {
-    console.log("テスト", recipe);
-    recipe.ingredients.map((ing) => {
-      console.log(ing);
-      
-    })
-
-  }, [recipe]);
+const RecipeCard: React.FC<RecipeCardProps> = ({
+  recipe,
+  isFavoritePage,
+  path,
+}) => {
   return (
     <div className={styles.card_block}>
       <div className={styles.card_block__img}>
@@ -55,31 +50,29 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, isFavoritePage, path })
           unoptimized
         />
       </div>
-      <div className={styles.card_block__contents}>
-        <h2 className={styles.card_block__name}>{recipe.name}</h2>
-        {/* ジャンル */}
-        <p className={styles.card_block__genre}>
-          ジャンル: <strong>{recipe.genre.name}</strong>{" "}
-          {/* 修正: genre.name を表示 */}
-        </p>
+      <h2 className={styles.card_block__name}>{recipe.name}</h2>
+      {/* ジャンル */}
+      <p className={styles.card_block__genre}>
+        ジャンル: <strong>{recipe.genre.name}</strong>{" "}
+        {/* 修正: genre.name を表示 */}
+      </p>
 
-        {/* 材料リスト */}
-        <h3 className={styles.card_block__ingredients}>材料</h3>
+      {/* 材料リスト */}
+      {/* <h3 className={styles.card_block__ingredients}>材料</h3>
         <ul className={styles.card_block__ing_list}>
           {recipe.ingredients.map((ingredient, idx) => (
             <li key={idx} className={styles.card_block__ing_item}>
               {ingredient.name} ({ingredient.quantity} {ingredient.unit?.name})
             </li>
           ))}
-        </ul>
+        </ul> */}
 
-         {/* ✅ 詳しく見るボタン（お気に入りページ限定） */}
-         {isFavoritePage && recipe.id && (
-          <Link href={`${path}${recipe.id}`}>
-            <button className={styles.details_button}>詳しく見る</button>
-          </Link>
-        )}
-      </div>
+      {/* ✅ 詳しく見るボタン（お気に入りページ限定） */}
+      {isFavoritePage && recipe.id && (
+        <Link href={`${path}${recipe.id}`}>
+          <button className={styles.details_button}>詳しく見る</button>
+        </Link>
+      )}
     </div>
   );
 };

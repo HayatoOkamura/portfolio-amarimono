@@ -1,0 +1,96 @@
+.profile_block {
+  max-width: 920px;
+  width: 100%;
+  margin: 40px auto 0;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+  }
+
+  &__image {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    width: 200px;
+    border-radius: 100%;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+    }
+  }
+
+  &__detail {
+  }
+
+  &__name {
+    font-size: 1.75rem;
+    line-height: 1.5;
+    letter-spacing: 0.03em;
+    color: #333;
+    font-weight: 600;
+  }
+
+  &__email {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    letter-spacing: 0.05em;
+    color: #333;
+    font-weight: 400;
+  }
+
+  &__list {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    margin-top: 18px;
+  }
+
+  &__btn {
+    display: block;
+    background: var(--accent-color);
+    border-radius: 5px;
+    color: #fff;
+    font-size: 1rem;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+    margin: 12px 0 0 auto;
+
+    a {
+      padding: 12px 15px 13px;
+      display: block;
+    }
+  }
+
+  .item_block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    &__icon {
+      background: #fff;
+      padding: 15px;
+      font-size: 1.75rem;
+      border-radius: 5px;
+      color: #de616a;
+    }
+
+    &__num {
+      font-family: "Roboto";
+      font-size: 1.5rem;
+      line-height: 1;
+      letter-spacing: 0.05em;
+      color: #2a2a2a;
+      font-weight: 700;
+    }
+
+    &__text {
+      font-size: 0.875rem;
+      line-height: 1.5;
+      letter-spacing: 0.02em;
+      color: var(--secondary-font-color);
+      font-weight: 500;
+    }
+  }
+}

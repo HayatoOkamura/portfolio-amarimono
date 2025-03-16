@@ -1,11 +1,9 @@
-/* eslint-disable */
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import styles from "./TopHeader.module.scss";
 import useRecipeStore from "@/app/stores/recipeStore";
-import { fetchSearchRecipes } from "@/app/hooks/recipes";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useUserStore } from "@/app/stores/userStore";
 import { FaUserCircle } from "react-icons/fa";
 import Image from "next/image";
@@ -13,27 +11,23 @@ import Link from "next/link";
 
 const Header = () => {
   const { user } = useUserStore();
-  const { setGeneratedRecipes } = useRecipeStore();
-  const [query, setQuery] = useState("");
+  const { setSearchType, setQuery, query } = useRecipeStore();
   const router = useRouter();
+  const pathname = usePathname();
 
   // レシピ検索
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      const response = await fetchSearchRecipes(query);
-
-      setGeneratedRecipes(response);
-
+      setSearchType("name");
       router.push("/recipes");
     }
   };
 
+  // ページ遷移時に検索クエリをリセット
   useEffect(() => {
-    console.log("ユーザー情報", user);
-    // console.log("ユーザー情報", user.username);
-    // console.log("ユーザー情報", user.profileImage);
-  }, [user]);
+    setQuery("");
+  }, [pathname, setQuery]);
 
   return (
     <header className={styles.header_block}>

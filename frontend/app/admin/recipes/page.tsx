@@ -107,7 +107,7 @@ const AdminRecipes = () => {
       formData.forEach((value, key) => {
         console.log(`${key}:`, value);
       });
-
+      
       await editRecipe(editingRecipe.id, formData);
       await fetchRecipes();
       closeEditModal();
