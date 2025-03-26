@@ -188,7 +188,7 @@ const EditMyRecipe = () => {
           <ul className={styles.nutrition_block}>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
-                カロリー{recipe.nutrition.calories}
+                カロリー{recipe.nutrition && recipe.nutrition.calories}
               </p>
               <ResponsivePieChart
                 value={
@@ -200,7 +200,7 @@ const EditMyRecipe = () => {
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
-                炭水化物{recipe.nutrition.carbohydrates}
+                炭水化物{recipe.nutrition && recipe.nutrition.carbohydrates}
               </p>
               <ResponsivePieChart
                 value={
@@ -212,7 +212,7 @@ const EditMyRecipe = () => {
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
-                脂質{recipe.nutrition.fat}
+                脂質{recipe.nutrition && recipe.nutrition.fat}
               </p>
               <ResponsivePieChart
                 value={
@@ -224,7 +224,7 @@ const EditMyRecipe = () => {
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
-                タンパク質{recipe.nutrition.protein}
+                タンパク質{recipe.nutrition && recipe.nutrition.protein}
               </p>
               <ResponsivePieChart
                 value={
@@ -236,7 +236,7 @@ const EditMyRecipe = () => {
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
-                塩分{recipe.nutrition.salt}
+                塩分{recipe.nutrition && recipe.nutrition.salt}
               </p>
               <ResponsivePieChart
                 value={
@@ -248,7 +248,7 @@ const EditMyRecipe = () => {
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
-                糖分{recipe.nutrition.sugar}
+                糖分{recipe.nutrition && recipe.nutrition.sugar}
               </p>
               <ResponsivePieChart
                 value={

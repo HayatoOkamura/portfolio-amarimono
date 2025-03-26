@@ -13,19 +13,17 @@ import CostEstimateSlider from "@/app/components/ui/RegistarSlider/CostEstimate/
 const RecipeRegistration: React.FC<{ isAdmin?: boolean }> = ({
   isAdmin = false,
 }) => {
-  const { fetchRecipes, addRecipe, setNewRecipe, newRecipe, resetNewRecipe } =
-    useRecipeStore();
+  const { addRecipe, setNewRecipe, newRecipe, resetNewRecipe } = useRecipeStore();
   const { ingredients, fetchIngredients } = useIngredientStore();
   const [costEstimate] = useState(0);
   const { recipeGenres, fetchRecipeGenres, error } = useGenreStore();
   const { user } = useUserStore();
 
   useEffect(() => {
-    fetchRecipes();
     fetchIngredients();
     fetchRecipeGenres();
-  }, [fetchRecipes, fetchIngredients, fetchRecipeGenres]);
-  
+  }, [fetchIngredients, fetchRecipeGenres]);
+
   const handleAddRecipe = async () => {
     console.log(newRecipe);
     if (
@@ -219,7 +217,7 @@ const RecipeRegistration: React.FC<{ isAdmin?: boolean }> = ({
       <CostEstimateSlider
         costEstimate={newRecipe.costEstimate}
         setCostEstimate={(estimate) => {
-          setNewRecipe({ ...newRecipe, costEstimate: estimate })
+          setNewRecipe({ ...newRecipe, costEstimate: estimate });
         }}
       />
       <p>
@@ -250,24 +248,40 @@ const RecipeRegistration: React.FC<{ isAdmin?: boolean }> = ({
 
       <div>
         <h3>Nutrition</h3>
-        {Object.keys(newRecipe.nutrition).map((key) => (
-          <input
-            key={key}
-            type="number"
-            placeholder={key}
-            value={newRecipe.nutrition[key as keyof Nutrition]}
-            onChange={(e) =>
-              setNewRecipe({
-                ...newRecipe,
-                nutrition: {
-                  ...newRecipe.nutrition,
-                  [key]: Number(e.target.value),
-                },
-              })
-            }
-          />
-        ))}
+        <table className="w-full border-collapse border border-gray-300">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border p-2">栄養素</th>
+              <th className="border p-2">値 (g, mg, kcal)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.keys(newRecipe.nutrition).map((key) => (
+              <tr key={key}>
+                <td className="border p-2">{key}</td>
+                <td className="border p-2">
+                  <input
+                    type="number"
+                    placeholder={key}
+                    value={newRecipe.nutrition[key as keyof Nutrition]}
+                    onChange={(e) =>
+                      setNewRecipe({
+                        ...newRecipe,
+                        nutrition: {
+                          ...newRecipe.nutrition,
+                          [key]: Number(e.target.value),
+                        },
+                      })
+                    }
+                    className="w-full p-2 border rounded"
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+
       <div>
         <h3>FAQ</h3>
         {newRecipe.faq.map((faq, index) => (

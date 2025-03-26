@@ -592,7 +592,8 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 	var recipe models.Recipe
 
 	// 指定されたIDのレシピを取得
-	if err := h.DB.Preload("Genre").Preload("Ingredients.Ingredient.Unit").First(&recipe, id).Error; err != nil {
+	if err := h.DB.Preload("Genre").Preload("Ingredients.Ingredient.Unit").
+		Where("id = ?", id).First(&recipe).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Recipe not found"})
 		} else {

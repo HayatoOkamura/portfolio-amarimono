@@ -11,6 +11,9 @@ const nextConfig = {
       },
     ],
   },
+  sassOptions: {
+    includePaths: ['./app'],
+  },
 };
 
 module.exports = nextConfig;

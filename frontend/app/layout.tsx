@@ -6,6 +6,7 @@ import "@/styles/globals.scss";
 import Container from "./components/layout/Container/Container";
 import { useEffect } from "react";
 import { useUserStore } from "@/app/stores/userStore";
+import QueryProvider from "./providers/QueryProvider";
 
 const notoSansJp = Noto_Sans_JP({
   subsets: ["latin"],
@@ -38,10 +39,16 @@ export default function RootLayout({
   }, [setUser]);
 
   return (
-    <html lang="ja" className={`${notoSansJp.variable} ${roboto.variable}`} suppressHydrationWarning>
+    <html
+      lang="ja"
+      className={`${notoSansJp.variable} ${roboto.variable}`}
+      suppressHydrationWarning
+    >
       <head />
       <body>
-        <Container>{children}</Container>
+        <QueryProvider>
+          <Container>{children}</Container>
+        </QueryProvider>
       </body>
     </html>
   );

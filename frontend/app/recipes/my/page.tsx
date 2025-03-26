@@ -2,24 +2,18 @@
 "use client";
 
 import React from "react";
-import { useEffect, useState } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
-import useRecipeStore from "@/app/stores/recipeStore";
+import { useUserRecipes } from "@/app/hooks/recipes";
 import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";
+import { Recipe } from "@/app/types";
 
 const ListMyRecipe = () => {
   const { user } = useAuth();
-  const { recipes, fetchUserRecipes } = useRecipeStore();
+  const { data, isLoading } = useUserRecipes(user?.id);
 
-  useEffect(() => {
-    if (user?.id) {
-      fetchUserRecipes(user.id);
-    } else {
-      return;
-    }
-  }, [user?.id, fetchUserRecipes]);
+  if (!user || isLoading) return <p>Loading...</p>;
 
-  if (!user) return <p>Loading...</p>;
+  const recipes = data?.recipes || [];
 
   return (
     <div>
@@ -27,7 +21,7 @@ const ListMyRecipe = () => {
         <h1 className="text-2xl font-bold">Your Recipes</h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
           {recipes.length > 0 ? (
-            recipes.map((recipe) => (
+            recipes.map((recipe: Recipe) => (
               <RecipeCard
                 key={recipe.id}
                 recipe={{
@@ -36,10 +30,12 @@ const ListMyRecipe = () => {
                     ...ingredient,
                     name: ingredient.name,
                     quantity: ingredient.quantity,
-                    unit:
-                      typeof ingredient.unit === "string"
-                        ? { id: 0, name: ingredient.unit }
-                        : ingredient.unit,
+                    unit: {
+                      id: ingredient.unit.id,
+                      name: ingredient.unit.name,
+                      description: ingredient.unit.description || '',
+                      step: ingredient.unit.step || 1
+                    }
                   })),
                 }}
                 isFavoritePage={true}

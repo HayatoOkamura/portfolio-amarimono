@@ -7,28 +7,32 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { backendUrl } from "@/app/utils/apiUtils";
 import { useFavorites } from "@/app/hooks/recipes";
-import { Recipe } from "@/app/types";
+import { Recipe, Ingredient } from "@/app/types";
 import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";
+import { useAuth } from "@/app/hooks/useAuth";
 
 const FavoritesPage = () => {
-  const { favoriteRecipes, loading } = useFavorites();
+  const { user } = useAuth();
+  const { data, isLoading } = useFavorites(user?.id || "");
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
   useEffect(() => {
-    console.log(favoriteRecipes);
-  }, [favoriteRecipes]);
+    console.log(data);
+  }, [data]);
 
   const handleRecipeClick = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
   };
 
-  if (loading) return <p>Loading...</p>;
+  if (isLoading) return <p>Loading...</p>;
 
-  if (favoriteRecipes.length > 0) {
+  const favoriteRecipes = data || [];
+
+  if (favoriteRecipes.length > 0)
     return (
       <div className={styles.container_block}>
         <div className={styles.recipe_list}>
-          {favoriteRecipes.map((recipe) => (
+          {favoriteRecipes.map((recipe: Recipe) => (
             <div
               key={recipe.id}
               className={`${styles.recipe_list__item} ${
@@ -39,14 +43,16 @@ const FavoritesPage = () => {
               <RecipeCard
                 recipe={{
                   ...recipe,
-                  ingredients: recipe.ingredients.map((ingredient) => ({
+                  ingredients: recipe.ingredients.map((ingredient: Ingredient) => ({
                     ...ingredient,
-                    name: ingredient.name, // nameを解決
+                    name: ingredient.name,
                     quantity: ingredient.quantity,
-                    unit:
-                      typeof ingredient.unit === "string"
-                        ? { id: 0, name: ingredient.unit } // unit が string なら仮の id を付与
-                        : ingredient.unit, // 既にオブジェクトならそのまま
+                    unit: {
+                      id: ingredient.unit.id,
+                      name: ingredient.unit.name,
+                      description: ingredient.unit.description || '',
+                      step: ingredient.unit.step || 1
+                    }
                   })),
                 }}
                 isFavoritePage={true}
@@ -57,7 +63,7 @@ const FavoritesPage = () => {
         </div>
       </div>
     );
-  } else {
+  else {
     return (
       <div>レシピが見つかりません</div>
     )

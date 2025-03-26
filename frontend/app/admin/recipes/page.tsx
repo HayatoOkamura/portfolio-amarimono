@@ -11,26 +11,28 @@ import useGenreStore from "../../stores/genreStore";
 import { v4 as uuidv4 } from "uuid";
 import { Ingredient, Instruction } from "@/app/types";
 import RegistrationForm from "@/app/components/ui/RegistrationForm/RecipeRegistration";
+import CookingTimeSlider from "@/app/components/ui/RegistarSlider/CookingTime/CookingTime";
+import CostEstimateSlider from "@/app/components/ui/RegistarSlider/CostEstimate/CostEstimate";
+import { useRecipes } from "@/app/hooks/recipes";
+import { useIngredients } from "@/app/hooks/ingredients";
 
 const AdminRecipes = () => {
-  const { recipes, fetchRecipes, addRecipe, editRecipe, deleteRecipe } =
-    useRecipeStore();
-
-  const { ingredients, fetchIngredients } = useIngredientStore();
+  const { editRecipe, deleteRecipe } = useRecipeStore();
+  const { data: recipes, isLoading } = useRecipes();
+  const { data: ingredients = [] } = useIngredients();
   const { recipeGenres, fetchRecipeGenres, error } = useGenreStore();
   const [editingRecipe, setEditingRecipe] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    fetchRecipes();
-    fetchIngredients();
+    // fetchRecipes();
     fetchRecipeGenres();
-  }, [fetchRecipes, fetchIngredients, fetchRecipeGenres]);
+  }, []);
 
   const handleDeleteRecipe = async (id: string) => {
     if (confirm("Are you sure you want to delete this recipe?")) {
       await deleteRecipe(id);
-      fetchRecipes();
+      // fetchRecipes();
     }
   };
 
@@ -78,6 +80,10 @@ const AdminRecipes = () => {
     setEditingRecipe(null);
   };
 
+  const handleChange = (field: string, value: any) => {
+    setEditingRecipe((prev: any) => ({ ...prev, [field]: value }));
+  };
+
   const saveEditedRecipe = async () => {
     if (editingRecipe) {
       const formData = new FormData();
@@ -102,14 +108,8 @@ const AdminRecipes = () => {
         formData.append("image", editingRecipe.imageUrl);
       }
 
-      // **FormDataの内容をログに出力**
-      console.log("📝 送信するFormData:");
-      formData.forEach((value, key) => {
-        console.log(`${key}:`, value);
-      });
-      
       await editRecipe(editingRecipe.id, formData);
-      await fetchRecipes();
+      // await fetchRecipes();
       closeEditModal();
     }
   };
@@ -126,7 +126,7 @@ const AdminRecipes = () => {
             <li key={recipe.id} className="p-6 rounded-lg shadow">
               <h4 className="text-xl font-bold mb-2">{recipe.name}</h4>
               {Array.isArray(recipe.instructions) &&
-                recipe.instructions.map((step) => (
+                recipe.instructions.map((step: Instruction) => (
                   <p
                     key={step.stepNumber}
                   >{`Step ${step.stepNumber}: ${step.description}`}</p>
@@ -166,7 +166,7 @@ const AdminRecipes = () => {
               <h5 className="font-semibold mt-4">Ingredients:</h5>
               <ul>
                 {Array.isArray(recipe.ingredients) &&
-                  recipe.ingredients.map((ingredient, index) => {
+                  recipe.ingredients.map((ingredient: Ingredient, index: number) => {
                     return (
                       <li key={index}>
                         <p>
@@ -204,22 +204,17 @@ const AdminRecipes = () => {
             <input
               type="text"
               value={editingRecipe.name}
-              onChange={(e) =>
-                setEditingRecipe({ ...editingRecipe, name: e.target.value })
-              }
+              onChange={(e) => handleChange("name", e.target.value)}
               className="border p-2 w-full mb-2 rounded"
             />
             {/* ジャンル */}
             <select
               value={editingRecipe.genre?.id || ""}
               onChange={(e) =>
-                setEditingRecipe({
-                  ...editingRecipe,
-                  genre:
-                    recipeGenres.find(
-                      (g) => g.id === parseInt(e.target.value)
-                    ) || editingRecipe.genre,
-                })
+                handleChange(
+                  "genre",
+                  recipeGenres.find((g) => g.id === parseInt(e.target.value))
+                )
               }
               className="border p-2 w-full mb-2 rounded"
             >
@@ -298,13 +293,16 @@ const AdminRecipes = () => {
             {/* 具材の編集 */}
             <h3 className="text-lg font-semibold mt-2">Ingredients</h3>
             {Array.isArray(editingRecipe.ingredients) &&
-              editingRecipe.ingredients.map((ingredient: any) => {
+              editingRecipe.ingredients.map((ingredient: Ingredient) => {
                 return (
                   <div key={ingredient.id} className="flex items-center mb-2">
                     <span className="mr-2 font-medium">{ingredient.name}</span>
                     <button
                       onClick={() =>
-                        updateIngredientQuantity(ingredient.id, ingredient.unit.step)
+                        updateIngredientQuantity(
+                          ingredient.id,
+                          ingredient.unit.step
+                        )
                       }
                       className="bg-green-500 text-white px-2 py-1 rounded ml-2"
                     >
@@ -313,7 +311,10 @@ const AdminRecipes = () => {
                     <span className="mx-4">{ingredient.quantity}</span>
                     <button
                       onClick={() =>
-                        updateIngredientQuantity(ingredient.id, -ingredient.unit.step)
+                        updateIngredientQuantity(
+                          ingredient.id,
+                          -ingredient.unit.step
+                        )
                       }
                       className="bg-red-500 text-white px-2 py-1 rounded"
                     >
@@ -324,41 +325,25 @@ const AdminRecipes = () => {
                 );
               })}
 
-            <h3>cokking time</h3>
-            <input
-              type="number"
-              placeholder="Cooking Time"
-              value={editingRecipe?.cookingTime || ""}
-              onChange={(e) =>
-                setEditingRecipe({
-                  ...editingRecipe,
-                  cookingTime: Number(e.target.value),
-                })
-              }
-              className="border p-2 w-full mb-2 rounded"
+            <h3>Cooking Time</h3>
+            <CookingTimeSlider
+              cookingTime={editingRecipe?.cookingTime || 0} // 初期値を設定
+              setCookingTime={(time) => handleChange("cookingTime", time)}
             />
 
-            <h3>costEstimate</h3>
-            <input
-              type="text"
-              placeholder="Cost Estimate"
-              value={editingRecipe?.costEstimate || ""}
-              onChange={(e) =>
-                setEditingRecipe({
-                  ...editingRecipe,
-                  costEstimate: e.target.value,
-                })
+            <h3>Cost Estimate</h3>
+            <CostEstimateSlider
+              costEstimate={editingRecipe?.costEstimate || 0} // 初期値を設定
+              setCostEstimate={(estimate) =>
+                handleChange("costEstimate", estimate)
               }
-              className="border p-2 w-full mb-2 rounded"
             />
 
             <h3>summary</h3>
             <textarea
               placeholder="Summary"
               value={editingRecipe?.summary || ""}
-              onChange={(e) =>
-                setEditingRecipe({ ...editingRecipe, summary: e.target.value })
-              }
+              onChange={(e) => handleChange("summary", e.target.value)}
               className="border p-2 w-full mb-2 rounded"
             />
 
@@ -366,33 +351,40 @@ const AdminRecipes = () => {
             <textarea
               placeholder="Catchphrase"
               value={editingRecipe?.catchphrase || ""}
-              onChange={(e) =>
-                setEditingRecipe({
-                  ...editingRecipe,
-                  catchphrase: e.target.value,
-                })
-              }
+              onChange={(e) => handleChange("catchphrase", e.target.value)}
               className="border p-2 w-full mb-2 rounded"
             />
 
-            <h3>Nutrition</h3>
-            {Object.keys(editingRecipe.nutrition).map((key) => (
-              <input
-                key={key}
-                type="number"
-                placeholder={key}
-                value={editingRecipe?.nutrition[key] || 0}
-                onChange={(e) =>
-                  setEditingRecipe({
-                    ...editingRecipe,
-                    nutrition: {
-                      ...editingRecipe.nutrition,
-                      [key]: Number(e.target.value), // 修正
-                    },
-                  })
-                }
-              />
-            ))}
+            <table className="w-full border-collapse border border-gray-300">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border p-2">栄養素</th>
+                  <th className="border p-2">値 (g, mg, kcal)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {["calories", "protein", "fat", "carbs", "fiber", "sugar"].map(
+                  (key) => (
+                    <tr key={key}>
+                      <td className="border p-2">{key}</td>
+                      <td className="border p-2">
+                        <input
+                          type="number"
+                          value={editingRecipe?.nutrition?.[key] || ""}
+                          onChange={(e) =>
+                            handleChange("nutrition", {
+                              ...editingRecipe.nutrition,
+                              [key]: Number(e.target.value),
+                            })
+                          }
+                          className="w-full p-2 border rounded"
+                        />
+                      </td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
 
             {/* 画像の変更 */}
             <input

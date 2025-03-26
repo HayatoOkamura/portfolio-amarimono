@@ -25,7 +25,7 @@ export interface Ingredient {
   id: number;
   name: string;
   genre: Genre;
-  imageUrl: string;
+  imageUrl?: string | null;
   quantity: number;
   unit: Unit;
 }
@@ -57,16 +57,16 @@ export interface Recipe {
   imageUrl?: string;
   instructions: Instruction[];
   ingredients: Ingredient[];
-  genre: Genre;
+  genre?: Genre | null;
   cookingTime: number;
   reviews: Review[];
   costEstimate: number;
   summary: string;
   catchphrase: string;
-  nutrition: Nutrition;
+  nutrition: Nutrition | null;
   faq: FAQ[];
   userId?: string;
-  nutritionPercentage?: Nutrition;
+  nutritionPercentage?: Nutrition | null;
   isPublic?: boolean;
 }
 
@@ -103,7 +103,7 @@ export interface NewIngredient {
 export interface EditIngredient {
   id: number;
   name: string;
-  imageUrl: File;
+  imageUrl: string | null;
   genreId: number | null;
   genre: Genre | null;
   unit: Unit | null;

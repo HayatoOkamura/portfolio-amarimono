@@ -1,10 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import styles from "./IngredientCard.module.scss";
 import { backendUrl } from "@/app/utils/apiUtils";
 import { Unit } from "@/app/types";
 import Image from "next/image";
+import useIngredientStore from "@/app/stores/ingredientStore";
+import { useUpdateIngredientQuantity } from "@/app/hooks/ingredients";
 
 export interface IngredientCardProps {
   ingredient: {
@@ -18,13 +20,32 @@ export interface IngredientCardProps {
     imageUrl?: string | null;
     quantity: number;
   };
-  updateQuantity: (id: number, delta: number) => void;
 }
 
 const IngredientCard: React.FC<IngredientCardProps> = ({
   ingredient,
-  updateQuantity,
 }) => {
+  const { mutate: updateQuantity } = useUpdateIngredientQuantity();
+  const ingredients = useIngredientStore((state) => state.ingredients);
+  const currentIngredient = ingredients.find(i => i.id === ingredient.id);
+  const currentQuantity = currentIngredient?.quantity || 0;
+
+  console.log('IngredientCard render:', {
+    ingredientId: ingredient.id,
+    ingredientName: ingredient.name,
+    currentIngredient,
+    currentQuantity,
+    allIngredients: ingredients
+  });
+  
+
+  const handleQuantityUpdate = (id: number, delta: number) => {
+    const newQuantity = Math.max(0, currentQuantity + delta);
+    if (newQuantity > 0 || currentQuantity > 0) {
+      updateQuantity({ ...ingredient, quantity: newQuantity });
+    }
+  };
+
   return (
     <li className={styles.card_block}>
       <div className={styles.card_block__image}>
@@ -43,17 +64,17 @@ const IngredientCard: React.FC<IngredientCardProps> = ({
       <p className={styles.card_block__genre}>{ingredient.genre.name}</p>
       <div className={styles.card_block__controls}>
         <button
-          onClick={() => updateQuantity(ingredient.id, ingredient.unit.step)}
+          onClick={() => handleQuantityUpdate(ingredient.id, ingredient.unit.step)}
           aria-label={`Increase quantity of ${ingredient.name}`}
           className={`${styles.card_block__button} ${styles['card_block__button--plus']}`}
         />
 
         <span>
-          {ingredient.quantity}
+          {currentQuantity}
           {ingredient.unit.name}
         </span>
         <button
-          onClick={() => updateQuantity(ingredient.id, -ingredient.unit.step)}
+          onClick={() => handleQuantityUpdate(ingredient.id, -ingredient.unit.step)}
           aria-label={`Decrease quantity of ${ingredient.name}`}
           className={`${styles.card_block__button} ${styles["card_block__button--minus"]}`}
         />

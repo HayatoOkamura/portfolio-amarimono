@@ -16,7 +16,7 @@ export const sortRecipes = (recipes: Recipe[], sortBy: string): Recipe[] => {
       case "time_asc":
         return a.cookingTime - b.cookingTime;
       case "calorie_asc":
-        return a.nutrition.calories - b.nutrition.calories;
+        return (a.nutrition?.calories || 0) - (b.nutrition?.calories || 0);
       default:
         return 0;
     }

@@ -1,112 +1,144 @@
 /* eslint-disable */
-import { backendUrl, handleApiResponse } from "../utils/apiUtils";
-import { Genre, Ingredient, Unit, NewIngredient, EditIngredient } from "../types";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Ingredient, Genre, Unit, NewIngredient, EditIngredient } from "../types";
+import { api } from "../utils/api";
+import useIngredientStore from "../stores/ingredientStore";
 
-export const fetchIngredientsService = async (): Promise<Ingredient[]> => {
-  const res = await fetch(`${backendUrl}/admin/ingredients`);
-  const data = await handleApiResponse(res);
-  return data.map((ingredient: any) => ({
-    ...ingredient,
-    imageUrl: ingredient.image_url,
-    genre: {
-      id: ingredient.genre.id,
-      name: ingredient.genre.name,
-    },
-    unit: {
-      id: ingredient.unit.id,
-      name: ingredient.unit.name,
-      description: ingredient.unit.description,
-      step: ingredient.unit.step
-    }
-  }));
+// Query keys
+const ingredientKeys = {
+  all: ["ingredients"] as const,
+  lists: () => [...ingredientKeys.all, "list"] as const,
+  list: (filters: string) => [...ingredientKeys.lists(), { filters }] as const,
+  details: () => [...ingredientKeys.all, "detail"] as const,
+  detail: (id: number) => [...ingredientKeys.details(), id] as const,
 };
 
-export const addIngredientService = async (
-  name: string,
-  imageUrl: File,
-  genre: Genre,
-  unit: Unit
-): Promise<Ingredient> => {
-  const formData = new FormData();
-
-  formData.append("name", name);
-  formData.append("image", imageUrl);
-  formData.append("genre", JSON.stringify(genre));
-  formData.append("unit", JSON.stringify(unit));
-
-  const res = await fetch(`${backendUrl}/admin/ingredients`, {
-    method: "POST",
-    body: formData,
-  });
-  const ingredient = await res.json();
-
+// 共通の食材データ変換関数
+const mapIngredient = (ingredient: any): Ingredient => {
+  if (!ingredient) {
+    throw new Error("Ingredient data is null or undefined");
+  }
 
   return {
-    ...ingredient,
-    imageUrl: ingredient.image_url || "", // imageUrlが存在しない場合のデフォルト
-    genre: ingredient.genre
-      ? { id: ingredient.genre.id || 0, name: ingredient.genre.name || "Unknown" } // genreが存在しない場合のデフォルト値
-      : { id: 0, name: "Unknown" },
-    unit: ingredient.unit ? {
-      id: ingredient.unit.id || 0,
-      name: ingredient.unit.name || "Unknown",
-      abbreviation: ingredient.unit.abbreviation || "",
-    } : { id: 0, name: "Unknown", abbreviation: "" }
+    id: ingredient.id || 0,
+    name: ingredient.name || "",
+    genre: ingredient.genre || { id: 0, name: "" },
+    unit: ingredient.unit || { id: 0, name: "", step: 1 },
+    imageUrl: ingredient.image_url || null,
+    quantity: ingredient.quantity || 0,
   };
 };
 
-export const deleteIngredientService = async (id: number): Promise<void> => {
-  const res = await fetch(`${backendUrl}/admin/ingredients/${id}`, {
-    method: "DELETE",
-  });
-  await handleApiResponse(res);
+// 配列対応の関数
+const mapIngredients = (ingredients: any[]): Ingredient[] => ingredients.map(mapIngredient);
+
+// Service functions
+const fetchIngredientsService = async (): Promise<Ingredient[]> => {
+  const response = await api.get("/admin/ingredients");
+  return mapIngredients(response.data);
 };
 
-export const updateIngredientService = async (
-  id: number,
-  updatedData: EditIngredient
-): Promise<Ingredient> => {
-  try {
-    const formData = new FormData();
-    formData.append("name", updatedData.name);
-    formData.append("image", updatedData.imageUrl);
-    formData.append("genre", JSON.stringify(updatedData.genre));
-    formData.append("unit", JSON.stringify(updatedData.unit));
+const addIngredientService = async (data: {
+  name: string;
+  imageUrl: File;
+  genre: Genre;
+  unit: Unit;
+}): Promise<Ingredient> => {
+  const formData = new FormData();
+  formData.append("name", data.name);
+  formData.append("imageUrl", data.imageUrl);
+  formData.append("genre", JSON.stringify(data.genre));
+  formData.append("unit", JSON.stringify(data.unit));
 
-    console.log("FormData entries:");
-    for (const [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
-    }
+  const response = await api.post("/ingredients", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
 
-    const res = await fetch(`${backendUrl}/admin/ingredients/${id}`, {
-      method: "PATCH",
-      body: formData,
-    });
+const deleteIngredientService = async (id: number): Promise<void> => {
+  await api.delete(`/ingredients/${id}`);
+};
 
-    console.log("レスポンス:", res);
+const updateIngredientService = async ({
+  id,
+  data,
+}: {
+  id: number;
+  data: EditIngredient;
+}): Promise<Ingredient> => {
+  const formData = new FormData();
+  if (data.name) formData.append("name", data.name);
+  if (data.imageUrl) formData.append("imageUrl", data.imageUrl);
+  if (data.genre) formData.append("genre", JSON.stringify(data.genre));
+  if (data.unit) formData.append("unit", JSON.stringify(data.unit));
 
-    if (!res.ok) {
-      const errorResponse = await res.json();  // エラー時のレスポンス内容を取得
-      console.error("エラーレスポンス:", errorResponse);
-      throw new Error(`Failed to update ingredient: ${errorResponse.message || res.statusText}`);
-    }
+  const response = await api.patch(`/ingredients/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
 
-    const ingredient = await res.json();
+// Query hooks
+export const useIngredients = () => {
+  return useQuery({
+    queryKey: ingredientKeys.lists(),
+    queryFn: fetchIngredientsService,
+  });
+};
 
-    return {
-      ...ingredient,
-      imageUrl: ingredient.image_url || "",
-      genreId: ingredient.genre_id || null,
-      genre: ingredient.genre
-        ? { id: ingredient.genre.id || 0, name: ingredient.genre.name || "Unknown" }
-        : { id: 0, name: "Unknown" },
-      unit: ingredient.unit
-        ? { id: ingredient.unit.id || 0, name: ingredient.unit.name || "Unknown", abbreviation: ingredient.unit.abbreviation || "" }
-        : { id: 0, name: "Unknown", abbreviation: "" },
-    };
-  } catch (error) {
-    console.error("Error updating ingredient:", error);
-    throw error; // エラーを再スロー
-  }
+// Mutation hooks
+export const useAddIngredient = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: addIngredientService,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ingredientKeys.lists() });
+    },
+  });
+};
+
+export const useDeleteIngredient = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteIngredientService,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ingredientKeys.lists() });
+    },
+  });
+};
+
+export const useUpdateIngredient = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateIngredientService,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ingredientKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ingredientKeys.detail(variables.id) });
+    },
+  });
+};
+
+export const useUpdateIngredientQuantity = () => {
+  const updateQuantity = useIngredientStore((state) => state.updateQuantity);
+  const { refetch } = useIngredients();
+  const ingredients = useIngredientStore((state) => state.ingredients);
+
+  return useMutation({
+    mutationFn: async (ingredient: Ingredient) => {
+      if (ingredients.length === 0) {
+        await refetch();
+      }
+      updateQuantity(ingredient.id, ingredient.quantity);
+      return ingredient;
+    },
+  });
 };
 

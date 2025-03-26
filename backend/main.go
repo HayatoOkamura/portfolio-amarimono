@@ -58,7 +58,11 @@ func main() {
 		DB: dbConn,
 	}
 
-	routes.SetupRoutes(r, recipeHandler, likeHandler, userHandler, genreHandler, adminHandler, reviewHandler)
+	recommendationHandler := &handlers.RecommendationHandler{
+		DB: dbConn,
+	}
+
+	routes.SetupRoutes(r, recipeHandler, likeHandler, userHandler, genreHandler, adminHandler, reviewHandler, recommendationHandler)
 
 	// サーバーを起動
 	port := os.Getenv("PORT")

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import styles from "./TopHeader.module.scss";
 import useRecipeStore from "@/app/stores/recipeStore";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useUserStore } from "@/app/stores/userStore";
 import { FaUserCircle } from "react-icons/fa";
 import Image from "next/image";
@@ -11,23 +11,17 @@ import Link from "next/link";
 
 const Header = () => {
   const { user } = useUserStore();
-  const { setSearchType, setQuery, query } = useRecipeStore();
+  const { setQuery, query } = useRecipeStore();
   const router = useRouter();
-  const pathname = usePathname();
 
   // レシピ検索
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      setSearchType("name");
-      router.push("/recipes");
+      // URL に検索クエリをパラメータとして渡す
+      router.push(`/recipes?query=${query}`);
     }
   };
-
-  // ページ遷移時に検索クエリをリセット
-  useEffect(() => {
-    setQuery("");
-  }, [pathname, setQuery]);
 
   return (
     <header className={styles.header_block}>

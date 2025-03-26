@@ -2,23 +2,27 @@
 
 import React, { useState, useEffect } from "react";
 import styles from "./IngredientSelector.module.scss";
-import useIngredientStore from "@/app/stores/ingredientStore";
 import useGenreStore from "@/app/stores/genreStore";
+import { useIngredients } from "@/app/hooks/ingredients";
 import IngredientCard from "../../ui/Cards/IngredientCard/IngredientCard";
 import CategoryCard from "../../ui/Cards/CategoryCard/CategoryCard";
+import Loading from "../../ui/Loading/Loading";
 
 const IngredientSelector = () => {
-  const { ingredients, fetchIngredients, updateQuantity } =
-    useIngredientStore();
-
+  const { data: ingredients = [], isLoading: isIngredientsLoading } = useIngredients();
   const { ingredientGenres, fetchIngredientGenres } = useGenreStore();
   const [selectedGenre, setSelectedGenre] = useState<string>("すべて");
   const [height, setHeight] = useState("auto");
+  const [isGenresLoading, setIsGenresLoading] = useState(true);
 
   useEffect(() => {
-    fetchIngredients();
-    fetchIngredientGenres();
-  }, [fetchIngredients, fetchIngredientGenres]);
+    const loadGenres = async () => {
+      setIsGenresLoading(true);
+      await fetchIngredientGenres();
+      setIsGenresLoading(false);
+    };
+    loadGenres();
+  }, [fetchIngredientGenres]);
 
   useEffect(() => {
     const updateHeight = () => {
@@ -38,8 +42,8 @@ const IngredientSelector = () => {
   }, []);
 
   const genres = [
-    { id: 0, name: "すべて" }, // "すべて" を追加
-    ...ingredientGenres, // Zustand で管理するジャンルを展開
+    { id: 0, name: "すべて" },
+    ...ingredientGenres,
   ];
 
   const filteredIngredients =
@@ -47,10 +51,18 @@ const IngredientSelector = () => {
       ? ingredients
       : ingredients.filter((ing) => ing.genre.name === selectedGenre);
 
+  // 具材とカテゴリの両方が読み込まれるまでLoadingを表示
+  if (isIngredientsLoading || isGenresLoading) {
+    return (
+      <div className={styles.container_block}>
+        <Loading />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.container_block}>
       {/* カテゴリカード */}
-
       <section className={styles.category_block}>
         <h2 className={styles.category_block__title}>具材カテゴリー</h2>
         <div className={styles.category_block__contents}>
@@ -76,7 +88,6 @@ const IngredientSelector = () => {
               <IngredientCard
                 key={ingredient.id}
                 ingredient={ingredient}
-                updateQuantity={updateQuantity}
               />
             ))}
           </div>

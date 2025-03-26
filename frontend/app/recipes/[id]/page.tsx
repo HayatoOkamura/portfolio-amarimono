@@ -40,14 +40,28 @@ const RecipeDetailPage = () => {
 
     const checkLikeStatus = async () => {
       try {
+        console.log('Checking like status for:', {
+          userId: user.id,
+          recipeId: recipe.id,
+          url: `${backendUrl}/api/likes/${user.id}/${recipe.id}`
+        });
+        
         const response = await fetch(
           `${backendUrl}/api/likes/${user.id}/${recipe.id}`
         );
+        
+        console.log('Like status response:', {
+          status: response.status,
+          ok: response.ok
+        });
+
         if (response.ok) {
+          const data = await response.json();
+          console.log('Like status data:', data);
           setIsLiked(true);
         }
       } catch (error) {
-        console.error("Error checking like status", error);
+        console.error("Error checking like status:", error);
       }
     };
 
@@ -109,10 +123,7 @@ const RecipeDetailPage = () => {
           <div className={styles.description_block__img}>
             <Image
               fill
-              src={
-                `${backendUrl}/uploads/${recipe.imageUrl}` ||
-                "/default-image.jpg"
-              }
+              src={recipe.imageUrl ? `${backendUrl}/uploads/${recipe.imageUrl}` : "/default-image.jpg"}
               alt={recipe.name}
               unoptimized
             />
@@ -123,10 +134,7 @@ const RecipeDetailPage = () => {
                 <div className={styles.description_block__sub_img}>
                   <Image
                     fill
-                    src={
-                      `${backendUrl}/uploads/${step.imageUrl}` ||
-                      "/default-image.jpg"
-                    }
+                    src={step.imageUrl ? `${backendUrl}/uploads/${step.imageUrl}` : "/default-image.jpg"}
                     alt={recipe.name}
                     unoptimized
                   />
@@ -186,37 +194,37 @@ const RecipeDetailPage = () => {
           <ul className={styles.nutrition_block}>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
-                カロリー{recipe.nutrition.calories}
+                カロリー{recipe.nutrition && recipe.nutrition.calories}
               </p>
               <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.calories : 0} />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
-                炭水化物{recipe.nutrition.carbohydrates}
+                炭水化物{recipe.nutrition && recipe.nutrition.carbohydrates}
               </p>
               <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.carbohydrates : 0} />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
-                脂質{recipe.nutrition.fat}
+                脂質{recipe.nutrition && recipe.nutrition.fat}
               </p>
               <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.fat : 0} />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
-                タンパク質{recipe.nutrition.protein}
+                タンパク質{recipe.nutrition && recipe.nutrition.protein}
               </p>
               <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.protein : 0} />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
-                塩分{recipe.nutrition.salt}
+                塩分{recipe.nutrition && recipe.nutrition.salt}
               </p>
               <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.salt : 0} />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
-                糖分{recipe.nutrition.sugar}
+                糖分{recipe.nutrition && recipe.nutrition.sugar}
               </p>
               <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.sugar : 0} />
             </li>

@@ -2,16 +2,13 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { Recipe, NewRecipe } from "../types";
-import { useReviewStore } from "./reviewStore";
 import {
-  fetchRecipesService,
-  addRecipeService,
-  deleteRecipeService,
-  updateRecipeService,
-  fetchUserRecipes,
+  useAddRecipe,
+  useDeleteRecipe,
+  useUpdateRecipe,
 } from "../hooks/recipes";
 
-type SortOption = "rating_desc" | "cost_asc";
+export type SortOption = "rating_desc" | "cost_asc" | "time_asc" | "calorie_asc";
 
 interface RecipeStore {
   recipes: Recipe[];
@@ -19,8 +16,6 @@ interface RecipeStore {
   error: string;
   newRecipe: NewRecipe;
   sortBy: SortOption;
-  fetchRecipes: () => Promise<void>;
-  fetchUserRecipes: (token: string) => Promise<void>;
   setGeneratedRecipes: (recipes: Recipe[]) => void;
   setRecipes: (recipes: Recipe[]) => void;
   clearRecipes: () => void;
@@ -92,63 +87,11 @@ const useRecipeStore = create<RecipeStore>()(
           newRecipe: initialNewRecipe,
         }),
 
-      fetchRecipes: async () => {
-        try {
-          const recipes = await fetchRecipesService();
-
-          // 各レシピに対応するレビューを取得
-          const reviewStore = useReviewStore.getState();
-          for (const recipe of recipes) {
-            const reviews = await reviewStore.fetchReviews(recipe.id);
-            if (reviews) {
-              recipe.reviews = reviews; // 修正後: 正しく Review[] を代入
-            }
-          }
-
-          set({ recipes, error: "" });
-        } catch (err) {
-          set({ error: "Failed to fetch recipes" });
-        }
-      },
-
-      fetchUserRecipes: async (userId) => {
-        try {
-          const data = await fetchUserRecipes(userId);
-
-          const reviewStore = useReviewStore.getState();
-          for (const recipe of data.recipes) {
-            const reviews = await reviewStore.fetchReviews(recipe.id);
-            recipe.reviews = reviews;
-          }
-
-          set({ recipes: data.recipes, error: "" });
-        } catch (err) {
-          set({ error: "Failed to fetch user recipes" });
-        }
-      },
-
       addRecipe: async (formData, userId, isPublic) => {
         try {
-          if (userId) {
-            formData.append("user_id", userId);
-          }
-          if (isPublic !== undefined) {
-            formData.append("public", isPublic.toString());
-          }
-          const newRecipe = await addRecipeService(formData);
-          console.log("取得したレシピ", { newRecipe, userId, isPublic });
-
-          if (!newRecipe || !newRecipe.id || !newRecipe.name) {
-            throw new Error("Invalid recipe data received");
-          }
-
-          set((state) => {
-            return {
-              recipes: [...state.recipes, newRecipe],
-              error: "",
-            }
-          });
-          await get().fetchRecipes();
+          const addRecipeMutation = useAddRecipe();
+          await addRecipeMutation.mutateAsync({ formData, userId, isPublic });
+          set({ error: "" });
         } catch (err: any) {
           set({ error: err.message });
         }
@@ -156,11 +99,9 @@ const useRecipeStore = create<RecipeStore>()(
 
       deleteRecipe: async (id) => {
         try {
-          await deleteRecipeService(id);
-          set((state) => ({
-            recipes: state.recipes.filter((recipe) => recipe.id !== id),
-            error: "",
-          }));
+          const deleteRecipeMutation = useDeleteRecipe();
+          await deleteRecipeMutation.mutateAsync(id);
+          set({ error: "" });
         } catch (err: any) {
           set({ error: err.message });
         }
@@ -168,23 +109,13 @@ const useRecipeStore = create<RecipeStore>()(
 
       editRecipe: async (id, formData) => {
         try {
-          const updatedRecipe = await updateRecipeService(id, formData);
-
-          // 更新後のレシピのレビューも取得
-          const reviewStore = useReviewStore.getState();
-          const reviews = await reviewStore.fetchReviews(updatedRecipe.id);
-          updatedRecipe.reviews = reviews;
-
-          set((state) => ({
-            recipes: state.recipes.map((recipe) =>
-              recipe.id === id ? updatedRecipe : recipe
-            ),
-          }));
+          const updateRecipeMutation = useUpdateRecipe();
+          await updateRecipeMutation.mutateAsync({ id, formData });
+          set({ error: "" });
         } catch (err: any) {
           set({ error: err.message });
         }
       },
-
     }),
     {
       name: "recipe-storage",

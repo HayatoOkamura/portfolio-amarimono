@@ -3,30 +3,11 @@ import React from "react";
 import Image from "next/image";
 import styles from "./RecipeCard.module.scss";
 import { backendUrl } from "@/app/utils/apiUtils";
+import { Recipe } from "@/app/types";
 import Link from "next/link";
 
-interface Ingredient {
-  name: string;
-  quantity: number;
-  unit: {
-    id: number;
-    name: string;
-  };
-}
-
-interface Genre {
-  id: number;
-  name: string;
-}
-
 interface RecipeCardProps {
-  recipe: {
-    id?: string | number;
-    name: string;
-    genre: Genre;
-    imageUrl?: string;
-    ingredients: Ingredient[];
-  };
+  recipe: Recipe;
   isFavoritePage?: boolean;
   path: string;
 }
@@ -36,6 +17,26 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   isFavoritePage,
   path,
 }) => {
+
+  // ジャンル表示用の文字列を取得
+  const getGenreText = () => {
+    if (!recipe.genre) return "すべて";
+    if (typeof recipe.genre === 'string') return recipe.genre;
+    
+    // genre.nameがオブジェクトの場合
+    if (typeof recipe.genre.name === 'object' && 'name' in recipe.genre.name) {
+      const genreName = recipe.genre.name as { name: string };
+      return genreName.name;
+    }
+    
+    // genre.nameが文字列の場合
+    if (typeof recipe.genre.name === 'string') {
+      return recipe.genre.name;
+    }
+    
+    return "すべて";
+  };
+
   return (
     <div className={styles.card_block}>
       <div className={styles.card_block__img}>
@@ -51,23 +52,17 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
         />
       </div>
       <h2 className={styles.card_block__name}>{recipe.name}</h2>
-      {/* ジャンル */}
       <p className={styles.card_block__genre}>
-        ジャンル: <strong>{recipe.genre.name}</strong>{" "}
-        {/* 修正: genre.name を表示 */}
+        ジャンル: <strong>{getGenreText()}</strong>
       </p>
-
-      {/* 材料リスト */}
-      {/* <h3 className={styles.card_block__ingredients}>材料</h3>
-        <ul className={styles.card_block__ing_list}>
-          {recipe.ingredients.map((ingredient, idx) => (
-            <li key={idx} className={styles.card_block__ing_item}>
-              {ingredient.name} ({ingredient.quantity} {ingredient.unit?.name})
-            </li>
-          ))}
-        </ul> */}
-
-      {/* ✅ 詳しく見るボタン（お気に入りページ限定） */}
+      <h3 className={styles.card_block__ingredients}>材料</h3>
+      <ul className={styles.card_block__ing_list}>
+        {recipe.ingredients.map((ingredient, idx) => (
+          <li key={idx} className={styles.card_block__ing_item}>
+            {ingredient.name} ({ingredient.quantity} {ingredient.unit?.name})
+          </li>
+        ))}
+      </ul>
       {isFavoritePage && recipe.id && (
         <Link href={`${path}${recipe.id}`}>
           <button className={styles.details_button}>詳しく見る</button>

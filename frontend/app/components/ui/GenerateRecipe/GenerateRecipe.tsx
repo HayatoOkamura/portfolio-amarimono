@@ -1,47 +1,55 @@
 /* eslint-disable */
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import styles from "./GenerateRecipe.module.scss";
 import { backendUrl } from "@/app/utils/apiUtils";
 import { useRouter } from "next/navigation";
 import useRecipeStore from "@/app/stores/recipeStore";
 import useIngredientStore from "@/app/stores/ingredientStore";
+import { Ingredient } from "@/app/types";
+import { useIngredients } from "@/app/hooks/ingredients";
 
 const GenerateRecipe = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { setRecipes } = useRecipeStore();
   const { setGeneratedRecipes, setSearchType } = useRecipeStore();
-  const { ingredients } = useIngredientStore();
+  const { ingredients, setIngredients } = useIngredientStore();
+  const { data: fetchedIngredients } = useIngredients();
   const router = useRouter();
+
+  useEffect(() => {
+    if (fetchedIngredients) {
+      setIngredients(fetchedIngredients);
+    }
+  }, [fetchedIngredients, setIngredients]);
 
   const handleRecipe = async () => {
     setLoading(true);
     
     try {
       const filteredIngredients = ingredients
-        .filter((ingredient) => ingredient.quantity > 0)
-        .map(({ id, quantity }) => ({ id, quantity }));
+        .filter((ingredient: Ingredient) => ingredient.quantity > 0)
+        .map(({ id, quantity }: Ingredient) => ({ id, quantity }));
 
       if (filteredIngredients.length === 0) {
         alert("具材が選択されていません。");
-        return; // 処理を中断
+        return;
       }
-
-      setSearchType("ingredients"); 
+      setSearchType("ingredients");
       router.push("/recipes");
     } catch (err: any) {
-      setRecipes([]);
       setGeneratedRecipes([]);
+      setError(err.message);
+    } finally {
       setLoading(false);
     }
   };
-
+  
   const selectedIngredients = ingredients.filter(
-    (ingredient) => ingredient.quantity > 0
-  );
+    (ingredient: Ingredient) => ingredient.quantity > 0
+  ) as Ingredient[];
 
   return (
     <section className={styles.container_block}>
@@ -50,7 +58,7 @@ const GenerateRecipe = () => {
         <div className={styles.container_block__contents}>
           {selectedIngredients.length > 0 && (
             <ul className={styles.ingredients_list}>
-              {selectedIngredients.map((ingredient: any) => (
+              {selectedIngredients.map((ingredient: Ingredient) => (
                 <li
                   key={ingredient.id}
                   className={styles.ingredients_list__item}
@@ -72,7 +80,7 @@ const GenerateRecipe = () => {
                   </p>
                   <p className={styles.ingredients_list__quantity}>
                     {ingredient.quantity}
-                    {ingredient.unit.name}
+                    {ingredient.unit?.name || ''}
                   </p>
                 </li>
               ))}
@@ -81,7 +89,7 @@ const GenerateRecipe = () => {
         </div>
         <div className={styles.container_block__btn}>
           <button onClick={handleRecipe}>
-            {loading ? <p>レシピを検索中...</p> : <p>レシピを検索</p>}
+            {loading ? "レシピを検索中..." : "レシピを検索"}
           </button>
         </div>
       </div>

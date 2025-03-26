@@ -68,13 +68,16 @@ const AdminIngredients = () => {
     }
 
     setInputError(""); // エラーをクリア
-    if (newIngredient.genre) {
-      addIngredient(
-        newIngredient.name,
-        newIngredient.imageUrl,
-        newIngredient.genre,
-        newIngredient.unit
-      );
+    if (newIngredient.genre && newIngredient.unit) {
+      const ingredient: Ingredient = {
+        id: newIngredient.id,
+        name: newIngredient.name,
+        genre: newIngredient.genre,
+        unit: newIngredient.unit,
+        quantity: newIngredient.quantity,
+        imageUrl: newIngredient.imageUrl
+      };
+      addIngredient(ingredient);
     }
   };
 
@@ -89,15 +92,14 @@ const AdminIngredients = () => {
   };
 
   const saveEditedIngredient = async () => {
-    if (editingIngredient) {
-      const updatedData: EditIngredient = {
+    if (editingIngredient && editingIngredient.genre && editingIngredient.unit) {
+      const updatedData: Ingredient = {
         id: editingIngredient.id,
         name: editingIngredient.name,
-        genreId: editingIngredient.genre!.id,
         genre: editingIngredient.genre,
         unit: editingIngredient.unit,
         quantity: editingIngredient.quantity,
-        imageUrl: editingIngredient.imageUrl, // 画像アップロードの処理が必要
+        imageUrl: editingIngredient.imageUrl
       };
   
       await editIngredient(updatedData);
@@ -186,12 +188,15 @@ const AdminIngredients = () => {
             value={newIngredient.name}
             placeholder="Ingredient Name"
             onChange={(e) =>
-              setNewIngredient(
-                e.target.value,
-                newIngredient.imageUrl,
-                newIngredient.genre,
-                newIngredient.unit
-              )
+              setNewIngredient({
+                ...newIngredient,
+                name: e.target.value,
+                genreId: newIngredient.genre?.id || null,
+                genre: newIngredient.genre || null,
+                unit: newIngredient.unit || null,
+                imageUrl: newIngredient.imageUrl || null,
+                quantity: newIngredient.quantity || 0
+              })
             }
             className="w-full md:w-1/3 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
           />
@@ -203,13 +208,14 @@ const AdminIngredients = () => {
           <select
             value={newIngredient.unit?.id || ""}
             onChange={(e) =>
-              setNewIngredient(
-                newIngredient.name,
-                newIngredient.imageUrl,
-                newIngredient.genre,
-                units.find((unit) => unit.id === parseInt(e.target.value)) ||
-                  null
-              )
+              setNewIngredient({
+                ...newIngredient,
+                unit: units.find((unit) => unit.id === parseInt(e.target.value)) || null,
+                genreId: newIngredient.genre?.id || null,
+                genre: newIngredient.genre || null,
+                imageUrl: newIngredient.imageUrl || null,
+                quantity: newIngredient.quantity || 0
+              })
             }
             className="w-full md:w-1/3 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
           >
@@ -223,14 +229,14 @@ const AdminIngredients = () => {
           <select
             value={newIngredient.genre?.id || ""}
             onChange={(e) =>
-              setNewIngredient(
-                newIngredient.name,
-                newIngredient.imageUrl,
-                ingredientGenres.find(
-                  (g) => g.id === parseInt(e.target.value)
-                ) || null,
-                newIngredient.unit
-              )
+              setNewIngredient({
+                ...newIngredient,
+                genre: ingredientGenres.find((g) => g.id === parseInt(e.target.value)) || null,
+                genreId: ingredientGenres.find((g) => g.id === parseInt(e.target.value))?.id || null,
+                unit: newIngredient.unit || null,
+                imageUrl: newIngredient.imageUrl || null,
+                quantity: newIngredient.quantity || 0
+              })
             }
             className="w-full md:w-1/3 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
           >
@@ -245,12 +251,14 @@ const AdminIngredients = () => {
             type="file"
             onChange={(e) => {
               const file = e.target.files ? e.target.files[0] : null;
-              setNewIngredient(
-                newIngredient.name,
-                file,
-                newIngredient.genre,
-                newIngredient.unit
-              );
+              setNewIngredient({
+                ...newIngredient,
+                imageUrl: file ? file.name : null,
+                genreId: newIngredient.genre?.id || null,
+                genre: newIngredient.genre || null,
+                unit: newIngredient.unit || null,
+                quantity: newIngredient.quantity || 0
+              });
             }}
             className="w-full md:w-1/3 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -328,7 +336,11 @@ const AdminIngredients = () => {
                 if (file) {
                   setEditingIngredient({
                     ...editingIngredient,
-                    imageUrl: file,
+                    imageUrl: file.name,
+                    genreId: editingIngredient.genre?.id || null,
+                    genre: editingIngredient.genre || null,
+                    unit: editingIngredient.unit || null,
+                    quantity: editingIngredient.quantity || 0
                   });
                 }
               }}
