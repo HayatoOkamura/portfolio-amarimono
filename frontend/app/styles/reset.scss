@@ -1,12 +1,50 @@
 /* styles/reset.css */
 
-/* Box-sizing rules */
+/* Reset CSS */
 *,
 *::before,
 *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+/* Reset links */
+a {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Reset buttons */
+button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+}
+
+/* Reset lists */
+ul,
+ol {
+    list-style: none;
+}
+
+/* Reset form elements */
+input,
+textarea,
+select {
+    font: inherit;
+    color: inherit;
+}
+
+/* Reset images */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
 }
 
 /* Remove default font styles */
@@ -22,7 +60,6 @@ body, h1, h2, h3, h4, h5, h6, p, ul, ol, li, a {
 /* Set base font settings */
 body {
     line-height: 1.5;
-    font-family: 'Arial', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -40,3 +77,4 @@ button {
     cursor: pointer;
     background: none;
 }
+

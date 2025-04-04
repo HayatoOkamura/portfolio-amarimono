@@ -4,7 +4,7 @@
 import React from "react";
 import Image from "next/image";
 import styles from "./CategoryCard.module.scss";
-import { Genre } from "@/app/types";
+import { Genre } from "@/app/types/index";
 
 type CategoryCardProps = {
   genre: Genre;

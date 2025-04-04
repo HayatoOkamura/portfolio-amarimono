@@ -1,11 +1,13 @@
 package models
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
 type Recipe struct {
-	ID                  uuid.UUID          `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	ID                  uuid.UUID          `json:"id" gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
 	Name                string             `json:"name" binding:"required"`
 	Instructions        JSONBInstructions  `json:"instructions" gorm:"type:jsonb" binding:"required"`
 	ImageUrl            string             `json:"image_url"`
@@ -21,8 +23,11 @@ type Recipe struct {
 	FAQ                 JSONBFaq           `json:"faq" gorm:"type:jsonb"`
 	Likes               []Like             `json:"likes"`
 	UserID              *uuid.UUID         `json:"user_id" gorm:"type:uuid"`
-	IsPublic            bool               `json:"isPublic" gorm:"default:true;not null"`
+	IsPublic            bool               `json:"is_public" gorm:"default:true"`
+	IsDraft             bool               `json:"is_draft" gorm:"default:false"`
 	NutritionPercentage map[string]float64 `json:"nutrition_percentage,omitempty" gorm:"-"`
+	CreatedAt           time.Time          `json:"created_at"`
+	UpdatedAt           time.Time          `json:"updated_at"`
 }
 
 type RecipeIngredient struct {

@@ -18,13 +18,13 @@
 }
 
 html {
-  font-size: 16px;
+  font-size: 16px; 
+  font-family: "Noto sans JP", "Roboto", sans-serif;
 }
 
 body {
   color: var(--primary-font-color);
   background: var(--primary-bg-color);
-  font-family: "Noto sans JP", sans-serif;
   overflow: hidden;
 }
 

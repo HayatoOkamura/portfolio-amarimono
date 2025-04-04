@@ -1,7 +1,7 @@
 /* eslint-disable */
 "use client"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Recipe, RecipeResponse, Instruction, Ingredient, Review } from "../types";
+import { Recipe, Instruction, Ingredient, Review } from "../types/index";
 import { backendUrl, handleApiResponse } from "../utils/apiUtils";
 import useRecipeStore from "@/app/stores/recipeStore";
 import { sortRecipes } from "@/app/utils/sortRecipes";
@@ -20,6 +20,8 @@ interface ApiIngredient {
     unit: {
       id: number;
       name: string;
+      description: string;
+      step: number;
     } | null;
   };
   quantity_required: number;
@@ -31,6 +33,7 @@ interface ApiReview {
   comment: string;
   create_at: string;
   updated_at: string;
+  userId: string;
 }
 
 interface ApiRecipe {
@@ -56,11 +59,21 @@ interface ApiRecipe {
     sugar: number;
     salt: number;
   } | null;
+  nutrition_percentage: {
+    calories: number;
+    carbohydrates: number;
+    fat: number;
+    protein: number;
+    sugar: number;
+    salt: number;
+  } | null;
   faq: { question: string; answer: string }[];
+  is_draft: boolean;
+  is_public: boolean;
 }
 
 // Query keys
-const recipeKeys = {
+export const recipeKeys = {
   all: ["recipes"] as const,
   lists: () => [...recipeKeys.all, "list"] as const,
   list: (filters: string) => [...recipeKeys.lists(), { filters }] as const,
@@ -72,104 +85,49 @@ const recipeKeys = {
 };
 
 // 共通のレシピデータ変換関数
-const mapRecipe = (recipe: ApiRecipe): Recipe => {
+export const mapRecipe = (recipe: ApiRecipe): Recipe => {
   if (!recipe) {
     throw new Error("Recipe data is null or undefined");
   }
 
-  const mappedRecipe = {
-    id: recipe.id || "",
-    name: recipe.name || "",
-    instructions: (recipe.instructions || []).map((step: ApiInstruction) => ({
-      id: step?.stepNumber?.toString() || "",
-      stepNumber: step?.stepNumber || 1,
-      description: step?.description || "",
-      imageUrl: step?.image_url || undefined,
-    })),
-    genre: recipe.genre,
-    imageUrl: recipe.image_url || undefined,
-    ingredients: (recipe.ingredients || []).map((ingredient: ApiIngredient) => ({
-      id: ingredient?.ingredient_id || 0,
-      name: ingredient?.ingredient?.name || "",
-      genre: { id: 0, name: "すべて" },
-      quantity: ingredient?.quantity_required || 0,
-      unit: ingredient?.ingredient?.unit
-        ? {
-          id: ingredient.ingredient.unit.id || 0,
-          name: ingredient.ingredient.unit.name || "",
-          description: "",
-          step: 1,
-        }
-        : { id: 0, name: "", description: "", step: 1 },
-    })),
-    cookingTime: recipe.cooking_time || 0,
-    reviews: (recipe.reviews || []).map((review: ApiReview) => ({
-      id: review?.id || "",
-      recipeId: recipe.id || "",
-      userId: "",
-      rating: review?.rating || 0,
-      comment: review?.comment || "",
-      createdAt: review?.create_at || "",
-      updatedAt: review?.updated_at || "",
-    })),
-    costEstimate: recipe.cost_estimate || 0,
-    summary: recipe.summary || "",
-    catchphrase: recipe.catchphrase || "",
-    nutrition: recipe.nutrition
-      ? {
-        calories: recipe.nutrition.calories || 0,
-        carbohydrates: recipe.nutrition.carbohydrates || 0,
-        fat: recipe.nutrition.fat || 0,
-        protein: recipe.nutrition.protein || 0,
-        sugar: recipe.nutrition.sugar || 0,
-        salt: recipe.nutrition.salt || 0,
-      }
-      : null,
-    faq: recipe.faq || [],
+  const defaultNutrition = {
+    calories: 0,
+    carbohydrates: 0,
+    fat: 0,
+    protein: 0,
+    sugar: 0,
+    salt: 0,
   };
 
-  return mappedRecipe;
-};
-
-// 配列対応の関数
-const mapRecipes = (data: ApiRecipe[]): Recipe[] => {
-  return data.map((recipe) => ({
+  return {
     id: recipe.id,
     name: recipe.name,
-    imageUrl: recipe.image_url || undefined,
-    instructions: recipe.instructions.map((instruction) => ({
-      id: instruction.stepNumber.toString(),
-      stepNumber: instruction.stepNumber,
-      description: instruction.description,
-      imageUrl: instruction.image_url || undefined,
+    instructions: recipe.instructions.map((step) => ({
+      id: step.stepNumber.toString(),
+      stepNumber: step.stepNumber,
+      description: step.description,
+      imageUrl: step.image_url || undefined,
     })),
-    genre: recipe.genre,
     ingredients: recipe.ingredients.map((ingredient) => ({
       id: ingredient.ingredient_id,
       name: ingredient.ingredient.name,
       quantity: ingredient.quantity_required,
-      unit: ingredient.ingredient.unit ? {
-        id: ingredient.ingredient.unit.id,
-        name: ingredient.ingredient.unit.name,
-        description: '',
-        step: 1
-      } : {
-        id: 0,
-        name: '',
-        description: '',
-        step: 1
+      unit: {
+        id: ingredient.ingredient.unit?.id || 0,
+        name: ingredient.ingredient.unit?.name || "",
+        description: ingredient.ingredient.unit?.description || "",
+        step: ingredient.ingredient.unit?.step || 1
       },
-      genre: {
-        id: 0,
-        name: ''
-      },
-      imageUrl: null
+      genre: { id: 0, name: "すべて" },
+      imageUrl: null,
     })),
+    genre: recipe.genre,
+    imageUrl: recipe.image_url || undefined,
     cookingTime: recipe.cooking_time,
     reviews: recipe.reviews.map((review) => ({
       id: review.id,
       recipeId: recipe.id,
-      userId: "",
+      userId: review.userId || "",
       rating: review.rating,
       comment: review.comment,
       createdAt: review.create_at,
@@ -178,18 +136,83 @@ const mapRecipes = (data: ApiRecipe[]): Recipe[] => {
     costEstimate: recipe.cost_estimate,
     summary: recipe.summary,
     catchphrase: recipe.catchphrase,
-    nutrition: recipe.nutrition,
-    faq: recipe.faq,
+    nutrition: recipe.nutrition || defaultNutrition,
+    nutritionPercentage: recipe.nutrition_percentage || null,
+    faq: recipe.faq || [],
+    isDraft: recipe.is_draft || false,
+    isPublic: recipe.is_public || false,
+  };
+};
+
+// 配列対応の関数
+export const mapRecipes = (data: ApiRecipe[]): Recipe[] => {
+  const defaultNutrition = {
+    calories: 0,
+    carbohydrates: 0,
+    fat: 0,
+    protein: 0,
+    sugar: 0,
+    salt: 0,
+  };
+
+  return data.map((recipe) => ({
+    id: recipe.id,
+    name: recipe.name,
+    imageUrl: recipe.image_url || undefined,
+    instructions: (recipe.instructions || []).map((instruction) => ({
+      id: instruction.stepNumber.toString(),
+      stepNumber: instruction.stepNumber,
+      description: instruction.description,
+      imageUrl: instruction.image_url || undefined,
+    })),
+    genre: recipe.genre,
+    ingredients: (recipe.ingredients || []).map((ingredient) => ({
+      id: ingredient.ingredient_id,
+      name: ingredient.ingredient.name,
+      quantity: ingredient.quantity_required,
+      unit: {
+        id: ingredient.ingredient.unit?.id || 0,
+        name: ingredient.ingredient.unit?.name || "",
+        description: ingredient.ingredient.unit?.description || "",
+        step: ingredient.ingredient.unit?.step || 1
+      },
+      genre: {
+        id: 0,
+        name: ''
+      },
+      imageUrl: null
+    })),
+    cookingTime: recipe.cooking_time,
+    reviews: (recipe.reviews || []).map((review) => ({
+      id: review.id,
+      recipeId: recipe.id,
+      userId: review.userId || "",
+      rating: review.rating,
+      comment: review.comment,
+      createdAt: review.create_at,
+      updatedAt: review.updated_at,
+    })),
+    costEstimate: recipe.cost_estimate,
+    summary: recipe.summary,
+    catchphrase: recipe.catchphrase,
+    nutrition: recipe.nutrition || defaultNutrition,
+    nutritionPercentage: recipe.nutrition_percentage || null,
+    faq: recipe.faq || [],
+    isDraft: recipe.is_draft || false,
+    isPublic: recipe.is_public || false
   }));
 };
 
 // Service functions
-const fetchRecipesService = async (): Promise<Recipe[]> => {
-  const response = await api.get("/api/recipes");
-  return response.data;
+
+// レシピ一覧取得（管理画面用）
+export const fetchRecipesService = async (): Promise<Recipe[]> => {
+  const response = await api.get("/admin/recipes");
+  return mapRecipes(response.data);
 };
 
-const fetchRecipesAPI = async (ingredients: { id: number; quantity: number }[]) => {
+// 具材からレシピを検索
+export const fetchRecipesAPI = async (ingredients: { id: number; quantity: number }[]) => {
   if (ingredients.length === 0) {
     throw new Error("具材が選択されていません");
   }
@@ -202,22 +225,40 @@ const fetchRecipesAPI = async (ingredients: { id: number; quantity: number }[]) 
   await new Promise(resolve => setTimeout(resolve, 500))
 
   const response = await api.post("/api/recipes", transformedIngredients);
+
   return Array.isArray(response.data) ? mapRecipes(response.data) : [];
 };
 
-const fetchSearchRecipes = async (query: string): Promise<Recipe[]> => {
+// レシピ名で検索
+export const fetchSearchRecipes = async (query: string): Promise<Recipe[]> => {
   const response = await api.get(`/api/recipes/search?q=${encodeURIComponent(query)}`);
-  return mapRecipes(response.data);
-};
-
-export const fetchRecipeByIdService = async (id: string) => {
-  const response = await api.get(`/api/recipes/${id}`);
-  return mapRecipe(response.data.recipe);
-};
-
-const addRecipeService = async (formData: FormData): Promise<Recipe> => {
   try {
-    const response = await api.post("/api/recipes", formData, {
+    const mappedRecipes = mapRecipes(response.data);
+    return mappedRecipes;
+  } catch (error) {
+    return [];
+  }
+};
+
+// レシピIDで詳細を取得
+export const fetchRecipeByIdService = async (id: string) => {
+  console.log('Fetching recipe with ID:', id);
+  try {
+    const response = await api.get(`/api/recipes/${id}`);
+    console.log('API Response:', response.data);
+    return mapRecipe(response.data.recipe);
+  } catch (error: any) {
+    console.error('Error in fetchRecipeByIdService:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
+    throw error;
+  }
+};
+
+// 新規レシピの登録
+export const addRecipeService = async (formData: FormData): Promise<Recipe> => {
+  try {
+    const response = await api.post("/admin/recipes", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -228,11 +269,13 @@ const addRecipeService = async (formData: FormData): Promise<Recipe> => {
   }
 };
 
-const deleteRecipeService = async (id: string): Promise<void> => {
-  await api.delete(`/api/recipes?id=${id}`);
+// レシピの削除
+export const deleteRecipeService = async (id: string): Promise<void> => {
+  await api.delete(`/admin/recipes/${id}`);
 };
 
-const updateRecipeService = async (
+// レシピの更新
+export const updateRecipeService = async (
   id: string,
   updatedData: FormData
 ): Promise<Recipe> => {
@@ -240,29 +283,41 @@ const updateRecipeService = async (
     const ingredientsRaw = updatedData.get("ingredients") as string;
     if (ingredientsRaw) {
       const ingredients = JSON.parse(ingredientsRaw);
+      // 配列であることを確認し、必要なプロパティが存在することを確認
+      if (Array.isArray(ingredients)) {
+        const formattedIngredients = ingredients
+          .filter(ing => ing && typeof ing === 'object')
+          .map((ing: any) => ({
+            ingredient_id: ing.id,
+            quantity_required: ing.quantity,
+            unit_id: ing.unit?.id || 1
+          }));
 
-      const formattedIngredients = ingredients.map((ing: any) => ({
-        ingredient_id: ing.id,
-        quantity_required: ing.quantity,
-        unit_id: ing.unit.id,
-      }));
+        // 具材データが空でないことを確認
+        if (formattedIngredients.length === 0) {
+          throw new Error("具材を選択してください");
+        }
 
-      updatedData.delete("ingredients");
-      updatedData.append("ingredients", JSON.stringify(formattedIngredients));
+        updatedData.delete("ingredients");
+        updatedData.append("ingredients", JSON.stringify(formattedIngredients));
+      } else {
+        throw new Error("Invalid ingredients data format");
+      }
     }
 
-    updatedData.append("id", id);
-    const response = await api.put("/api/recipes", updatedData, {
+    const response = await api.put(`/admin/recipes/${id}`, updatedData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
     return response.data;
   } catch (error) {
+    console.error("Error in updateRecipeService:", error);
     throw error;
   }
 };
 
+// いいね機能の内部実装
 export const handleLikeService = async (
   userId: string,
   recipeId: string,
@@ -291,6 +346,7 @@ export const handleLikeService = async (
   }
 };
 
+// ユーザーのレシピ一覧を取得
 const fetchUserRecipes = async (userId: string) => {
   const res = await fetch(`${backendUrl}/api/user/recipes?userId=${userId}`, {
     method: "GET",
@@ -303,10 +359,12 @@ const fetchUserRecipes = async (userId: string) => {
     throw new Error("Failed to fetch user recipes");
   }
 
-  return res.json();
+  const data = await res.json();
+  return { recipes: mapRecipes(data.recipes) };
 };
 
-const fetchRecommendedRecipesService = async (userId: string): Promise<Recipe[]> => {
+// おすすめレシピを取得
+export const fetchRecommendedRecipesService = async (userId: string): Promise<Recipe[]> => {
   const res = await fetch(`${backendUrl}/api/recommendations/${userId}`);
   const data = await handleApiResponse(res);
 
@@ -321,6 +379,7 @@ const fetchRecommendedRecipesService = async (userId: string): Promise<Recipe[]>
   }
 };
 
+// ユーザーのお気に入りレシピを取得
 const fetchUserFavorites = async (userId: string) => {
   const res = await fetch(`${backendUrl}/api/user/favorites?userId=${userId}`, {
     method: "GET",
@@ -348,30 +407,26 @@ export const useFetchRecipesAPI = (ingredients: { id: number; quantity: number }
   return useQuery({
     queryKey: recipeKeys.list(JSON.stringify(ingredients)),
     queryFn: async () => {
-      // 量が0より大きい具材のみをフィルタリング
       const validIngredients = ingredients.filter(ing => ing.quantity > 0);
-      
-      // 具材が空の場合は空配列を返す
+
       if (validIngredients.length === 0) {
-        console.log('No valid ingredients found, returning empty array');
         return [];
       }
 
       try {
-        console.log('Fetching recipes with ingredients:', validIngredients);
         const response = await fetchRecipesAPI(validIngredients);
-        console.log('Fetched recipes response:', response);
+
         return response;
       } catch (error) {
         console.error('Error fetching recipes:', error);
         return [];
       }
     },
-    // 具材が空の場合はクエリを実行しない
     enabled: ingredients.length > 0,
-    // キャッシュの設定
-    staleTime: 5 * 60 * 1000, // 5分
-    gcTime: 30 * 60 * 1000, // 30分
+    staleTime: 5 * 60 * 1000, // 5分間キャッシュを保持
+    gcTime: 30 * 60 * 1000, // 30分間キャッシュを保持
+    refetchOnMount: false, // マウント時の再取得を無効化
+    refetchOnWindowFocus: false, // ウィンドウフォーカス時の再取得を無効化
   });
 };
 
@@ -384,6 +439,7 @@ export const useSearchRecipes = (query: string) => {
       }
       return fetchSearchRecipes(query);
     },
+    enabled: false, // デフォルトで検索を無効化
   });
 };
 
@@ -424,16 +480,20 @@ export const useAddRecipe = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ formData, userId, isPublic }: { 
-      formData: FormData; 
-      userId?: string; 
+    mutationFn: async ({ formData, userId, isPublic, isDraft }: {
+      formData: FormData;
+      userId?: string;
       isPublic?: boolean;
+      isDraft?: boolean;
     }) => {
       if (userId) {
         formData.append("user_id", userId);
       }
       if (isPublic !== undefined) {
         formData.append("public", isPublic.toString());
+      }
+      if (isDraft !== undefined) {
+        formData.append("is_draft", isDraft.toString());
       }
       return addRecipeService(formData);
     },
@@ -481,4 +541,91 @@ export const useSortedRecipes = (filteredRecipes: Recipe[] | null | undefined) =
   }
 
   return sortRecipes(filteredRecipes, sortBy);
+};
+
+// 下書きレシピの保存
+export const saveDraftRecipe = async (userId: string, recipeData: any) => {
+  try {
+    console.log('🔥 Starting saveDraftRecipe');
+    console.log('📦 Input userId:', userId);
+    console.log('📦 Input recipeData:', JSON.stringify(recipeData, null, 2));
+
+    // JSONデータの作成
+    const draftData = {
+      userId: userId,
+      recipeData: recipeData,
+      lastModifiedAt: new Date().toISOString()
+    };
+
+    console.log('📦 Draft data to be sent:', JSON.stringify(draftData, null, 2));
+
+    const response = await api.post("/admin/draft-recipes", draftData, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    console.log('✅ Response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ Failed to save draft recipe:", error);
+    console.error("❌ Error response:", error.response?.data);
+    console.error("❌ Error status:", error.response?.status);
+    throw error;
+  }
+};
+
+// 下書きレシピの取得
+export const getDraftRecipe = async (userId: string) => {
+  try {
+    console.log('🔥 Fetching draft recipe for user:', userId);
+    const response = await api.get(`/admin/draft-recipes/${userId}`);
+    const draftRecipes = response.data;
+
+    // 下書きレシピの内容を詳細にログ出力
+    if (draftRecipes.draftRecipes && draftRecipes.draftRecipes.length > 0) {
+      const draftRecipe = draftRecipes.draftRecipes[0];
+      console.log('📝 Draft Recipe Details:');
+      console.log('👤 User ID:', draftRecipe.userId);
+      console.log('🕒 Last Modified:', draftRecipe.lastModifiedAt);
+      console.log('📋 Recipe Data:', JSON.stringify(draftRecipe.recipeData, null, 2));
+    } else {
+      console.log('ℹ️ No draft recipe found');
+    }
+
+    // 最新の下書きを返す
+    return draftRecipes.length > 0 ? draftRecipes[0] : null;
+  } catch (error) {
+    console.error("❌ Failed to get draft recipe:", error);
+    throw error;
+  }
+};
+
+// 下書き保存用のカスタムフック
+export const useDraftRecipe = (userId: string | undefined, isEditing: boolean = false) => {
+  const queryClient = useQueryClient();
+
+  const saveDraftMutation = useMutation({
+    mutationFn: async (recipeData: any) => {
+      if (!userId) throw new Error("User ID is required");
+      if (isEditing) return null; // 編集時は下書きを保存しない
+      console.log('💾 Saving draft recipe for user:', userId);
+      console.log('📦 Recipe data to save:', JSON.stringify(recipeData, null, 2));
+      return saveDraftRecipe(userId, recipeData);
+    },
+  });
+
+  const { data: draftRecipe, isLoading } = useQuery({
+    queryKey: ["draftRecipe", userId],
+    queryFn: () => {
+      if (!userId || isEditing) return null; // 編集時は下書きを読み込まない
+      return getDraftRecipe(userId);
+    },
+    enabled: !!userId && !isEditing, // 編集時はクエリを無効化
+  });
+
+  return {
+    saveDraft: saveDraftMutation.mutate,
+    draftRecipe,
+    isLoading,
+  };
 };

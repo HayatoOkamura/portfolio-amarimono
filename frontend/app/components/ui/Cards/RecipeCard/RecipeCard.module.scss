@@ -1,53 +1,57 @@
 .card_block {
-  border-radius: 12px;
-  padding: 1rem;
+  border-radius: 10px;
   text-align: center;
   height: 100%;
   background: #fff;
+  overflow: hidden;
   &__img {
     width: 100%;
     display: block;
     position: relative;
-    margin-bottom: 1rem;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 1 / 1;
     img {
-      border-radius: 5px;
       object-fit: cover;
       width: 100%;
     }
   }
 
   &__contents {
-
+   
+  padding: 5px 15px;
   }
 
   &__name {
     font-size: 1.2rem;
     font-weight: bold;
     color: #323232;
+    text-align: left;
   }
 
   &__ingredients {
-
   }
 
   &__ing_list {
-
   }
 
   &__ing_item {
-
   }
 
   &__step {
-
   }
 
   &__step_list {
-
   }
 
   &__step_item {
-    
+  }
+
+  &__draft {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #f3f4f6;
+    color: #6b7280;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin-top: 4px;
   }
 }

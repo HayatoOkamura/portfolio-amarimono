@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -10,6 +11,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 )
 
 func main() {
@@ -39,6 +41,21 @@ func main() {
 	// DB接続
 	dbConn := db.GetDB()
 
+	// Redisクライアントの初期化
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "redis:6379",
+		Password: "", // パスワードがある場合は設定
+		DB:       0,  // 使用するDB番号
+	})
+
+	// Redis接続の確認
+	ctx := context.Background()
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		log.Printf("❌ Failed to connect to Redis: %v", err)
+	} else {
+		log.Println("✅ Successfully connected to Redis")
+	}
+
 	// `RecipeHandler` を初期化
 	recipeHandler := handlers.NewRecipeHandler(dbConn)
 
@@ -49,7 +66,8 @@ func main() {
 	userHandler := handlers.NewUserHandler(dbConn)
 
 	adminHandler := &handlers.AdminHandler{
-		DB: dbConn,
+		DB:          dbConn,
+		RedisClient: rdb,
 	}
 	genreHandler := &handlers.GenreHandler{
 		DB: dbConn,

@@ -12,7 +12,7 @@ func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, like
 	router.GET("/api/likes/:user_id", likeHandler.GetUserLikes)               // ユーザーのお気に入りレシピを取得
 
 	// `/api/recipes` エンドポイントの登録
-	router.POST("/api/recipes", recipeHandler.SerchRecipes)
+	router.POST("/api/recipes", recipeHandler.SerchRecipes)              // レシピ検索
 	router.GET("/api/recipes/:id", recipeHandler.GetRecipeByID)          // レシピ詳細を取得
 	router.GET("/api/recipes/search", recipeHandler.SearchRecipesByName) // レシピ名付検索
 
@@ -41,14 +41,16 @@ func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, like
 	// 管理画面用エンドポイント
 	admin := router.Group("/admin")
 	{
-		admin.GET("/ingredients", adminHandler.ListIngredients)         // 具材一覧
-		admin.POST("/ingredients", adminHandler.AddIngredient)          // 具材追加
-		admin.PATCH("/ingredients/:id", adminHandler.UpdateIngredient)  // 具材更新
-		admin.DELETE("/ingredients/:id", adminHandler.DeleteIngredient) //具材削除
-		admin.GET("/recipes", adminHandler.ListRecipes)                 // レシピ一覧
-		admin.POST("/recipes", adminHandler.AddRecipe)                  // レシピ追加
-		admin.PUT("/recipes/:id", adminHandler.UpdateRecipe)            // レシピ更新
-		admin.DELETE("/recipes/:id", adminHandler.DeleteRecipe)         //具材削除
-		admin.GET("/units", adminHandler.ListUnits)                     // 単位一覧
+		admin.GET("/ingredients", adminHandler.ListIngredients)           // 具材一覧
+		admin.POST("/ingredients", adminHandler.AddIngredient)            // 具材追加
+		admin.PATCH("/ingredients/:id", adminHandler.UpdateIngredient)    // 具材更新
+		admin.DELETE("/ingredients/:id", adminHandler.DeleteIngredient)   //具材削除
+		admin.GET("/recipes", adminHandler.ListRecipes)                   // レシピ一覧
+		admin.POST("/recipes", adminHandler.AddRecipe)                    // レシピ追加
+		admin.PUT("/recipes/:id", adminHandler.UpdateRecipe)              // レシピ更新
+		admin.DELETE("/recipes/:id", adminHandler.DeleteRecipe)           //具材削除
+		admin.GET("/units", adminHandler.ListUnits)                       // 単位一覧
+		admin.POST("/draft-recipes", adminHandler.SaveDraftRecipe)        // 下書きレシピの保存
+		admin.GET("/draft-recipes/:userId", adminHandler.GetDraftRecipes) // 下書きレシピの取得
 	}
 }

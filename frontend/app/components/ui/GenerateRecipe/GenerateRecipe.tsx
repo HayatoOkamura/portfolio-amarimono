@@ -8,7 +8,7 @@ import { backendUrl } from "@/app/utils/apiUtils";
 import { useRouter } from "next/navigation";
 import useRecipeStore from "@/app/stores/recipeStore";
 import useIngredientStore from "@/app/stores/ingredientStore";
-import { Ingredient } from "@/app/types";
+import { Ingredient } from "@/app/types/index";
 import { useIngredients } from "@/app/hooks/ingredients";
 
 const GenerateRecipe = () => {

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { fetchReviewsByRecipeID } from "@/app/hooks/review"; // APIリクエスト関数
-import { Review } from "../types";
+import { Review } from "@/app/types/index";
 
 type ReviewStore = {
   reviews: Review[];

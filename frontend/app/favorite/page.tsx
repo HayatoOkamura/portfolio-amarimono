@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { backendUrl } from "@/app/utils/apiUtils";
 import { useFavorites } from "@/app/hooks/recipes";
-import { Recipe, Ingredient } from "@/app/types";
+import { Recipe, Ingredient } from "@/app/types/index";
 import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";
 import { useAuth } from "@/app/hooks/useAuth";
 
@@ -15,10 +15,6 @@ const FavoritesPage = () => {
   const { user } = useAuth();
   const { data, isLoading } = useFavorites(user?.id || "");
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-
-  useEffect(() => {
-    console.log(data);
-  }, [data]);
 
   const handleRecipeClick = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
@@ -41,20 +37,7 @@ const FavoritesPage = () => {
               onClick={() => handleRecipeClick(recipe)}
             >
               <RecipeCard
-                recipe={{
-                  ...recipe,
-                  ingredients: recipe.ingredients.map((ingredient: Ingredient) => ({
-                    ...ingredient,
-                    name: ingredient.name,
-                    quantity: ingredient.quantity,
-                    unit: {
-                      id: ingredient.unit.id,
-                      name: ingredient.unit.name,
-                      description: ingredient.unit.description || '',
-                      step: ingredient.unit.step || 1
-                    }
-                  })),
-                }}
+                recipe={recipe}
                 isFavoritePage={true}
                 path="/recipes/"
               />

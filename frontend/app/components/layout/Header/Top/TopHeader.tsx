@@ -8,17 +8,24 @@ import { useUserStore } from "@/app/stores/userStore";
 import { FaUserCircle } from "react-icons/fa";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchRecipes, recipeKeys } from "@/app/hooks/recipes";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Header = () => {
   const { user } = useUserStore();
-  const { setQuery, query } = useRecipeStore();
+  const { setQuery, query, setSearchType, setSearchExecuted } = useRecipeStore();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { refetch } = useSearchRecipes(query);
 
   // レシピ検索
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      // URL に検索クエリをパラメータとして渡す
+      setSearchType("name"); // 検索タイプを"name"に設定
+      setSearchExecuted(true); // 検索が実行されたことを設定
+      await queryClient.removeQueries({ queryKey: recipeKeys.list(query) }); // キャッシュをクリア
+    await refetch();
       router.push(`/recipes?query=${query}`);
     }
   };

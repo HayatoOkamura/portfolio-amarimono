@@ -5,7 +5,7 @@ import { useState } from "react";
 import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import { useUserStore } from "@/app/stores/userStore";
 import { backendUrl } from "@/app/utils/apiUtils";
-import { UserData } from "@/app/types";
+import { UserData } from "@/app/types/index";
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");

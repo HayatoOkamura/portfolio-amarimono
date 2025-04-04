@@ -5,13 +5,15 @@ import { backendUrl } from "@/app/utils/apiUtils";
 import ResponsivePieChart from "@/app/components/ui/PieChart/PieChart";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Recipe } from "@/app/types";
+import { Recipe } from "@/app/types/index";
 import Image from "next/image";
 import { fetchRecipeByIdService } from "@/app/hooks/recipes";
 import { handleLikeService } from "@/app/hooks/recipes";
 import { useUserStore } from "@/app/stores/userStore";
 import { calculateAverageRating } from "@/app/utils/calculateAverageRating";
 import StarRating from "@/app/components/ui/StarRating/StarRating";
+import { IoMdTime } from "react-icons/io";
+import { RiMoneyCnyCircleLine } from "react-icons/ri";
 
 const RecipeDetailPage = () => {
   const router = useRouter();
@@ -40,24 +42,13 @@ const RecipeDetailPage = () => {
 
     const checkLikeStatus = async () => {
       try {
-        console.log('Checking like status for:', {
-          userId: user.id,
-          recipeId: recipe.id,
-          url: `${backendUrl}/api/likes/${user.id}/${recipe.id}`
-        });
         
         const response = await fetch(
           `${backendUrl}/api/likes/${user.id}/${recipe.id}`
         );
-        
-        console.log('Like status response:', {
-          status: response.status,
-          ok: response.ok
-        });
 
         if (response.ok) {
           const data = await response.json();
-          console.log('Like status data:', data);
           setIsLiked(true);
         }
       } catch (error) {
@@ -89,8 +80,6 @@ const RecipeDetailPage = () => {
   // レビューを送信する関数
   const handleReviewSubmit = async () => {
     if (!user || !recipe) return;
-    console.log("ユーザー", user);
-    
 
     const response = await fetch(`${backendUrl}/api/reviews`, {
       method: "POST",
@@ -166,25 +155,25 @@ const RecipeDetailPage = () => {
               </p>
             </div>
             <div className={styles.detail_block__item}>
-              <p className={styles.detail_block__title}>調理時間</p>
-              <p>{recipe.cookingTime}</p>
+              <p className={styles.detail_block__title}><IoMdTime />調理時間</p>
+              <p className={styles.detail_block__text}><span>約</span>{recipe.cookingTime}<span>分</span></p>
             </div>
             <div className={styles.detail_block__item}>
-              <p className={styles.detail_block__title}>費用目安</p>
-              <p>{recipe.costEstimate}</p>
+              <p className={styles.detail_block__title}><RiMoneyCnyCircleLine />費用目安</p>
+              <p className={styles.detail_block__text}>{recipe.costEstimate}<span>円</span><span className={styles["small"]}>前後</span></p>
             </div>
           </div>
           <div className={styles.interaction_block}>
-            <button
-              onClick={handleLike}
-              className={styles.interaction_block__item}
-            >
-              {isLiked ? "お気に入り済み" : "お気に入り"}
-            </button>
-            <div className={styles.interaction_block__item}>
+            <div className={`${styles.interaction_block__item} ${styles["interaction_block__item--likes"]}`}>
+              <button
+                onClick={handleLike}
+              >
+                {isLiked ? "お気に入り済み" : "お気に入り"}
+              </button>
+            </div>
+            <div className={`${styles.interaction_block__item} ${styles["interaction_block__item--review"]}`}>
               <button
                 onClick={() => setShowReviewModal(true)} // レビュー用モーダルを表示
-                className={styles.interaction_block__item}
               >
                 レビューを投稿
               </button>
@@ -196,37 +185,37 @@ const RecipeDetailPage = () => {
               <p className={styles.nutrition_block__title}>
                 カロリー{recipe.nutrition && recipe.nutrition.calories}
               </p>
-              <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.calories : 0} />
+              <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.calories : 0} type="calories" />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
                 炭水化物{recipe.nutrition && recipe.nutrition.carbohydrates}
               </p>
-              <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.carbohydrates : 0} />
+              <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.carbohydrates : 0} type="carbohydrates" />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
                 脂質{recipe.nutrition && recipe.nutrition.fat}
               </p>
-              <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.fat : 0} />
+              <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.fat : 0} type="fat" />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
                 タンパク質{recipe.nutrition && recipe.nutrition.protein}
               </p>
-              <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.protein : 0} />
+              <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.protein : 0} type="protein" />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
                 塩分{recipe.nutrition && recipe.nutrition.salt}
               </p>
-              <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.salt : 0} />
+              <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.salt : 0} type="salt" />
             </li>
             <li className={styles.nutrition_block__item}>
               <p className={styles.nutrition_block__title}>
                 糖分{recipe.nutrition && recipe.nutrition.sugar}
               </p>
-              <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.sugar : 0} />
+              <ResponsivePieChart value={recipe.nutritionPercentage ? recipe.nutritionPercentage.sugar : 0} type="sugar" />
             </li>
           </ul>
           <h3 className={styles.info_block__ingredient}>材料【1人分】</h3>

@@ -5,7 +5,7 @@ import { backendUrl } from "@/app/utils/apiUtils";
 import ResponsivePieChart from "@/app/components/ui/PieChart/PieChart";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Recipe } from "@/app/types";
+import { Recipe } from "@/app/types/index";
 import Image from "next/image";
 import { fetchRecipeByIdService } from "@/app/hooks/recipes";
 import { handleLikeService } from "@/app/hooks/recipes";
@@ -78,8 +78,7 @@ const EditMyRecipe = () => {
   // レビューを送信する関数
   const handleReviewSubmit = async () => {
     if (!user || !recipe) return;
-    console.log("ユーザー", user);
-
+    
     const response = await fetch(`${backendUrl}/api/reviews`, {
       method: "POST",
       headers: {
@@ -196,6 +195,7 @@ const EditMyRecipe = () => {
                     ? recipe.nutritionPercentage.calories
                     : 0
                 }
+                type="calories"
               />
             </li>
             <li className={styles.nutrition_block__item}>
@@ -208,6 +208,7 @@ const EditMyRecipe = () => {
                     ? recipe.nutritionPercentage.carbohydrates
                     : 0
                 }
+                type="carbohydrates"
               />
             </li>
             <li className={styles.nutrition_block__item}>
@@ -220,6 +221,7 @@ const EditMyRecipe = () => {
                     ? recipe.nutritionPercentage.fat
                     : 0
                 }
+                type="fat"
               />
             </li>
             <li className={styles.nutrition_block__item}>
@@ -232,6 +234,7 @@ const EditMyRecipe = () => {
                     ? recipe.nutritionPercentage.protein
                     : 0
                 }
+                type="protein"
               />
             </li>
             <li className={styles.nutrition_block__item}>
@@ -244,6 +247,7 @@ const EditMyRecipe = () => {
                     ? recipe.nutritionPercentage.salt
                     : 0
                 }
+                type="salt"
               />
             </li>
             <li className={styles.nutrition_block__item}>
@@ -256,6 +260,7 @@ const EditMyRecipe = () => {
                     ? recipe.nutritionPercentage.sugar
                     : 0
                 }
+                type="sugar"
               />
             </li>
           </ul>

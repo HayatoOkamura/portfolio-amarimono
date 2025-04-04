@@ -1,9 +1,9 @@
 "use client";
-import React from "react";
+import React, {useEffect} from "react";
 import Image from "next/image";
 import styles from "./RecipeCard.module.scss";
 import { backendUrl } from "@/app/utils/apiUtils";
-import { Recipe } from "@/app/types";
+import { Recipe } from "@/app/types/index";
 import Link from "next/link";
 
 interface RecipeCardProps {
@@ -51,8 +51,13 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
           unoptimized
         />
       </div>
-      <h2 className={styles.card_block__name}>{recipe.name}</h2>
-      <p className={styles.card_block__genre}>
+      <div className={styles.card_block__contents}>
+        <h2 className={styles.card_block__name}>{recipe.name}</h2>
+        {recipe.isDraft && (
+          <span className={styles.card_block__draft}>下書き</span>
+        )}
+      </div>
+      {/* <p className={styles.card_block__genre}>
         ジャンル: <strong>{getGenreText()}</strong>
       </p>
       <h3 className={styles.card_block__ingredients}>材料</h3>
@@ -67,7 +72,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
         <Link href={`${path}${recipe.id}`}>
           <button className={styles.details_button}>詳しく見る</button>
         </Link>
-      )}
+      )} */}
     </div>
   );
 };

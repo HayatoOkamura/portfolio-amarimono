@@ -1,6 +1,6 @@
 /* eslint-disable */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Ingredient, Genre, Unit, NewIngredient, EditIngredient } from "../types";
+import { Ingredient, Genre, Unit, NewIngredient, EditIngredient } from "../types/index";
 import { api } from "../utils/api";
 import useIngredientStore from "../stores/ingredientStore";
 
@@ -119,9 +119,8 @@ export const useUpdateIngredient = () => {
 
   return useMutation({
     mutationFn: updateIngredientService,
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ingredientKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: ingredientKeys.detail(variables.id) });
     },
   });
 };

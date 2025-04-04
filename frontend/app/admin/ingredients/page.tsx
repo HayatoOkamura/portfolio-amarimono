@@ -9,7 +9,7 @@ import useUnitStore from "../../stores/unitStore";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { EditIngredient, Ingredient } from "../../types";
+import { EditIngredient, Ingredient } from "../../types/index";
 
 const AdminIngredients = () => {
   const {

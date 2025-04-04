@@ -1,6 +1,6 @@
 /* eslint-disable */
 import { backendUrl, handleApiResponse } from "../utils/apiUtils";
-import { Unit } from "../types";
+import { Unit } from "../types/index";
 
 // 単位(Unit)一覧を取得
 export const fetchUnitsService = async (): Promise<Unit[]> => {

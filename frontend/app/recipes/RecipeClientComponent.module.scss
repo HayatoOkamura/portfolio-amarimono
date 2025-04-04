@@ -41,6 +41,8 @@
         width: 100%;
         border-radius: 3px;
         padding: 3px 5px 4px;
+        border: none;
+        color: #2d2d2d;
       }
     }
   }
@@ -112,6 +114,7 @@
   }
 
   .recipe_list {
+    max-height: 300px;
     margin-top: 5px;
     display: flex;
     align-items: flex-start;
@@ -150,6 +153,7 @@
     width: 300px;
     overflow-y: auto;
     border-radius: 10px;
+    background: #fff;
 
     &__inner {
 
@@ -226,6 +230,11 @@
 
   .review_block {
     margin-top: 20px;
+
+    &__stars {
+      margin-top: 6px;
+    }
+
     &__average {
       display: flex;
       align-items: flex-end;

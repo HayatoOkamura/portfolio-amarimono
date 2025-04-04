@@ -2,7 +2,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { fetchUnitsService } from "../hooks/unit";
-import { Unit } from "../types";
+import { Unit } from "@/app/types/index";
 
 interface UnitStore {
   units: Unit[];

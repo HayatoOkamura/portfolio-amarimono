@@ -72,20 +72,20 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		quantityMap[ing.IngredientID] = ing.QuantityRequired
 	}
 
-	// サブクエリ：指定具材が含まれるレシピを取得
+	// サブクエリ：指定具材が含まれるレシピを取得（下書きを除外）
 	subQuery := h.DB.Table("recipe_ingredients").
 		Select("recipe_id").
 		Where("ingredient_id IN ?", extractIngredientIDs(ingredients)).
 		Group("recipe_id")
 
-	// レシピと関連具材をロード
+	// レシピと関連具材をロード（下書きを除外）
 	var recipes []models.Recipe
 	if err := h.DB.Preload("Ingredients.Ingredient").
 		Preload("Ingredients.Ingredient.Unit").
 		Preload("Ingredients.Ingredient.Genre").
 		Preload("Genre").
 		Preload("Reviews").
-		Where("id IN (?)", subQuery).
+		Where("id IN (?) AND is_draft = ?", subQuery, false).
 		Find(&recipes).Error; err != nil {
 		log.Printf("Failed to fetch recipes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query failed", "details": err.Error()})
@@ -165,7 +165,7 @@ func (h *RecipeHandler) SearchRecipesByName(c *gin.Context) {
 		Preload("Ingredients.Ingredient.Unit").
 		Preload("Ingredients.Ingredient.Genre").
 		Preload("Genre").
-		Where("LOWER(name) LIKE LOWER(?)", "%"+query+"%").
+		Where("LOWER(name) LIKE LOWER(?) AND is_draft = ?", "%"+query+"%", false).
 		Order(clause.Expr{SQL: "POSITION(LOWER(?) IN LOWER(name))", Vars: []interface{}{query}}).
 		Find(&recipes).Error
 
@@ -173,6 +173,29 @@ func (h *RecipeHandler) SearchRecipesByName(c *gin.Context) {
 		log.Printf("検索クエリエラー: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "データベースエラー"})
 		return
+	}
+
+	// 栄養情報の標準値を取得
+	var standard models.NutritionStandard
+	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
+		log.Printf("Failed to fetch nutrition standard: %v", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
+		return
+	}
+
+	// 各レシピの栄養素の割合を計算
+	for i := range recipes {
+		if recipes[i].Nutrition != (models.NutritionInfo{}) {
+			nutritionPercentage := map[string]float64{
+				"calories":      (float64(recipes[i].Nutrition.Calories) / standard.Calories) * 100,
+				"carbohydrates": (float64(recipes[i].Nutrition.Carbohydrates) / standard.Carbohydrates) * 100,
+				"fat":           (float64(recipes[i].Nutrition.Fat) / standard.Fat) * 100,
+				"protein":       (float64(recipes[i].Nutrition.Protein) / standard.Protein) * 100,
+				"salt":          (float64(recipes[i].Nutrition.Salt) / standard.Salt) * 100,
+				"sugar":         (float64(recipes[i].Nutrition.Sugar) / standard.Sugar) * 100,
+			}
+			recipes[i].NutritionPercentage = nutritionPercentage
+		}
 	}
 
 	c.JSON(http.StatusOK, recipes)
@@ -199,10 +222,16 @@ func (h *RecipeHandler) GetRecipeByID(c *gin.Context) {
 		return
 	}
 
-	// 栄養情報がない場合
+	// 栄養情報がない場合はデフォルト値を設定
 	if recipe.Nutrition == (models.NutritionInfo{}) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition data not found for this recipe"})
-		return
+		recipe.Nutrition = models.NutritionInfo{
+			Calories:      0,
+			Carbohydrates: 0,
+			Fat:           0,
+			Protein:       0,
+			Sugar:         0,
+			Salt:          0,
+		}
 	}
 
 	// 推奨摂取量を取得（仮に年齢グループと性別を固定値にしている）

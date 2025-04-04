@@ -26,7 +26,6 @@
   }
 
   &__btn {
-    color: #fff;
     font-size: 1rem;
     font-weight: 600;
     letter-spacing: 0.03em;
@@ -45,9 +44,11 @@
 
     button {
       text-align: center;
-      padding: 10px 15px 11px;
+      padding: 13px 15px 14px;
       display: block;
       width: 100%;
+      color: #fff;
+      font-weight: 700;
     }
   }
 

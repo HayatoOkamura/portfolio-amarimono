@@ -1,12 +1,8 @@
 /* eslint-disable */
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { Recipe, NewRecipe } from "../types";
-import {
-  useAddRecipe,
-  useDeleteRecipe,
-  useUpdateRecipe,
-} from "../hooks/recipes";
+import { Recipe, NewRecipe } from "../types/index";
+import { backendUrl } from "../utils/apiUtils";
 
 export type SortOption = "rating_desc" | "cost_asc" | "time_asc" | "calorie_asc";
 
@@ -16,29 +12,31 @@ interface RecipeStore {
   error: string;
   newRecipe: NewRecipe;
   sortBy: SortOption;
-  setGeneratedRecipes: (recipes: Recipe[]) => void;
+  selectedRecipe: Recipe | null;
+  setSelectedRecipe: (recipe: Recipe | null) => void;
   setRecipes: (recipes: Recipe[]) => void;
+  setGeneratedRecipes: (recipes: Recipe[]) => void;
   clearRecipes: () => void;
   clearGeneratedRecipes: () => void;
   setNewRecipe: (updates: Partial<NewRecipe>) => void;
   resetNewRecipe: () => void;
-  addRecipe: (formData: FormData, userId?: string, isPublic?: boolean) => Promise<void>;
-  deleteRecipe: (id: string) => Promise<void>;
-  editRecipe: (id: string, formData: FormData) => Promise<void>;
+  setError: (error: string) => void;
   setSortBy: (sortBy: SortOption) => void;
   searchType: "ingredients" | "name" | null;
   setSearchType: (type: "ingredients" | "name" | null) => void;
   query: string;
   setQuery: (query: string) => void;
+  searchExecuted: boolean;
+  setSearchExecuted: (executed: boolean) => void;
+  addRecipe: (formData: FormData) => Promise<void>;
 }
 
 const initialNewRecipe: NewRecipe = {
   name: "",
-  instructions: [{ stepNumber: 1, description: "", image: null }],
-  image: null,
-  genre: "すべて",
+  instructions: [{ step: 1, description: "", imageURL: undefined }],
+  image: undefined,
+  genre: { id: 1, name: "すべて" },
   cookingTime: 0,
-  reviews: [],
   costEstimate: 0,
   summary: "",
   catchphrase: "",
@@ -50,10 +48,9 @@ const initialNewRecipe: NewRecipe = {
     sugar: 0,
     salt: 0,
   },
-  faq: [{ question: "", answer: "" }],
-  selectedIngredients: [],
-  userId: "",
+  ingredients: [],
   isPublic: true,
+  isDraft: false,
 };
 
 const useRecipeStore = create<RecipeStore>()(
@@ -64,18 +61,18 @@ const useRecipeStore = create<RecipeStore>()(
       error: "",
       newRecipe: initialNewRecipe,
       sortBy: "rating_desc",
-      searchType: null,
-      setSearchType: (type) => set({ searchType: type }),
+      searchType: "ingredients",
       query: "",
+      selectedRecipe: null,
+      setSelectedRecipe: (recipe) => set({ selectedRecipe: recipe }),
+      setSearchType: (type) => set({ searchType: type }),
       setQuery: (query) => set({ query }),
-
       setRecipes: (recipes) => set({ recipes }),
       setGeneratedRecipes: (recipes) => set({ generatedRecipes: recipes }),
-
       setSortBy: (sortBy) => set({ sortBy }),
-
       clearRecipes: () => set({ recipes: [] }),
       clearGeneratedRecipes: () => set({ generatedRecipes: [] }),
+      setError: (error) => set({ error }),
 
       setNewRecipe: (updates) =>
         set((state) => ({
@@ -87,39 +84,30 @@ const useRecipeStore = create<RecipeStore>()(
           newRecipe: initialNewRecipe,
         }),
 
-      addRecipe: async (formData, userId, isPublic) => {
-        try {
-          const addRecipeMutation = useAddRecipe();
-          await addRecipeMutation.mutateAsync({ formData, userId, isPublic });
-          set({ error: "" });
-        } catch (err: any) {
-          set({ error: err.message });
-        }
-      },
+      searchExecuted: false,
+      setSearchExecuted: (executed) => set({ searchExecuted: executed }),
 
-      deleteRecipe: async (id) => {
+      addRecipe: async (formData: FormData) => {
         try {
-          const deleteRecipeMutation = useDeleteRecipe();
-          await deleteRecipeMutation.mutateAsync(id);
-          set({ error: "" });
-        } catch (err: any) {
-          set({ error: err.message });
-        }
-      },
-
-      editRecipe: async (id, formData) => {
-        try {
-          const updateRecipeMutation = useUpdateRecipe();
-          await updateRecipeMutation.mutateAsync({ id, formData });
-          set({ error: "" });
-        } catch (err: any) {
-          set({ error: err.message });
+          const response = await fetch(`${backendUrl}/api/recipes`, {
+            method: 'POST',
+            body: formData,
+          });
+          if (!response.ok) throw new Error('Failed to add recipe');
+        } catch (error) {
+          set({ error: error instanceof Error ? error.message : 'Failed to add recipe' });
         }
       },
     }),
     {
       name: "recipe-storage",
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        recipes: state.recipes,
+        selectedRecipe: state.selectedRecipe,
+        searchType: state.searchType,
+        query: state.query,
+      }),
     }
   )
 );

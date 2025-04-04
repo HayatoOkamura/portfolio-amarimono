@@ -68,29 +68,47 @@ export interface Recipe {
   userId?: string;
   nutritionPercentage?: Nutrition | null;
   isPublic?: boolean;
+  isDraft?: boolean;
 }
 
 export interface NewRecipe {
+  id?: string;
   name: string;
-  instructions: NewRecipeInstructions[];
-  image: File | null;
-  genre: number | string;
   cookingTime: number;
-  reviews: Review[];
   costEstimate: number;
   summary: string;
   catchphrase: string;
-  nutrition: Nutrition;
-  faq: { question: string; answer: string }[];
-  selectedIngredients: { id: number; quantity: number }[];
-  userId?: string;
-  isPublic?: boolean;
+  genre: { id: number; name: string };
+  nutrition: {
+    calories: number;
+    carbohydrates: number;
+    fat: number;
+    protein: number;
+    sugar: number;
+    salt: number;
+  };
+  ingredients: {
+    id: number;
+    quantity: number;
+    unitId: number;
+  }[];
+  instructions: {
+    step: number;
+    description: string;
+    imageURL?: string | File;
+    imageUrl?: string;
+  }[];
+  image?: File;
+  imageUrl?: string;
+  isPublic: boolean;
+  isDraft: boolean;
+  faq?: { question: string; answer: string }[];
 }
 
 export interface NewRecipeInstructions {
-  stepNumber: number;
+  step: number;
   description: string;
-  image: File | null;
+  imageURL?: string;
 }
 
 export interface NewIngredient {

@@ -27,7 +27,6 @@ const IngredientSelector = () => {
   useEffect(() => {
     const updateHeight = () => {
       const element = document.getElementById("target");
-      console.log(element);
       
       if (element) {
         const topOffset = element.getBoundingClientRect().top;

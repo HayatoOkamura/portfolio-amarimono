@@ -5,7 +5,7 @@ import React from "react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useUserRecipes } from "@/app/hooks/recipes";
 import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";
-import { Recipe } from "@/app/types";
+import { Recipe } from "@/app/types/index";
 
 const ListMyRecipe = () => {
   const { user } = useAuth();

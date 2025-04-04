@@ -14,23 +14,16 @@ import { ImSpoonKnife } from "react-icons/im";
 import { FaHeart } from "react-icons/fa";
 import { FaStar } from "react-icons/fa";
 import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";
-import { Recipe } from "@/app/types";
+import { Recipe } from "@/app/types/index";
 
 export default function UserPage() {
   const { user } = useAuth();
-  console.log("UserPage - user:", user);
-  console.log("UserPage - user?.id:", user?.id);
 
   const { likeCount, loading: likesLoading } = useUserLikeCount(user?.id);
   const { averageRating, loading: ratingLoading } = useUserRecipeAverageRating(
     user?.id
   );
   const { data: recommendedRecipes, isLoading: recommendedLoading, isError, error } = useRecommendedRecipes(user?.id);
-  
-  console.log("UserPage - recommendedRecipes:", recommendedRecipes);
-  console.log("UserPage - isLoading:", recommendedLoading);
-  console.log("UserPage - isError:", isError);
-  console.log("UserPage - error:", error);
 
   const [recipeCount, setRecipeCount] = useState(0);
 
