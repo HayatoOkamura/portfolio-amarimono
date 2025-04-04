@@ -44,6 +44,7 @@ interface ApiRecipe {
     id: number;
     name: string;
   };
+  genre_id?: number;
   image_url: string | null;
   ingredients: ApiIngredient[];
   cooking_time: number;
@@ -99,16 +100,22 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
     salt: 0,
   };
 
+  // genre_idが存在する場合は、それを使用してgenreオブジェクトを構築
+  const genre = recipe.genre_id ? {
+    id: recipe.genre_id,
+    name: recipe.genre?.name || ''
+  } : recipe.genre;
+
   return {
     id: recipe.id,
     name: recipe.name,
-    instructions: recipe.instructions.map((step) => ({
-      id: step.stepNumber.toString(),
-      stepNumber: step.stepNumber,
-      description: step.description,
+    instructions: (recipe.instructions || []).map((step) => ({
+      id: step.stepNumber?.toString() || '',
+      stepNumber: step.stepNumber || 0,
+      description: step.description || '',
       imageUrl: step.image_url || undefined,
     })),
-    ingredients: recipe.ingredients.map((ingredient) => ({
+    ingredients: (recipe.ingredients || []).map((ingredient) => ({
       id: ingredient.ingredient_id,
       name: ingredient.ingredient.name,
       quantity: ingredient.quantity_required,
@@ -121,10 +128,10 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
       genre: { id: 0, name: "すべて" },
       imageUrl: null,
     })),
-    genre: recipe.genre,
+    genre: genre,
     imageUrl: recipe.image_url || undefined,
     cookingTime: recipe.cooking_time,
-    reviews: recipe.reviews.map((review) => ({
+    reviews: (recipe.reviews || []).map((review) => ({
       id: review.id,
       recipeId: recipe.id,
       userId: review.userId || "",
@@ -246,7 +253,18 @@ export const fetchRecipeByIdService = async (id: string) => {
   try {
     const response = await api.get(`/api/recipes/${id}`);
     console.log('API Response:', response.data);
-    return mapRecipe(response.data.recipe);
+    
+    // レスポンスデータが直接recipeオブジェクトの場合
+    if (response.data && !response.data.recipe) {
+      return mapRecipe(response.data);
+    }
+    
+    // レスポンスデータが{ recipe: ... }の形式の場合
+    if (response.data && response.data.recipe) {
+      return mapRecipe(response.data.recipe);
+    }
+    
+    throw new Error('Recipe data not found');
   } catch (error: any) {
     console.error('Error in fetchRecipeByIdService:', error);
     console.error('Error response:', error.response?.data);
@@ -263,8 +281,29 @@ export const addRecipeService = async (formData: FormData): Promise<Recipe> => {
         "Content-Type": "multipart/form-data",
       },
     });
-    return response.data.recipe;
-  } catch (error) {
+    
+    console.log('API Response:', response.data);
+    
+    // レスポンスデータが直接recipeオブジェクトの場合
+    if (response.data && !response.data.recipe) {
+      return mapRecipe(response.data);
+    }
+    
+    // レスポンスデータが{ recipe: ... }の形式の場合
+    if (response.data && response.data.recipe) {
+      return mapRecipe(response.data.recipe);
+    }
+    
+    // レスポンスデータが空の場合
+    if (!response.data) {
+      throw new Error('No data received from server');
+    }
+    
+    throw new Error('Invalid response format');
+  } catch (error: any) {
+    console.error('Error in addRecipeService:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
     throw error;
   }
 };
@@ -550,26 +589,18 @@ export const saveDraftRecipe = async (userId: string, recipeData: any) => {
     console.log('📦 Input userId:', userId);
     console.log('📦 Input recipeData:', JSON.stringify(recipeData, null, 2));
 
-    // JSONデータの作成
+    // ローカルストレージに保存
     const draftData = {
       userId: userId,
       recipeData: recipeData,
       lastModifiedAt: new Date().toISOString()
     };
 
-    console.log('📦 Draft data to be sent:', JSON.stringify(draftData, null, 2));
-
-    const response = await api.post("/admin/draft-recipes", draftData, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    console.log('✅ Response:', response.data);
-    return response.data;
+    localStorage.setItem(`draft_recipe_${userId}`, JSON.stringify(draftData));
+    console.log('✅ Draft saved to localStorage');
+    return draftData;
   } catch (error: any) {
     console.error("❌ Failed to save draft recipe:", error);
-    console.error("❌ Error response:", error.response?.data);
-    console.error("❌ Error status:", error.response?.status);
     throw error;
   }
 };
@@ -578,22 +609,20 @@ export const saveDraftRecipe = async (userId: string, recipeData: any) => {
 export const getDraftRecipe = async (userId: string) => {
   try {
     console.log('🔥 Fetching draft recipe for user:', userId);
-    const response = await api.get(`/admin/draft-recipes/${userId}`);
-    const draftRecipes = response.data;
-
-    // 下書きレシピの内容を詳細にログ出力
-    if (draftRecipes.draftRecipes && draftRecipes.draftRecipes.length > 0) {
-      const draftRecipe = draftRecipes.draftRecipes[0];
-      console.log('📝 Draft Recipe Details:');
-      console.log('👤 User ID:', draftRecipe.userId);
-      console.log('🕒 Last Modified:', draftRecipe.lastModifiedAt);
-      console.log('📋 Recipe Data:', JSON.stringify(draftRecipe.recipeData, null, 2));
-    } else {
+    const draftData = localStorage.getItem(`draft_recipe_${userId}`);
+    
+    if (!draftData) {
       console.log('ℹ️ No draft recipe found');
+      return null;
     }
 
-    // 最新の下書きを返す
-    return draftRecipes.length > 0 ? draftRecipes[0] : null;
+    const parsedData = JSON.parse(draftData);
+    console.log('📝 Draft Recipe Details:');
+    console.log('👤 User ID:', parsedData.userId);
+    console.log('🕒 Last Modified:', parsedData.lastModifiedAt);
+    console.log('📋 Recipe Data:', JSON.stringify(parsedData.recipeData, null, 2));
+
+    return parsedData;
   } catch (error) {
     console.error("❌ Failed to get draft recipe:", error);
     throw error;

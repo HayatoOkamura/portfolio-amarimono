@@ -69,7 +69,7 @@ const GenerateRecipe = () => {
                       src={
                         ingredient.imageUrl
                           ? `${backendUrl}/${ingredient.imageUrl}`
-                          : "/default-image.jpg"
+                          : "/pic_recipe_default.webp"
                       }
                       alt={ingredient.name}
                       unoptimized

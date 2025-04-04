@@ -156,7 +156,7 @@ const AdminIngredients = () => {
                 src={
                   ing.imageUrl
                     ? `${backendUrl}/${ing.imageUrl}`
-                    : "/default-image.jpg"
+                    : "/pic_recipe_default.webp"
                 }
                 alt={ing.name ? ing.name : ""}
                 className="object-cover"

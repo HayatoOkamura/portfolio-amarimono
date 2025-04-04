@@ -138,7 +138,7 @@ const RecipeRegistration: React.FC = () => {
                     src={
                       recipe.imageUrl
                         ? `${backendUrl}/uploads/${recipe.imageUrl}`
-                        : "/default-image.jpg"
+                        : "/pic_recipe_default.webp"
                     }
                     alt={recipe.name}
                     className="w-32 h-32 object-cover rounded mb-2"

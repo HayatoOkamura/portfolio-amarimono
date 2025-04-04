@@ -15,6 +15,19 @@
     }
   }
 
+  &__draft {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #f3f4f6;
+    color: #6b7280;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin-top: 4px;
+  }
+
   &__contents {
    
   padding: 5px 15px;
@@ -43,15 +56,5 @@
   }
 
   &__step_item {
-  }
-
-  &__draft {
-    display: inline-block;
-    padding: 2px 8px;
-    background-color: #f3f4f6;
-    color: #6b7280;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    margin-top: 4px;
   }
 }

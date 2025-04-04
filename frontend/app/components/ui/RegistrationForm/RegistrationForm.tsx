@@ -37,10 +37,13 @@ const VALIDATION_MESSAGES = {
 
 // 下書き保存時のバリデーション
 const validateDraft = (recipe: any) => {
-  // 下書きの場合は最小限のバリデーション
+  // 下書きの場合は名前のみ必須
   if (!recipe.name?.trim()) {
     throw new Error("レシピ名は必須です。");
   }
+  
+  // 下書きの場合は他のフィールドは任意
+  return true;
 };
 
 // レシピ登録時のバリデーション
@@ -80,15 +83,42 @@ const validateRecipe = (recipe: any) => {
 const createFormData = (
   recipe: NewRecipe,
   userId: string,
-  isAdmin: boolean = false
+  isAdmin: boolean = false,
+  isAutoSave: boolean = false
 ): FormData => {
   const formData = new FormData();
   console.log('Creating FormData with recipe:', recipe);
   console.log('Recipe Image:', recipe.image);
   console.log('Recipe Image URL:', recipe.imageUrl);
 
+  // 必須フィールド
   formData.append("name", recipe.name);
-  formData.append("genre_id", recipe.genre.id.toString());
+  formData.append("is_draft", recipe.isDraft.toString());
+  formData.append("user_id", userId);
+  formData.append("is_admin", isAdmin.toString());
+
+  // 自動保存の場合は、必要な最小限のデータのみを送信
+  if (isAutoSave) {
+    formData.append("cooking_time", "0");
+    formData.append("cost_estimate", "0");
+    formData.append("genre", "1");
+    formData.append("summary", "");
+    formData.append("catchphrase", "");
+    formData.append("nutrition", JSON.stringify({
+      calories: 0,
+      carbohydrates: 0,
+      fat: 0,
+      protein: 0,
+      sugar: 0,
+      salt: 0
+    }));
+    formData.append("ingredients", JSON.stringify([]));
+    formData.append("instructions", JSON.stringify([]));
+    return formData;
+  }
+
+  // 通常のレシピ登録時は全てのフィールドを送信
+  formData.append("genre", recipe.genre.id.toString());
   formData.append("cooking_time", recipe.cookingTime.toString());
   formData.append("cost_estimate", recipe.costEstimate.toString());
   formData.append("summary", recipe.summary);
@@ -108,9 +138,6 @@ const createFormData = (
   );
 
   formData.append("is_public", recipe.isPublic.toString());
-  formData.append("user_id", userId);
-  formData.append("is_admin", isAdmin.toString());
-  formData.append("is_draft", recipe.isDraft.toString());
 
   // idが存在する場合は追加
   if (recipe.id) {
@@ -154,15 +181,9 @@ const createFormData = (
       if (instruction.imageURL instanceof File) {
         formData.append(`instruction_images[${index}]`, instruction.imageURL);
       } else if (instruction.imageUrl) {
-        // 既存の手順画像URLがある場合はそれを送信
         formData.append(`instruction_image_urls[${index}]`, instruction.imageUrl);
       }
     });
-  }
-
-  // デバッグ用：FormDataの内容を確認
-  for (const [key, value] of formData.entries()) {
-    console.log(`FormData Key: ${key}, Value:`, value);
   }
 
   return formData;
@@ -281,9 +302,15 @@ const RecipeRegistration: React.FC<{
       console.log("🍎 Nutrition data:", newRecipe.nutrition);
 
       if (user?.id) {
+        // 下書きとして保存するためにisDraftをtrueに設定
+        const draftRecipe = {
+          ...newRecipe,
+          isDraft: true
+        };
+
         // ログイン済みの場合は下書きとしてレシピを保存
-        const formData = createFormData(newRecipe, user.id, isAdmin);
-        formData.append("isDraft", "true"); // 下書きフラグを追加
+        const formData = createFormData(draftRecipe, user.id, isAdmin, false);
+        formData.append("is_draft", "true"); // 下書きフラグを追加
 
         // formDataの内容を確認するためのログ
         console.log("=== FormData Contents ===");
@@ -462,7 +489,7 @@ const RecipeRegistration: React.FC<{
       };
 
       // FormDataの作成
-      const formData = createFormData(recipeToSubmit, user?.id, isAdmin);
+      const formData = createFormData(recipeToSubmit, user?.id, isAdmin, false);
       console.log("⚡️⚡️⚡️", recipeToSubmit);
       
       // formDataの内容を確認
@@ -701,6 +728,21 @@ const RecipeRegistration: React.FC<{
         ))}
       </div>
       <div className={styles.btn_block}>
+        {/* リセットボタン */}
+        <div
+          className={`${styles.btn_block__item} ${styles["btn_block__item--reset"]}`}
+        >
+          <button
+            onClick={() => {
+              if (confirm("入力した内容を全てリセットしますか？")) {
+                resetNewRecipe();
+              }
+            }}
+          >
+            リセット
+          </button>
+        </div>
+
         {/* レシピ追加/更新ボタン */}
         <button
           onClick={handleAddRecipe}

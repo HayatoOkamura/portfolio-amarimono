@@ -1,0 +1,44 @@
+.btn_block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 18px;
+
+  &__item {
+    flex: 1;
+    text-align: center;
+    border-radius: 4px;
+
+    &--edit {
+      border: 1px solid #de616a;
+      a {
+        color: #de616a;
+      }
+    }
+
+    &--delete { 
+      background: #de616a;
+      button {
+        color: #fff;
+      }
+    }
+
+    &--reset {
+      background: #6c757d;
+      button {
+        color: #fff;
+      }
+    }
+
+    a,
+    button {
+      display: block;
+      width: 100%;
+      font-size: 0.75rem;
+      padding: 8px 12px;
+      font-weight: 600;
+    }
+  }
+}

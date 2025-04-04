@@ -112,7 +112,7 @@ const EditMyRecipe = () => {
               fill
               src={
                 `${backendUrl}/uploads/${recipe.imageUrl}` ||
-                "/default-image.jpg"
+                "/pic_recipe_default.webp"
               }
               alt={recipe.name}
               unoptimized
@@ -126,7 +126,7 @@ const EditMyRecipe = () => {
                     fill
                     src={
                       `${backendUrl}/uploads/${step.imageUrl}` ||
-                      "/default-image.jpg"
+                      "/pic_recipe_default.webp"
                     }
                     alt={recipe.name}
                     unoptimized

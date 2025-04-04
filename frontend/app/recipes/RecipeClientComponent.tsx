@@ -207,7 +207,7 @@ const RecipeClientComponent = () => {
                         fill
                         src={
                           `${backendUrl}/uploads/${persistedSelectedRecipe.imageUrl}` ||
-                          "/default-image.jpg"
+                          "/pic_recipe_default.webp"
                         }
                         alt={persistedSelectedRecipe.name}
                         unoptimized
@@ -222,7 +222,7 @@ const RecipeClientComponent = () => {
                           nextRecipe
                             ? `${backendUrl}/uploads/${nextRecipe.imageUrl}`
                             : `${backendUrl}/uploads/${persistedSelectedRecipe?.imageUrl}` ||
-                              "/default-image.jpg"
+                              "/pic_recipe_default.webp"
                         }
                         alt={
                           nextRecipe?.name ||

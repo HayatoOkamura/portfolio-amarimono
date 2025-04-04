@@ -109,18 +109,23 @@ const AdminRecipes = () => {
       <ul className={styles.detail_block}>
         {Array.isArray(sortedRecipes) &&
           sortedRecipes.map((recipe) => (
-            <li key={recipe.id} className={`${styles.detail_block__item} ${recipe.isDraft && styles["detail_block__item--draft"]}`}>
-              {recipe.isDraft && (
-                <span className={styles.detail_block__draft}>下書き</span>
-              )}
+            <li
+              key={recipe.id}
+              className={`${styles.detail_block__item} ${
+                recipe.isDraft && styles["detail_block__item--draft"]
+              }`}
+            >
               <div className={styles.detail_block__img}>
+                {recipe.isDraft && (
+                  <span className={styles.detail_block__draft}>下書き</span>
+                )}
                 {recipe.imageUrl && (
                   <Image
                     fill
                     src={
                       recipe.imageUrl
                         ? `${backendUrl}/uploads/${recipe.imageUrl}`
-                        : "/default-image.jpg"
+                        : "/images/common/pic_recipe_default.webp"
                     }
                     alt={recipe.name}
                     className={styles.recipes_block}
@@ -138,10 +143,14 @@ const AdminRecipes = () => {
                   />
                 </div>
                 <div className={styles.btn_block}>
-                  <div className={`${styles.btn_block__item} ${styles["btn_block__item--edit"]}`}>
+                  <div
+                    className={`${styles.btn_block__item} ${styles["btn_block__item--edit"]}`}
+                  >
                     <Link href={`/admin/recipes/${recipe.id}`}>編集</Link>
                   </div>
-                  <div className={`${styles.btn_block__item} ${styles["btn_block__item--delete"]}`}>
+                  <div
+                    className={`${styles.btn_block__item} ${styles["btn_block__item--delete"]}`}
+                  >
                     <button onClick={() => handleDeleteRecipe(recipe.id)}>
                       削除
                     </button>

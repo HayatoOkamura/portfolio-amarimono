@@ -112,7 +112,7 @@ const RecipeDetailPage = () => {
           <div className={styles.description_block__img}>
             <Image
               fill
-              src={recipe.imageUrl ? `${backendUrl}/uploads/${recipe.imageUrl}` : "/default-image.jpg"}
+              src={recipe.imageUrl ? `${backendUrl}/uploads/${recipe.imageUrl}` : "/pic_recipe_default.webp"}
               alt={recipe.name}
               unoptimized
             />
@@ -123,7 +123,7 @@ const RecipeDetailPage = () => {
                 <div className={styles.description_block__sub_img}>
                   <Image
                     fill
-                    src={step.imageUrl ? `${backendUrl}/uploads/${step.imageUrl}` : "/default-image.jpg"}
+                    src={step.imageUrl ? `${backendUrl}/uploads/${step.imageUrl}` : "/pic_recipe_default.webp"}
                     alt={recipe.name}
                     unoptimized
                   />

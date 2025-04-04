@@ -1,5 +1,5 @@
 "use client";
-import React, {useEffect} from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import styles from "./RecipeCard.module.scss";
 import { backendUrl } from "@/app/utils/apiUtils";
@@ -17,35 +17,37 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   isFavoritePage,
   path,
 }) => {
-
   // ジャンル表示用の文字列を取得
   const getGenreText = () => {
     if (!recipe.genre) return "すべて";
-    if (typeof recipe.genre === 'string') return recipe.genre;
-    
+    if (typeof recipe.genre === "string") return recipe.genre;
+
     // genre.nameがオブジェクトの場合
-    if (typeof recipe.genre.name === 'object' && 'name' in recipe.genre.name) {
+    if (typeof recipe.genre.name === "object" && "name" in recipe.genre.name) {
       const genreName = recipe.genre.name as { name: string };
       return genreName.name;
     }
-    
+
     // genre.nameが文字列の場合
-    if (typeof recipe.genre.name === 'string') {
+    if (typeof recipe.genre.name === "string") {
       return recipe.genre.name;
     }
-    
+
     return "すべて";
   };
 
   return (
     <div className={styles.card_block}>
       <div className={styles.card_block__img}>
+        {recipe.isDraft && (
+          <span className={styles.card_block__draft}>下書き</span>
+        )}
         <Image
           fill
           src={
             recipe.imageUrl
               ? `${backendUrl}/uploads/${recipe.imageUrl}`
-              : "/default-image.jpg"
+              : "/pic_recipe_default.webp"
           }
           alt={recipe.name}
           unoptimized
@@ -53,9 +55,6 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
       </div>
       <div className={styles.card_block__contents}>
         <h2 className={styles.card_block__name}>{recipe.name}</h2>
-        {recipe.isDraft && (
-          <span className={styles.card_block__draft}>下書き</span>
-        )}
       </div>
       {/* <p className={styles.card_block__genre}>
         ジャンル: <strong>{getGenreText()}</strong>
