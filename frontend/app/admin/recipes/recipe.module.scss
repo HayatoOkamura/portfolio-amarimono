@@ -91,12 +91,20 @@
     }
 
     &__draft {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 5px;
       padding: 5px;
       position: absolute;
       bottom: 5px;
       left: 5px;
       z-index: 2;
+      background: #ECEBE9;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      svg {
+        margin-top: 2px;
+      }
     }
 
     &__title {

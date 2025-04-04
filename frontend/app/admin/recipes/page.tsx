@@ -18,6 +18,7 @@ import { calculateAverageRating } from "@/app/utils/calculateAverageRating";
 import { RecipeSort } from "@/app/components/ui/RecipeSort/RecipeSort";
 import StarRating from "@/app/components/ui/StarRating/StarRating";
 import styles from "./recipe.module.scss";
+import { LuClipboardPen } from "react-icons/lu";
 
 const AdminRecipes = () => {
   const { data: recipes, isLoading } = useRecipes();
@@ -117,21 +118,22 @@ const AdminRecipes = () => {
             >
               <div className={styles.detail_block__img}>
                 {recipe.isDraft && (
-                  <span className={styles.detail_block__draft}>下書き</span>
+                  <div className={styles.detail_block__draft}>
+                    <LuClipboardPen />
+                    <p>下書き</p>
+                  </div>
                 )}
-                {recipe.imageUrl && (
-                  <Image
-                    fill
-                    src={
-                      recipe.imageUrl
-                        ? `${backendUrl}/uploads/${recipe.imageUrl}`
-                        : "/images/common/pic_recipe_default.webp"
-                    }
-                    alt={recipe.name}
-                    className={styles.recipes_block}
-                    unoptimized
-                  />
-                )}
+                <Image
+                  fill
+                  src={
+                    recipe.imageUrl
+                      ? `${backendUrl}/uploads/${recipe.imageUrl}`
+                      : "/images/common/pic_recipe_default.webp"
+                  }
+                  alt={recipe.name}
+                  className={styles.recipes_block}
+                  unoptimized
+                />
               </div>
               <div className={styles.detail_block__contents}>
                 <p className={styles.detail_block__title}>{recipe.name}</p>

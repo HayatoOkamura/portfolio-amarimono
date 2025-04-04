@@ -245,6 +245,9 @@ const RecipeClientComponent = () => {
                   exit="hidden"
                   transition={{ duration: 0.4, ease: "easeInOut" }}
                 >
+                      <p className={styles.current_recipe__catchphrase}>
+                    {persistedSelectedRecipe?.catchphrase}
+                  </p>
                   <h2 className={styles.current_recipe__title}>
                     {persistedSelectedRecipe?.name}
                   </h2>

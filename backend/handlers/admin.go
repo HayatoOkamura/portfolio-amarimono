@@ -48,61 +48,56 @@ func (h *AdminHandler) ListIngredients(c *gin.Context) {
 
 // AddIngredient /admin/ingredients(POST) 具材を追加
 func (h *AdminHandler) AddIngredient(c *gin.Context) {
+	log.Println("⭐️=== AddIngredient Handler Start ===")
 	// 名前を受け取る
 	name := c.PostForm("name")
 	if name == "" {
-		log.Println("Error: Name is missing") // ログ追加
+		log.Println("Error: Name is missing")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Name is required"})
 		return
 	}
 
-	// ジャンルを受け取る (JSON形式の文字列)
-	genreJSON := c.PostForm("genre")
-	if genreJSON == "" {
-		log.Println("Error: Genre is missing") // ログ追加
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Genre is required"})
+	// ジャンルIDを受け取る
+	genreID := c.PostForm("genre_id")
+	if genreID == "" {
+		log.Println("Error: Genre ID is missing")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Genre ID is required"})
 		return
 	}
 
-	// genreJSON をパース
-	var genreReq struct {
-		ID   int    `json:"id" binding:"required"`
-		Name string `json:"name" binding:"required"`
-	}
-	if err := json.Unmarshal([]byte(genreJSON), &genreReq); err != nil {
-		log.Println("Error parsing genre JSON:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre format"})
+	// ジャンルIDを数値に変換
+	genreIDInt, err := strconv.Atoi(genreID)
+	if err != nil {
+		log.Println("Error: Invalid genre ID format")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre ID format"})
 		return
 	}
 
 	// ジャンルが存在するか確認
 	var genre models.IngredientGenre
-	if err := h.DB.Where("id = ?", genreReq.ID).First(&genre).Error; err != nil {
+	if err := h.DB.Where("id = ?", genreIDInt).First(&genre).Error; err != nil {
 		log.Println("Error: Genre not found:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre"})
 		return
 	}
 
-	// 単位を受け取る (JSON形式の文字列)
-	unitJSON := c.PostForm("unit")
-	if unitJSON == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Unit is required"})
+	// 単位IDを受け取る
+	unitID := c.PostForm("unit_id")
+	if unitID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unit ID is required"})
 		return
 	}
 
-	// unitJSONをパース
-	var unitReq struct {
-		ID   int    `json:"id" binding:"required"`
-		Name string `json:"name" binding:"required"`
-	}
-	if err := json.Unmarshal([]byte(unitJSON), &unitReq); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid unit format"})
+	// 単位IDを数値に変換
+	unitIDInt, err := strconv.Atoi(unitID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid unit ID format"})
 		return
 	}
 
 	// 単位が存在するか確認
 	var unit models.Unit
-	if err := h.DB.Where("id = ?", unitReq.ID).First(&unit).Error; err != nil {
+	if err := h.DB.Where("id = ?", unitIDInt).First(&unit).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid unit"})
 		return
 	}
@@ -110,7 +105,7 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	// ファイルを受け取る
 	file, err := c.FormFile("image")
 	if err != nil {
-		log.Println("Error: Image file is missing:", err) // ログ追加
+		log.Println("Error: Image file is missing:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Image file is required"})
 		return
 	}
@@ -120,7 +115,7 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	if _, err := os.Stat(saveDir); os.IsNotExist(err) {
 		log.Println("Uploads directory does not exist, creating it...")
 		if err := os.MkdirAll(saveDir, os.ModePerm); err != nil {
-			log.Println("Error creating uploads directory:", err) // ログ追加
+			log.Println("Error creating uploads directory:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
 			return
 		}
@@ -130,16 +125,17 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	uniqueFilename := fmt.Sprintf("%d-%s", time.Now().UnixNano(), file.Filename)
 	savePath := filepath.Join(saveDir, uniqueFilename)
 	if err := c.SaveUploadedFile(file, savePath); err != nil {
-		log.Println("Error saving uploaded file:", err) // ログ追加
+		log.Println("Error saving uploaded file:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
 		return
 	}
 
 	ingredient := models.Ingredient{
 		Name:     name,
-		GenreID:  genre.ID,
-		UnitID:   unit.ID,
+		GenreID:  genreIDInt,
+		UnitID:   uint(unitIDInt),
 		ImageUrl: savePath,
+		Quantity: 0,
 	}
 
 	// 具材名の重複をチェック
@@ -150,7 +146,7 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	}
 
 	if count > 0 {
-		log.Println("Error: Ingredient already exists") // ログ追加
+		log.Println("Error: Ingredient already exists")
 		c.JSON(http.StatusConflict, gin.H{"error": "Ingredient already exists"})
 		return
 	}
@@ -161,7 +157,17 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 		return
 	}
 
-	log.Println("Ingredient added successfully:", ingredient) // 成功時ログ
+	// ジャンル情報を取得
+	var ingredientGenre models.IngredientGenre
+	if err := h.DB.Where("id = ?", genreIDInt).First(&ingredientGenre).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch genre"})
+		return
+	}
+
+	// レスポンスにジャンル情報を含める
+	ingredient.Genre = ingredientGenre
+
+	log.Println("Ingredient added successfully:", ingredient)
 	c.JSON(http.StatusCreated, gin.H{"message": "Ingredient added successfully", "ingredient": ingredient})
 }
 

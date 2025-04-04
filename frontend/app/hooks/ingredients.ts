@@ -19,47 +19,83 @@ const mapIngredient = (ingredient: any): Ingredient => {
     throw new Error("Ingredient data is null or undefined");
   }
 
-  return {
-    id: ingredient.id || 0,
-    name: ingredient.name || "",
-    genre: ingredient.genre || { id: 0, name: "" },
-    unit: ingredient.unit || { id: 0, name: "", step: 1 },
-    imageUrl: ingredient.image_url || null,
-    quantity: ingredient.quantity || 0,
+  console.log('Mapping single ingredient:', ingredient);
+  
+  // レスポンスがネストされた形式の場合、ingredientプロパティを使用
+  const ingredientData = ingredient.ingredient || ingredient;
+  
+  console.log('Genre data:', ingredientData.genre);
+  
+  const mapped = {
+    id: ingredientData.id || 0,
+    name: ingredientData.name || "",
+    genre: {
+      id: ingredientData.genre?.id || ingredientData.genre_id || 0,
+      name: ingredientData.genre?.name || ""
+    },
+    unit: ingredientData.unit || { id: 0, name: "", step: 1 },
+    imageUrl: ingredientData.image_url || "/pic_recipe_default.webp",
+    quantity: ingredientData.quantity || 0,
   };
+  console.log('Mapped result:', mapped);
+  return mapped;
 };
 
 // 配列対応の関数
-const mapIngredients = (ingredients: any[]): Ingredient[] => ingredients.map(mapIngredient);
+const mapIngredients = (ingredients: any[]): Ingredient[] => {
+  console.log('Mapping ingredients array:', ingredients);
+  return ingredients.map(ing => {
+    const mapped = mapIngredient(ing);
+    console.log('Mapped single ingredient:', mapped);
+    return mapped;
+  });
+};
 
 // Service functions
 const fetchIngredientsService = async (): Promise<Ingredient[]> => {
+  console.log('Fetching ingredients...');
   const response = await api.get("/admin/ingredients");
-  return mapIngredients(response.data);
+  console.log('Raw response data:', response.data);
+  const mappedIngredients = mapIngredients(response.data);
+  console.log('Mapped ingredients:', mappedIngredients);
+  return mappedIngredients;
 };
 
-const addIngredientService = async (data: {
-  name: string;
-  imageUrl: File;
-  genre: Genre;
-  unit: Unit;
-}): Promise<Ingredient> => {
-  const formData = new FormData();
-  formData.append("name", data.name);
-  formData.append("imageUrl", data.imageUrl);
-  formData.append("genre", JSON.stringify(data.genre));
-  formData.append("unit", JSON.stringify(data.unit));
+const addIngredientService = async (formData: FormData): Promise<Ingredient> => {
+  try {
+    console.log('Sending request to /admin/ingredients');
+    console.log('Request headers:', {
+      'Content-Type': 'multipart/form-data'
+    });
 
-  const response = await api.post("/ingredients", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-  return response.data;
+    // FormDataの内容を確認
+    for (const [key, value] of formData.entries()) {
+      console.log(`FormData ${key}:`, value);
+    }
+
+    const response = await api.post("/admin/ingredients", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      transformRequest: [(data) => data],
+    });
+
+    console.log('Response data:', response.data);
+    console.log('Mapped ingredient:', mapIngredient(response.data));
+    return mapIngredient(response.data);
+  } catch (error: any) {
+    console.error("Error in addIngredientService:", error);
+    if (error.response) {
+      console.error("Error response data:", error.response.data);
+      console.error("Error response status:", error.response.status);
+      console.error("Error response headers:", error.response.headers);
+    }
+    throw error;
+  }
 };
 
 const deleteIngredientService = async (id: number): Promise<void> => {
-  await api.delete(`/ingredients/${id}`);
+  await api.delete(`/admin/ingredients/${id}`);
 };
 
 const updateIngredientService = async ({
@@ -94,21 +130,35 @@ export const useIngredients = () => {
 // Mutation hooks
 export const useAddIngredient = () => {
   const queryClient = useQueryClient();
+  const addIngredient = useIngredientStore((state) => state.addIngredient);
+  const setIngredients = useIngredientStore((state) => state.setIngredients);
 
   return useMutation({
     mutationFn: addIngredientService,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // ローカルストアの状態を更新
+      addIngredient(data);
+      
+      // キャッシュを無効化して再取得をトリガー
       queryClient.invalidateQueries({ queryKey: ingredientKeys.lists() });
+      
+      // ストアの状態を更新
+      const ingredients = queryClient.getQueryData<Ingredient[]>(ingredientKeys.lists());
+      if (ingredients) {
+        setIngredients(ingredients);
+      }
     },
   });
 };
 
 export const useDeleteIngredient = () => {
   const queryClient = useQueryClient();
+  const deleteIngredient = useIngredientStore((state) => state.deleteIngredient);
 
   return useMutation({
     mutationFn: deleteIngredientService,
-    onSuccess: () => {
+    onSuccess: (_, id) => {
+      deleteIngredient(id);
       queryClient.invalidateQueries({ queryKey: ingredientKeys.lists() });
     },
   });

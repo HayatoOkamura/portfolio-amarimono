@@ -25,7 +25,7 @@ export interface Ingredient {
   id: number;
   name: string;
   genre: Genre;
-  imageUrl?: string | null;
+  imageUrl?: string | File | null;
   quantity: number;
   unit: Unit;
 }
@@ -121,7 +121,7 @@ export interface NewIngredient {
 export interface EditIngredient {
   id: number;
   name: string;
-  imageUrl: string | null;
+  imageUrl: string | File | null;
   genreId: number | null;
   genre: Genre | null;
   unit: Unit | null;

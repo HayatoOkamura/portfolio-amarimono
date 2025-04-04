@@ -23,7 +23,13 @@ const useIngredientStore = create<IngredientStore>()(
     (set, get) => ({
       ingredients: [],
       error: null,
-      newIngredient: {} as EditIngredient,
+      newIngredient: {
+        name: "",
+        genre: null,
+        unit: null,
+        imageUrl: null,
+        quantity: 0
+      } as EditIngredient,
       setIngredients: (ingredients: Ingredient[]) => set({ ingredients }),
       setError: (error: string | null) => set({ error }),
       updateQuantity: (id: number, quantity: number) => {
@@ -50,15 +56,9 @@ const useIngredientStore = create<IngredientStore>()(
           ingredients: state.ingredients.filter(ing => ing.id !== id)
         }));
       },
-      fetchIngredients: async () => {
-        try {
-          const response = await fetch(`${backendUrl}/api/ingredients`);
-          if (!response.ok) throw new Error('Failed to fetch ingredients');
-          const data = await response.json();
-          set({ ingredients: data });
-        } catch (error) {
-          set({ error: error instanceof Error ? error.message : 'Failed to fetch ingredients' });
-        }
+      fetchIngredients: () => {
+        // APIリクエストはhooksで行うため、ここでは何もしない
+        return Promise.resolve();
       },
     }),
     {

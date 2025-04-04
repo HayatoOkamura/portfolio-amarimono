@@ -10,6 +10,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EditIngredient, Ingredient } from "../../types/index";
+import { useDeleteIngredient, useAddIngredient } from "../../hooks/ingredients";
 
 const AdminIngredients = () => {
   const {
@@ -17,8 +18,6 @@ const AdminIngredients = () => {
     error,
     newIngredient,
     fetchIngredients,
-    addIngredient,
-    deleteIngredient,
     editIngredient,
     setNewIngredient,
   } = useIngredientStore();
@@ -37,6 +36,8 @@ const AdminIngredients = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingIngredient, setEditingIngredient] = useState<EditIngredient | null>(null);
 
+  const { mutate: deleteIngredient } = useDeleteIngredient();
+  const { mutate: addIngredient } = useAddIngredient();
 
   // 初回レンダリング時にデータを取得
   useEffect(() => {
@@ -57,6 +58,10 @@ const AdminIngredients = () => {
 
   // 入力を確認してエラーを設定
   const handleAddIngredient = () => {
+    console.log('New Ingredient:', newIngredient);
+    console.log('Image URL type:', typeof newIngredient.imageUrl);
+    console.log('Is File:', newIngredient.imageUrl instanceof File);
+
     if (
       !newIngredient.name ||
       !newIngredient.genre ||
@@ -69,15 +74,40 @@ const AdminIngredients = () => {
 
     setInputError(""); // エラーをクリア
     if (newIngredient.genre && newIngredient.unit) {
-      const ingredient: Ingredient = {
-        id: newIngredient.id,
-        name: newIngredient.name,
-        genre: newIngredient.genre,
-        unit: newIngredient.unit,
-        quantity: newIngredient.quantity,
-        imageUrl: newIngredient.imageUrl
-      };
-      addIngredient(ingredient);
+      const formData = new FormData();
+      formData.append("name", newIngredient.name);
+      formData.append("genre_id", newIngredient.genre.id.toString());
+      formData.append("unit_id", newIngredient.unit.id.toString());
+      formData.append("quantity", "0");
+      
+      // 画像ファイルを追加
+      if (newIngredient.imageUrl instanceof File) {
+        console.log('Appending file:', newIngredient.imageUrl);
+        formData.append("image", newIngredient.imageUrl);
+      } else if (typeof newIngredient.imageUrl === 'string') {
+        console.log('Appending image URL:', newIngredient.imageUrl);
+        formData.append("image_url", newIngredient.imageUrl);
+      }
+
+      // FormDataの内容を確認
+      for (const [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
+
+      addIngredient(formData, {
+        onSuccess: (data) => {
+          // 成功したらフォームをリセット
+          setNewIngredient({
+            id: 0,
+            name: "",
+            genre: null,
+            genreId: null,
+            unit: null,
+            imageUrl: null,
+            quantity: 0
+          });
+        }
+      });
     }
   };
 
@@ -155,7 +185,9 @@ const AdminIngredients = () => {
                 fill
                 src={
                   ing.imageUrl
-                    ? `${backendUrl}/${ing.imageUrl}`
+                    ? typeof ing.imageUrl === 'string'
+                      ? `${backendUrl}/${ing.imageUrl}`
+                      : URL.createObjectURL(ing.imageUrl)
                     : "/pic_recipe_default.webp"
                 }
                 alt={ing.name ? ing.name : ""}
@@ -253,7 +285,7 @@ const AdminIngredients = () => {
               const file = e.target.files ? e.target.files[0] : null;
               setNewIngredient({
                 ...newIngredient,
-                imageUrl: file ? file.name : null,
+                imageUrl: file,
                 genreId: newIngredient.genre?.id || null,
                 genre: newIngredient.genre || null,
                 unit: newIngredient.unit || null,
@@ -336,7 +368,7 @@ const AdminIngredients = () => {
                 if (file) {
                   setEditingIngredient({
                     ...editingIngredient,
-                    imageUrl: file.name,
+                    imageUrl: file,
                     genreId: editingIngredient.genre?.id || null,
                     genre: editingIngredient.genre || null,
                     unit: editingIngredient.unit || null,
