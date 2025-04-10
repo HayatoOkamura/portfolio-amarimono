@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
 import useIngredientStore from "@/app/stores/ingredientStore";
 import useGenreStore from "@/app/stores/genreStore";
-import RegistrationForm from "@/app/components/ui/RegistrationForm/RegistrationForm";
+import { RegistrationForm } from "@/app/components/features/RecipeForm/RegistrationForm";
 import { useIngredients } from "@/app/hooks/ingredients";
 import {
   useUserRecipes,
@@ -35,10 +35,6 @@ const RecipeRegistration: React.FC = () => {
     }
     fetchRecipeGenres();
   }, [ingredientsData, setIngredients, fetchRecipeGenres]);
-
-  useEffect(() => {
-    console.log(recipesData);
-  }, [recipesData]);
 
   if (!user) return <p>Loading...</p>;
 

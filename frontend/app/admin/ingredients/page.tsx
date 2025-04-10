@@ -58,10 +58,6 @@ const AdminIngredients = () => {
 
   // 入力を確認してエラーを設定
   const handleAddIngredient = () => {
-    console.log('New Ingredient:', newIngredient);
-    console.log('Image URL type:', typeof newIngredient.imageUrl);
-    console.log('Is File:', newIngredient.imageUrl instanceof File);
-
     if (
       !newIngredient.name ||
       !newIngredient.genre ||
@@ -82,16 +78,9 @@ const AdminIngredients = () => {
       
       // 画像ファイルを追加
       if (newIngredient.imageUrl instanceof File) {
-        console.log('Appending file:', newIngredient.imageUrl);
         formData.append("image", newIngredient.imageUrl);
       } else if (typeof newIngredient.imageUrl === 'string') {
-        console.log('Appending image URL:', newIngredient.imageUrl);
         formData.append("image_url", newIngredient.imageUrl);
-      }
-
-      // FormDataの内容を確認
-      for (const [key, value] of formData.entries()) {
-        console.log(`${key}: ${value}`);
       }
 
       addIngredient(formData, {

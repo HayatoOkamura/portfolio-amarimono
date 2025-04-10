@@ -18,13 +18,9 @@ const mapIngredient = (ingredient: any): Ingredient => {
   if (!ingredient) {
     throw new Error("Ingredient data is null or undefined");
   }
-
-  console.log('Mapping single ingredient:', ingredient);
   
   // レスポンスがネストされた形式の場合、ingredientプロパティを使用
   const ingredientData = ingredient.ingredient || ingredient;
-  
-  console.log('Genre data:', ingredientData.genre);
   
   const mapped = {
     id: ingredientData.id || 0,
@@ -37,42 +33,26 @@ const mapIngredient = (ingredient: any): Ingredient => {
     imageUrl: ingredientData.image_url || "/pic_recipe_default.webp",
     quantity: ingredientData.quantity || 0,
   };
-  console.log('Mapped result:', mapped);
   return mapped;
 };
 
 // 配列対応の関数
 const mapIngredients = (ingredients: any[]): Ingredient[] => {
-  console.log('Mapping ingredients array:', ingredients);
   return ingredients.map(ing => {
     const mapped = mapIngredient(ing);
-    console.log('Mapped single ingredient:', mapped);
     return mapped;
   });
 };
 
 // Service functions
 const fetchIngredientsService = async (): Promise<Ingredient[]> => {
-  console.log('Fetching ingredients...');
   const response = await api.get("/admin/ingredients");
-  console.log('Raw response data:', response.data);
   const mappedIngredients = mapIngredients(response.data);
-  console.log('Mapped ingredients:', mappedIngredients);
   return mappedIngredients;
 };
 
 const addIngredientService = async (formData: FormData): Promise<Ingredient> => {
   try {
-    console.log('Sending request to /admin/ingredients');
-    console.log('Request headers:', {
-      'Content-Type': 'multipart/form-data'
-    });
-
-    // FormDataの内容を確認
-    for (const [key, value] of formData.entries()) {
-      console.log(`FormData ${key}:`, value);
-    }
-
     const response = await api.post("/admin/ingredients", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
@@ -80,8 +60,6 @@ const addIngredientService = async (formData: FormData): Promise<Ingredient> => 
       transformRequest: [(data) => data],
     });
 
-    console.log('Response data:', response.data);
-    console.log('Mapped ingredient:', mapIngredient(response.data));
     return mapIngredient(response.data);
   } catch (error: any) {
     console.error("Error in addIngredientService:", error);

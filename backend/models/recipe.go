@@ -13,7 +13,7 @@ type Recipe struct {
 	ImageUrl            string             `json:"image_url"`
 	GenreID             int                `json:"genre_id" binding:"required"`
 	Genre               RecipeGenre        `json:"genre" gorm:"foreignKey:GenreID;references:ID"`
-	Ingredients         []RecipeIngredient `json:"ingredients" gorm:"foreignKey:RecipeID" binding:"required,dive"`
+	Ingredients         []RecipeIngredient `json:"ingredients" gorm:"foreignKey:RecipeID;references:ID" binding:"required,dive"`
 	Reviews             []Review           `json:"reviews" gorm:"foreignKey:RecipeID;references:ID"`
 	CookingTime         int                `json:"cooking_time"`
 	CostEstimate        int                `json:"cost_estimate"`

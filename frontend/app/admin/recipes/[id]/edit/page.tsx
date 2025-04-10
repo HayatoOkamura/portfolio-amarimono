@@ -3,8 +3,9 @@
 
 import { useEffect, useState } from "react";
 import { Recipe, NewRecipe } from "@/app/types/index";
+import { backendUrl } from "@/app/utils/apiUtils";
 import { fetchRecipeByIdService } from "@/app/hooks/recipes";
-import RegistrationForm from "@/app/components/ui/RegistrationForm/RegistrationForm";
+import { RegistrationForm } from "@/app/components/features/RecipeForm/RegistrationForm";
 import { useRouter } from "next/navigation";
 
 const AdminRecipeEdit = () => {
@@ -35,7 +36,7 @@ const AdminRecipeEdit = () => {
             instructions: recipeData.instructions.map(step => ({
               step: step.stepNumber,
               description: step.description,
-              imageURL: undefined
+              imageURL: step.imageUrl ? `${backendUrl}/uploads/${step.imageUrl}` : undefined
             })),
             ingredients: recipeData.ingredients.map(ing => ({
               id: ing.id,
@@ -52,10 +53,6 @@ const AdminRecipeEdit = () => {
         .catch((error) => console.error("Error fetching recipe:", error));
     }
   }, []);
-
-  useEffect(() => {
-    console.log("recipe", recipe);
-  }, [recipe]);
 
   if (!recipe) {
     return <div>Loading...</div>;

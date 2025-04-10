@@ -2,7 +2,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import RegistrationForm from "@/app/components/ui/RegistrationForm/RegistrationForm";
+import { RegistrationForm } from "@/app/components/features/RecipeForm/RegistrationForm";
 
 const AdminRecipeNew = () => {
   const router = useRouter();

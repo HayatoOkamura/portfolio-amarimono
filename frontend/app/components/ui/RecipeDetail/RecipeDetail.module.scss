@@ -4,6 +4,7 @@
     align-items: flex-start;
     justify-content: center;
     gap: 50px;
+    padding-bottom: 50px;
   }
 
   .description_block {
@@ -14,30 +15,49 @@
       aspect-ratio: 1 / 1;
     }
 
+    &__label {
+    }
+
+    &__text {
+    }
+  }
+
+  .instruction_block {
+    margin-top: 60px;
+
+    &__title {
+      color: #000;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      line-height: 1.2;
+    }
+
     &__list {
-      margin-top: 60px;
+      margin-top: 18px;
     }
 
     &__item {
       display: flex;
       gap: 30px;
       align-items: flex-start;
+
+      + .instruction_block__item {
+        margin-top: 15px;
+      }
     }
 
     &__sub_img {
       position: relative;
       aspect-ratio: 1 / 1;
-      max-width: 50%;
-      width: 100%;
+      flex: 1;
+      img {
+        width: 100%;
+      }
     }
 
     &__contents {
-    }
-
-    &__label {
-    }
-
-    &__text {
+      flex: 1.3;
     }
   }
 
@@ -57,7 +77,7 @@
 
     &__name {
       color: #000;
-      font-size: 2.5rem;
+      font-size: 1.75rem;
       font-weight: 700;
       letter-spacing: 0.03em;
       line-height: 1.2;
@@ -69,16 +89,8 @@
       color: #000;
       font-size: 1rem;
       font-weight: 400;
-      letter-spacing: 0.03em;
-      line-height: 1.2;
-    }
-
-    &__ingredient {
-      color: #000;
-      font-size: 1.25rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      line-height: 1.2;
+      letter-spacing: 0.05em;
+      line-height: 1.75;
     }
 
     .detail_block {
@@ -96,7 +108,7 @@
       }
 
       &__title {
-        font-size: 1rem;
+        font-size: 0.875rem;
         font-weight: 400;
         display: flex;
         align-items: center;
@@ -115,8 +127,8 @@
         span {
           font-size: 1.25rem;
           font-weight: 500;
-          letter-spacing: .03em;
-          
+          letter-spacing: 0.03em;
+
           &.small {
             font-size: 1rem;
           }
@@ -134,22 +146,45 @@
       &__item {
         width: 100%;
         text-align: center;
-        border-radius: 5px;
         button {
-          display: block;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #000;
+          border-radius: 5px;
+          gap: 8px;
           width: 100%;
           padding: 12px 20px;
-          color: #fff;
           font-size: 1rem;
           font-weight: 600;
+
+          span {
+            margin-top: 3px;
+          }
         }
 
         &--likes {
-          background: #e4cb0f;
+          span {
+            color: #e4cb0f;
+          }
+        }
+
+        &--is-liked {
+          button {
+            border: 1.5px solid #e4cb0f;
+            background: #e4cb0f;
+            color: #fff;
+          }
+          span {
+            color: #fff;
+          }
         }
 
         &--review {
-          background: #e49b0f;
+          span {
+            color: #e49b0f;
+            font-size: 1.25rem;
+          }
         }
       }
     }
@@ -195,7 +230,9 @@
     .nutrition_block {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      margin-top: 40px;
+      margin-top: 30px;
+      gap: 15px;
+
       &__item {
         position: relative;
         width: 100%;
@@ -204,34 +241,66 @@
         aspect-ratio: 1 / 1;
       }
 
-      &__title {
-        color: #000;
-        font-size: 1rem;
-        font-weight: 700;
-        letter-spacing: 0.03em;
-        line-height: 1.2;
+      &__texts {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
+        z-index: 1;
+      }
+
+      &__title {
+        color: #000;
+        font-size: 0.75rem;
+        font-weight: 400;
+        letter-spacing: 0.03em;
+        line-height: 1.2;
+        z-index: 1;
+        white-space: nowrap;
         text-align: center;
+      }
+
+      &__num {
+        font-family: "Roboto";
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        line-height: 1.2;
+        text-align: center;
+        margin-top: 4px;
+
+        span {
+          font-size: 0.875rem;
+          font-weight: 400;
+        }
       }
     }
 
     .ingredient_block {
       margin-top: 40px;
+
+      &__title {
+        color: #000;
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        line-height: 1.2;
+      }
+      &__list {
+        margin-top: 15px;
+      }
       &__item {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        border-bottom: 1px solid #000;
+        border-bottom: 1px solid #c7c7cc;
         padding: 12px 0;
       }
 
       &__name {
         color: #000;
         font-size: 1.125rem;
-        font-weight: 500;
+        font-weight: 400;
         letter-spacing: 0.03em;
         line-height: 1.2;
       }
@@ -239,7 +308,7 @@
       &__quantity {
         color: #000;
         font-size: 1rem;
-        font-weight: 500;
+        font-weight: 400;
         letter-spacing: 0.03em;
         line-height: 1.2;
       }
@@ -268,12 +337,38 @@
 
     &__close {
       position: absolute;
+      width: 25px;
+      height: 25px;
       right: 10px;
       top: 10px;
       background: none;
       border: none;
       font-size: 20px;
       cursor: pointer;
+
+      span {
+        display: block;
+        width: 1px;
+        height: 100%;
+        background: #000;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(45deg);
+
+        &:nth-child(2) {
+          transform: translate(-50%, -50%) rotate(-45deg);
+        }
+      }
+    }
+
+    &__title {
+      color: #000;
+      font-size: 1.125rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      line-height: 1.2;
+      text-align: center;
     }
 
     &__stars {
@@ -286,6 +381,19 @@
     &__star {
       cursor: pointer;
       font-size: 24px;
+      position: relative;
+      display: inline-block;
+
+      .gray {
+        color: #ddd;
+      }
+
+      .yellow {
+        color: #e4cb0f;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
     }
 
     &__textarea {
@@ -298,7 +406,7 @@
     }
 
     &__submit {
-      background: #4CAF50;
+      background: #DE616A;
       color: white;
       padding: 10px 20px;
       border: none;
@@ -321,32 +429,58 @@
     z-index: 1000;
 
     &__inner {
-      background: white;
-      padding: 20px;
+      background: #fff;
+      padding: 30px;
       border-radius: 8px;
       text-align: center;
-      width: 300px;
+      max-width: 380px;
+      width: 100%;
       position: relative;
     }
 
     &__close {
       position: absolute;
+      width: 25px;
+      height: 25px;
       right: 10px;
       top: 10px;
       background: none;
       border: none;
       font-size: 20px;
       cursor: pointer;
+
+      span {
+        display: block;
+        width: 1px;
+        height: 100%;
+        background: #000;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(45deg);
+
+        &:nth-child(2) {
+          transform: translate(-50%, -50%) rotate(-45deg);
+        }
+      }
+    }
+
+    &__title {
+      color: #000;
+      font-size: 1.125rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      line-height: 1.2;
     }
 
     &__login {
-      background: #4CAF50;
-      color: white;
+      background: #de616a;
+      color: #fff;
       padding: 10px 20px;
       border: none;
       border-radius: 4px;
       cursor: pointer;
-      margin-top: 10px;
+      margin-top: 24px;
     }
   }
-} 
+}

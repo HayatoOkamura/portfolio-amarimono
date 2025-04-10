@@ -366,9 +366,25 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	log.Printf("ingredients: %s", ingredients)
 	log.Printf("instructions: %s", instructions)
 
+	// 画像ファイルの確認
+	for i := 0; i < 10; i++ { // 最大10個の画像を確認
+		fileKey := fmt.Sprintf("instruction_image_%d", i)
+		if file, err := c.FormFile(fileKey); err == nil {
+			log.Printf("Found image file for instruction %d: %s", i, file.Filename)
+		}
+	}
+
 	// 下書きフラグの確認
 	isDraft := isDraftStr == "true"
 	log.Printf("Is draft: %v", isDraft)
+
+	// トランザクション開始
+	tx := h.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
 
 	// 下書きの場合は最小限のバリデーション
 	if isDraft {
@@ -376,6 +392,7 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 		// レシピ名の確認
 		if name == "" {
 			log.Println("Missing recipe name for draft")
+			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Recipe name is required"})
 			return
 		}
@@ -404,12 +421,14 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 		// 通常のレシピのバリデーション
 		if cookingTime == "" {
 			log.Println("Missing cooking time")
+			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cooking time"})
 			return
 		}
 		// ジャンルIDのバリデーション
 		if genre == "" || genre == "0" {
 			log.Println("Invalid genre ID")
+			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre ID"})
 			return
 		}
@@ -418,13 +437,15 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	// ジャンルIDの存在確認
 	genreID := getIntFromString(genre)
 	var genreExists bool
-	if err := h.DB.Model(&models.RecipeGenre{}).Select("count(*) > 0").Where("id = ?", genreID).Find(&genreExists).Error; err != nil {
+	if err := tx.Model(&models.RecipeGenre{}).Select("count(*) > 0").Where("id = ?", genreID).Find(&genreExists).Error; err != nil {
 		log.Printf("Error checking genre existence: %v", err)
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate genre"})
 		return
 	}
 	if !genreExists {
 		log.Printf("Genre ID %d does not exist", genreID)
+		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre ID"})
 		return
 	}
@@ -440,6 +461,18 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 		Catchphrase:  catchphrase,
 	}
 
+	// メイン画像の処理
+	if imageFile, err := c.FormFile("image"); err == nil {
+		imageURL, err := utils.SaveImage(c, imageFile, "recipe")
+		if err != nil {
+			log.Printf("Error saving main image: %v", err)
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save main image"})
+			return
+		}
+		recipe.ImageUrl = imageURL
+	}
+
 	// ユーザーIDの設定
 	if userId != "" {
 		userID, err := uuid.Parse(userId)
@@ -452,27 +485,128 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	if nutrition != "" {
 		if err := json.Unmarshal([]byte(nutrition), &recipe.Nutrition); err != nil {
 			log.Printf("Error parsing nutrition data: %v", err)
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nutrition format"})
+			return
 		}
 	}
 
-	// 手順の設定
+	// レシピの保存
+	if err := tx.Create(&recipe).Error; err != nil {
+		log.Printf("Error creating recipe: %v", err)
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create recipe"})
+		return
+	}
+
+	// 材料の処理
+	log.Printf("Raw ingredients data: %s", ingredients)
+	log.Printf("Processing ingredients: %s", ingredients)
+	var ingredientsData []struct {
+		IngredientID     int `json:"ingredient_id"`
+		QuantityRequired int `json:"quantity_required"`
+		UnitID           int `json:"unit_id"`
+	}
+	if err := json.Unmarshal([]byte(ingredients), &ingredientsData); err != nil {
+		log.Printf("Error parsing ingredients JSON: %v", err)
+		log.Printf("Raw JSON data that failed to parse: %s", ingredients)
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ingredients data"})
+		return
+	}
+	log.Printf("Parsed ingredients: %+v", ingredientsData)
+
+	// 材料の存在確認
+	for _, ing := range ingredientsData {
+		if ing.IngredientID == 0 {
+			log.Printf("Invalid ingredient ID: %d", ing.IngredientID)
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ingredient ID"})
+			return
+		}
+		var ingredient models.Ingredient
+		if err := tx.First(&ingredient, ing.IngredientID).Error; err != nil {
+			log.Printf("Ingredient not found: %d, error: %v", ing.IngredientID, err)
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Ingredient not found"})
+			return
+		}
+	}
+
+	// 材料の保存
+	var recipeIngredients []models.RecipeIngredient
+	for _, temp := range ingredientsData {
+		// ingredient_idが0の場合はスキップ
+		if temp.IngredientID == 0 {
+			continue
+		}
+		recipeIngredients = append(recipeIngredients, models.RecipeIngredient{
+			RecipeID:         recipe.ID,
+			IngredientID:     temp.IngredientID,
+			QuantityRequired: temp.QuantityRequired,
+		})
+	}
+
+	// 具材データが空でない場合のみ更新を実行
+	if len(recipeIngredients) > 0 {
+		if err := tx.Create(&recipeIngredients).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update ingredients"})
+			return
+		}
+	}
+
+	// 手順の処理
 	if instructions != "" {
-		if err := json.Unmarshal([]byte(instructions), &recipe.Instructions); err != nil {
+		var tempInstructions models.JSONBInstructions
+		if err := json.Unmarshal([]byte(instructions), &tempInstructions); err != nil {
 			log.Printf("Error parsing instructions: %v", err)
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instructions format"})
+			return
+		}
+
+		// 手順の画像を処理
+		for i, instruction := range tempInstructions {
+			if imageFile, err := c.FormFile(fmt.Sprintf("instruction_image_%d", i)); err == nil {
+				imageURL, err := utils.SaveImage(c, imageFile, "instruction")
+				if err != nil {
+					log.Printf("Error saving instruction image: %v", err)
+					tx.Rollback()
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save instruction image"})
+					return
+				}
+				instruction.ImageURL = imageURL
+				tempInstructions[i] = instruction
+			}
+		}
+
+		recipe.Instructions = tempInstructions
+
+		if err := tx.Model(&recipe).Update("instructions", tempInstructions).Error; err != nil {
+			log.Printf("Error updating instructions: %v", err)
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save instructions"})
+			return
 		}
 	}
 
-	log.Printf("Created recipe object: %+v", recipe)
-
-	// データベースへの保存
-	if err := h.DB.Create(&recipe).Error; err != nil {
-		log.Printf("Error saving recipe to database: %v", err)
+	// トランザクションのコミット
+	if err := tx.Commit().Error; err != nil {
+		log.Printf("Error committing transaction: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save recipe"})
 		return
 	}
 
-	log.Println("=== AddRecipe Handler End ===")
-	c.JSON(http.StatusOK, gin.H{"recipe": recipe})
+	// 保存したレシピの取得（関連データを含む）
+	var savedRecipe models.Recipe
+	if err := h.DB.Preload("Genre").Preload("Ingredients.Ingredient.Unit").First(&savedRecipe, recipe.ID).Error; err != nil {
+		log.Printf("Error fetching saved recipe: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Recipe saved but failed to fetch details"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, savedRecipe)
 }
 
 // ヘルパー関数
@@ -599,16 +733,37 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instructions format"})
 			return
 		}
+		log.Printf("📝 Processing instructions: %+v", tempInstructions)
 		for i := range tempInstructions {
+			// 新しい画像ファイルの処理
 			fileKey := fmt.Sprintf("instruction_image_%d", i)
 			if imageFile, err := c.FormFile(fileKey); err == nil {
+				log.Printf("📝 Found new image file for instruction %d: %s", i, imageFile.Filename)
 				savePath := filepath.Join(recipeFolder, "instructions")
 				imageURL, err := utils.SaveImage(c, imageFile, savePath)
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save instruction image"})
 					return
 				}
+				log.Printf("📝 Saved new image for instruction %d: %s", i, imageURL)
 				tempInstructions[i].ImageURL = filepath.ToSlash(filepath.Join(recipeFolder, "instructions", filepath.Base(imageURL)))
+			} else {
+				// 既存の画像URLの処理
+				imageURLKey := fmt.Sprintf("instruction_image_url_%d", i)
+				if existingImageURL := c.PostForm(imageURLKey); existingImageURL != "" {
+					log.Printf("📝 Processing existing image URL for instruction %d: %s", i, existingImageURL)
+					// 正規表現で完全なURLから相対パスを抽出
+					re := regexp.MustCompile(`http://[^/]+/uploads/(.+)`)
+					matches := re.FindStringSubmatch(existingImageURL)
+					if len(matches) > 1 {
+						tempInstructions[i].ImageURL = matches[1]
+						log.Printf("📝 Extracted relative path: %s", matches[1])
+					} else {
+						// URL形式でない場合はそのまま使用
+						tempInstructions[i].ImageURL = existingImageURL
+						log.Printf("📝 Using original URL: %s", existingImageURL)
+					}
+				}
 			}
 		}
 		recipe.Instructions = tempInstructions
@@ -616,10 +771,12 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 
 	nutritionJSON := c.PostForm("nutrition")
 	if nutritionJSON != "" {
-		if err := json.Unmarshal([]byte(nutritionJSON), &recipe.Nutrition); err != nil {
+		var nutrition models.NutritionInfo
+		if err := json.Unmarshal([]byte(nutritionJSON), &nutrition); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nutrition format"})
 			return
 		}
+		recipe.Nutrition = nutrition
 	}
 
 	// トランザクション開始
@@ -674,48 +831,73 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 
 	// ingredients の更新
 	ingredientsJSON := c.PostForm("ingredients")
+	log.Printf("📝 Raw ingredients JSON from request: %s", ingredientsJSON)
+	log.Printf("📝 Request form data: %+v", c.Request.PostForm)
+	log.Printf("📝 Request content type: %s", c.Request.Header.Get("Content-Type"))
+	log.Printf("📝 Request body size: %d", c.Request.ContentLength)
+
 	if ingredientsJSON != "" {
 		var tempIngredients []struct {
-			ID       int `json:"ingredient_id"`
-			Quantity int `json:"quantity_required"`
-			UnitId   int `json:"unit_id"`
+			IngredientID     int `json:"ingredient_id"`
+			QuantityRequired int `json:"quantity_required"`
+			UnitID           int `json:"unit_id"`
 		}
 
+		log.Printf("📝 Attempting to parse ingredients JSON...")
+		log.Printf("📝 Raw JSON string: %s", ingredientsJSON)
 		if err := json.Unmarshal([]byte(ingredientsJSON), &tempIngredients); err != nil {
+			log.Printf("❌ Error parsing ingredients JSON: %v", err)
+			log.Printf("❌ Raw ingredients JSON: %s", ingredientsJSON)
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ingredients format"})
 			return
 		}
 
-		// 具材データが空でないことを確認
-		if len(tempIngredients) == 0 {
-			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"error": "具材を選択してください"})
-			return
-		}
+		log.Printf("📝 Successfully parsed ingredients: %+v", tempIngredients)
+		log.Printf("📝 Number of ingredients: %d", len(tempIngredients))
 
 		// 既存のingredientsを削除
+		log.Printf("📝 Deleting existing ingredients for recipe ID: %s", recipe.ID)
 		if err := tx.Where("recipe_id = ?", recipe.ID).Delete(&models.RecipeIngredient{}).Error; err != nil {
+			log.Printf("❌ Error deleting existing ingredients: %v", err)
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete existing ingredients"})
 			return
 		}
+		log.Printf("📝 Successfully deleted existing ingredients")
 
 		// 新しいingredientsを追加
 		var recipeIngredients []models.RecipeIngredient
-		for _, temp := range tempIngredients {
+		for i, temp := range tempIngredients {
+			// ingredient_idが0の場合はスキップ
+			if temp.IngredientID == 0 {
+				log.Printf("⚠️ Skipping ingredient %d with ID 0", i)
+				continue
+			}
+			log.Printf("📝 Processing ingredient %d: ID=%d, Quantity=%d, UnitID=%d",
+				i, temp.IngredientID, temp.QuantityRequired, temp.UnitID)
 			recipeIngredients = append(recipeIngredients, models.RecipeIngredient{
 				RecipeID:         recipe.ID,
-				IngredientID:     temp.ID,
-				QuantityRequired: temp.Quantity,
+				IngredientID:     temp.IngredientID,
+				QuantityRequired: temp.QuantityRequired,
 			})
 		}
 
-		if err := tx.Create(&recipeIngredients).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update ingredients"})
-			return
+		// 具材データが空でない場合のみ更新を実行
+		if len(recipeIngredients) > 0 {
+			log.Printf("📝 Creating %d recipe ingredients: %+v", len(recipeIngredients), recipeIngredients)
+			if err := tx.Create(&recipeIngredients).Error; err != nil {
+				log.Printf("❌ Error creating recipe ingredients: %v", err)
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update ingredients"})
+				return
+			}
+			log.Printf("📝 Successfully created recipe ingredients")
+		} else {
+			log.Printf("⚠️ No valid ingredients to create")
 		}
+	} else {
+		log.Printf("⚠️ No ingredients JSON provided")
 	}
 
 	// コミット処理

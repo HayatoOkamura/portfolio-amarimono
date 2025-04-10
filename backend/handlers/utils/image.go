@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SaveImage は画像を指定ディレクトリに保存し、アクセス可能なURLを返す
+// SaveImage は画像を指定ディレクトリに保存し、相対パスを返す
 func SaveImage(c *gin.Context, file *multipart.FileHeader, dir string) (string, error) {
 	saveDir := filepath.Join(".", "uploads", dir)
 	if _, err := os.Stat(saveDir); os.IsNotExist(err) {
@@ -27,6 +27,6 @@ func SaveImage(c *gin.Context, file *multipart.FileHeader, dir string) (string, 
 		return "", err
 	}
 
-	// 画像のアクセスURLを返す（静的ファイルのURLパスに変更）
-	return fmt.Sprintf("http://localhost:8080/uploads/%s/%s", dir, uniqueFilename), nil
+	// 相対パスを返す
+	return filepath.Join(dir, uniqueFilename), nil
 }

@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { Recipe } from "@/app/types/index";
 import { backendUrl } from "@/app/utils/apiUtils";
-import { fetchRecipeByIdService } from "@/app/hooks/recipes";
-import { handleLikeService } from "@/app/hooks/recipes";
+import { fetchRecipeByIdService, handleLikeService, checkLikeStatusService } from "@/app/hooks/recipes";
 import { useUserStore } from "@/app/stores/userStore";
 import { useRouter } from "next/navigation";
 import RecipeDetail from "@/app/components/ui/RecipeDetail/RecipeDetail";
@@ -12,7 +11,7 @@ import RecipeDetail from "@/app/components/ui/RecipeDetail/RecipeDetail";
 const RecipeDetailPage = () => {
   const router = useRouter();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState<boolean>(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewValue, setReviewValue] = useState(0);
@@ -31,20 +30,18 @@ const RecipeDetailPage = () => {
   }, []);
 
   useEffect(() => {
-    if (!recipe || !user) return;
+    if (!recipe || !user) {
+      setIsLiked(false);
+      return;
+    }
 
     const checkLikeStatus = async () => {
       try {
-        const response = await fetch(
-          `${backendUrl}/api/likes/${user.id}/${recipe.id}`
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setIsLiked(true);
-        }
+        const isLiked = await checkLikeStatusService(user.id, recipe.id);
+        setIsLiked(isLiked);
       } catch (error) {
         console.error("Error checking like status:", error);
+        setIsLiked(false);
       }
     };
 
@@ -58,8 +55,15 @@ const RecipeDetailPage = () => {
     }
 
     if (!recipe) return;
-
     handleLikeService(user.id, recipe.id, setIsLiked, setShowLoginModal);
+  };
+
+  const handleReview = () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+    setShowReviewModal(true);
   };
 
   const handleReviewSubmit = async () => {
@@ -99,13 +103,14 @@ const RecipeDetailPage = () => {
       reviewValue={reviewValue}
       reviewText={reviewText}
       onLike={handleLike}
-      onReview={() => setShowReviewModal(true)}
+      onReview={handleReview}
       onReviewSubmit={handleReviewSubmit}
       onReviewTextChange={setReviewText}
       onReviewValueChange={setReviewValue}
       onCloseReviewModal={() => setShowReviewModal(false)}
       onCloseLoginModal={() => setShowLoginModal(false)}
       onLogin={() => router.push("/login/")}
+      setShowLoginModal={setShowLoginModal}
     />
   );
 };
