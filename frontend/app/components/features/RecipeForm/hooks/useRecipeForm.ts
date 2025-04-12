@@ -33,6 +33,7 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
     imageUrl: undefined,
     isPublic: true,
     isDraft: false,
+    faq: initialRecipe?.faq || [],
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +47,17 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
           id: ing.id,
           quantity: ing.quantity,
           unitId: ing.unitId
-        })) || []
+        })) || [],
+        faq: initialRecipe.faq || [],
+        instructions: initialRecipe.instructions || [{ step: 1, description: "", imageURL: undefined }],
+        nutrition: initialRecipe.nutrition || {
+          calories: 0,
+          carbohydrates: 0,
+          fat: 0,
+          protein: 0,
+          sugar: 0,
+          salt: 0,
+        }
       };
       setFormData(formattedRecipe);
     }
@@ -81,6 +92,7 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
       imageUrl: undefined,
       isPublic: true,
       isDraft: false,
+      faq: [],
     });
   }, []);
 

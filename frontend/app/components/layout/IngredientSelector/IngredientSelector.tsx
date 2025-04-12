@@ -86,7 +86,10 @@ const IngredientSelector = () => {
             {filteredIngredients.map((ingredient) => (
               <IngredientCard
                 key={ingredient.id}
-                ingredient={ingredient}
+                ingredient={{
+                  ...ingredient,
+                  imageUrl: typeof ingredient.imageUrl === 'string' ? ingredient.imageUrl : null
+                }}
               />
             ))}
           </div>

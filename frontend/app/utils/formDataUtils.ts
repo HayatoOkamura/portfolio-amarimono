@@ -29,6 +29,12 @@ export const createFormData = (
   formData.append("summary", recipe.summary || "");
   formData.append("catchphrase", recipe.catchphrase || "");
 
+  // FAQデータの追加
+  if (recipe.faq && recipe.faq.length > 0) {
+    formData.append("faq", JSON.stringify(recipe.faq));
+    console.log("Added FAQ data:", recipe.faq);
+  }
+
   // 手順の処理
   const formattedInstructions = recipe.instructions.map((instruction, index) => {
     const instructionData = {

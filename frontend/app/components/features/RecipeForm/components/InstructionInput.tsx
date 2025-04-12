@@ -9,7 +9,7 @@ interface InstructionInputProps {
 }
 
 export const InstructionInput = ({
-  instructions,
+  instructions = [],
   onUpdateInstructions,
 }: InstructionInputProps) => {
   const { handleImageChange, getImageUrl, revokeImageUrl } = useImageUpload();

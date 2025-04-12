@@ -501,7 +501,7 @@ export const fetchRecommendedRecipesService = async (userId: string): Promise<Re
 
 // ユーザーのお気に入りレシピを取得
 const fetchUserFavorites = async (userId: string) => {
-  const res = await fetch(`${backendUrl}/api/user/favorites?userId=${userId}`, {
+  const res = await fetch(`${backendUrl}/api/likes/${userId}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -512,7 +512,8 @@ const fetchUserFavorites = async (userId: string) => {
     throw new Error("Failed to fetch user favorites");
   }
 
-  return res.json();
+  const data = await res.json();
+  return mapRecipes(data);
 };
 
 // Query hooks

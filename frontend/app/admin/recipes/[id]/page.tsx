@@ -69,6 +69,7 @@ const AdminRecipeDetail = () => {
       onEdit={() => router.push(`/admin/recipes/${recipe.id}/edit`)}
       onPublish={handleTogglePublish}
       onDelete={handleDelete}
+      setShowLoginModal={() => {}}
     />
   );
 };

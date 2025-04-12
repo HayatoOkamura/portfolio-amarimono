@@ -46,7 +46,8 @@ const AdminRecipeEdit = () => {
             image: undefined,
             imageUrl: recipeData.imageUrl,
             isPublic: recipeData.isPublic || false,
-            isDraft: recipeData.isDraft || false
+            isDraft: recipeData.isDraft || false,
+            faq: recipeData.faq || []
           };
           setRecipe(newRecipe);
         })

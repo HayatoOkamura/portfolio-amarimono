@@ -324,8 +324,22 @@ func (h *AdminHandler) DeleteIngredient(c *gin.Context) {
 func (h *AdminHandler) ListRecipes(c *gin.Context) {
 	var recipes []models.Recipe
 
-	// ingredientsを一緒にロードするためにPreloadを使用
+	// 生のFAQデータを確認
+	var rawFAQData []struct {
+		ID  string `gorm:"column:id"`
+		FAQ string `gorm:"column:faq"`
+	}
+	if err := h.DB.Raw("SELECT id, faq FROM recipes").Scan(&rawFAQData).Error; err != nil {
+		log.Printf("❌ Error fetching raw FAQ data: %v", err)
+	} else {
+		for _, data := range rawFAQData {
+			log.Printf("📝 Recipe ID: %s, Raw FAQ data: %s", data.ID, data.FAQ)
+		}
+	}
+
 	if err := h.DB.Preload("Genre").Preload("Ingredients.Ingredient.Unit").Preload("Reviews").Find(&recipes).Error; err != nil {
+		log.Printf("❌ Error fetching recipes: %v", err)
+		log.Printf("❌ Error details: %+v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes", "details": err.Error()})
 		return
 	}
@@ -675,6 +689,7 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 	summary := c.PostForm("summary")
 	catchphrase := c.PostForm("catchphrase")
 	genreID, err := strconv.Atoi(c.PostForm("genre"))
+	faqJSON := c.PostForm("faq")
 	if err != nil || genreID <= 0 {
 		// 下書きの場合はデフォルトのジャンルIDを設定
 		genreID = 1
@@ -814,6 +829,17 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 	}
 	if len(recipe.Instructions) > 0 {
 		updates["instructions"] = recipe.Instructions
+	}
+	// FAQデータの更新
+	if faqJSON != "" {
+		var faqData models.JSONBFaq
+		if err := json.Unmarshal([]byte(faqJSON), &faqData); err != nil {
+			log.Printf("❌ Error parsing FAQ data: %v", err)
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid FAQ format"})
+			return
+		}
+		updates["faq"] = faqData
 	}
 	// Nutritionは常に更新する（空の場合はデフォルト値が設定される）
 	updates["nutrition"] = recipe.Nutrition

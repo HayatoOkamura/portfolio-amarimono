@@ -66,263 +66,278 @@ const RecipeDetail = ({
       }`}
     >
       <div className={styles.recipe_block__inner}>
-        <div className={styles.description_block}>
-          <div className={styles.description_block__img}>
-            <Image
-              fill
-              src={
-                recipe.imageUrl
-                  ? `${backendUrl}/uploads/${recipe.imageUrl}`
-                  : "/pic_recipe_default.webp"
-              }
-              alt={recipe.name}
-              unoptimized
-            />
-          </div>
-          <section className={styles.instruction_block}>
-            <h2 className={styles.instruction_block__title}>作り方</h2>
-            <ol className={styles.instruction_block__list}>
-              {recipe.instructions.map((step, idx) => (
-                <li className={styles.instruction_block__item} key={idx}>
-                  {step.imageUrl && (
-                    <div className={styles.instruction_block__sub_img}>
-                      <Image
-                        fill
-                        src={
-                          step.imageUrl
-                            ? `${backendUrl}/uploads/${step.imageUrl}`
-                            : "/pic_recipe_default.webp"
-                        }
-                        alt={recipe.name}
-                        unoptimized
-                      />
+        <div className={styles.recipe_block__contents}>
+          <div className={styles.description_block}>
+            <div className={styles.description_block__img}>
+              <Image
+                fill
+                src={
+                  recipe.imageUrl
+                    ? `${backendUrl}/uploads/${recipe.imageUrl}`
+                    : "/pic_recipe_default.webp"
+                }
+                alt={recipe.name}
+                unoptimized
+              />
+            </div>
+            <section className={styles.instruction_block}>
+              <h2 className={styles.instruction_block__title}>作り方</h2>
+              <ol className={styles.instruction_block__list}>
+                {recipe.instructions.map((step, idx) => (
+                  <li className={styles.instruction_block__item} key={idx}>
+                    {step.imageUrl && (
+                      <div className={styles.instruction_block__sub_img}>
+                        <Image
+                          fill
+                          src={
+                            step.imageUrl
+                              ? `${backendUrl}/uploads/${step.imageUrl}`
+                              : "/pic_recipe_default.webp"
+                          }
+                          alt={recipe.name}
+                          unoptimized
+                        />
+                      </div>
+                    )}
+                    <div className={styles.instruction_block__contents}>
+                      <strong className={styles.instruction_block__label}>
+                        手順 {step.stepNumber}:
+                      </strong>
+                      <p className={styles.instruction_block__text}>
+                        {step.description}
+                      </p>
                     </div>
-                  )}
-                  <div className={styles.instruction_block__contents}>
-                    <strong className={styles.instruction_block__label}>
-                      手順 {step.stepNumber}:
-                    </strong>
-                    <p className={styles.instruction_block__text}>
-                      {step.description}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </section>
-        </div>
-        <div className={styles.info_block}>
-          {isAdmin && (
-            <div className={styles.admin_actions}>
-              <button
-                onClick={onEdit}
-                className={`${styles.admin_actions__button} ${styles["admin_actions__button--edit"]}`}
-              >
-                編集
-              </button>
-              <button
-                onClick={onPublish}
-                className={`${styles.admin_actions__button} ${
-                  recipe.isPublic
-                    ? styles["admin_actions__button--unpublish"]
-                    : styles["admin_actions__button--publish"]
-                }`}
-              >
-                {recipe.isPublic ? "非公開にする" : "公開する"}
-              </button>
-              <button
-                onClick={onDelete}
-                className={`${styles.admin_actions__button} ${styles["admin_actions__button--delete"]}`}
-              >
-                削除
-              </button>
-            </div>
-          )}
-          <p className={styles.info_block__catchphrase}>{recipe.catchphrase}</p>
-          <h1 className={styles.info_block__name}>{recipe.name}</h1>
-          <div className={styles.detail_block}>
-            <div className={styles.detail_block__item}>
-              <StarRating
-                reviews={recipe.reviews}
-                className={styles.align_center}
-              />
-              <p className={styles.detail_block__text}>
-                {averageRating.toFixed(1)}{" "}
-                <span>({recipe.reviews?.length ?? 0}件)</span>
-              </p>
-            </div>
-            <div className={styles.detail_block__item}>
-              <p className={styles.detail_block__title}>
-                <IoMdTime />
-                調理時間
-              </p>
-              <p className={styles.detail_block__text}>
-                <span>約</span>
-                {recipe.cookingTime}
-                <span>分</span>
-              </p>
-            </div>
-            <div className={styles.detail_block__item}>
-              <p className={styles.detail_block__title}>
-                <RiMoneyCnyCircleLine />
-                費用目安
-              </p>
-              <p className={styles.detail_block__text}>
-                {recipe.costEstimate}
-                <span>円</span>
-                <span className={styles["small"]}>前後</span>
-              </p>
-            </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
           </div>
-          {!isAdmin && (
-            <div className={styles.interaction_block}>
-              <div
-                className={`${styles.interaction_block__item} ${
-                  styles["interaction_block__item--likes"]
-                } ${
-                  isLiked ? styles["interaction_block__item--is-liked"] : ""
-                }`}
-              >
-                <button onClick={onLike}>
-                  <span>
-                    <FaHeart />
-                  </span>
-                  {isLiked ? "お気に入り済み" : "お気に入り"}
+          <div className={styles.info_block}>
+            {isAdmin && (
+              <div className={styles.admin_actions}>
+                <button
+                  onClick={onEdit}
+                  className={`${styles.admin_actions__button} ${styles["admin_actions__button--edit"]}`}
+                >
+                  編集
+                </button>
+                <button
+                  onClick={onPublish}
+                  className={`${styles.admin_actions__button} ${
+                    recipe.isPublic
+                      ? styles["admin_actions__button--unpublish"]
+                      : styles["admin_actions__button--publish"]
+                  }`}
+                >
+                  {recipe.isPublic ? "非公開にする" : "公開する"}
+                </button>
+                <button
+                  onClick={onDelete}
+                  className={`${styles.admin_actions__button} ${styles["admin_actions__button--delete"]}`}
+                >
+                  削除
                 </button>
               </div>
-              <div
-                className={`${styles.interaction_block__item} ${styles["interaction_block__item--review"]}`}
-              >
-                <button onClick={onReview}>
-                  <span>
-                    <MdOutlineRateReview />
-                  </span>
-                  レビューを投稿
-                </button>
+            )}
+            <p className={styles.info_block__catchphrase}>{recipe.catchphrase}</p>
+            <h1 className={styles.info_block__name}>{recipe.name}</h1>
+            <div className={styles.detail_block}>
+              <div className={styles.detail_block__item}>
+                <StarRating
+                  reviews={recipe.reviews}
+                  className={styles.align_center}
+                />
+                <p className={styles.detail_block__text}>
+                  {averageRating.toFixed(1)}{" "}
+                  <span>({recipe.reviews?.length ?? 0}件)</span>
+                </p>
+              </div>
+              <div className={styles.detail_block__item}>
+                <p className={styles.detail_block__title}>
+                  <IoMdTime />
+                  調理時間
+                </p>
+                <p className={styles.detail_block__text}>
+                  <span>約</span>
+                  {recipe.cookingTime}
+                  <span>分</span>
+                </p>
+              </div>
+              <div className={styles.detail_block__item}>
+                <p className={styles.detail_block__title}>
+                  <RiMoneyCnyCircleLine />
+                  費用目安
+                </p>
+                <p className={styles.detail_block__text}>
+                  {recipe.costEstimate}
+                  <span>円</span>
+                  <span className={styles["small"]}>前後</span>
+                </p>
               </div>
             </div>
-          )}
-          <p className={styles.info_block__summary}>{recipe.summary}</p>
-          <ul className={styles.nutrition_block}>
-            <li className={styles.nutrition_block__item}>
-              <div className={styles.nutrition_block__texts}>
-                <p className={styles.nutrition_block__title}>カロリー</p>
-                <p className={styles.nutrition_block__num}>
-                  {recipe.nutrition && recipe.nutrition.calories}
-                  <span>kcal</span>
-                </p>
+            {!isAdmin && (
+              <div className={styles.interaction_block}>
+                <div
+                  className={`${styles.interaction_block__item} ${
+                    styles["interaction_block__item--likes"]
+                  } ${
+                    isLiked ? styles["interaction_block__item--is-liked"] : ""
+                  }`}
+                >
+                  <button onClick={onLike}>
+                    <span>
+                      <FaHeart />
+                    </span>
+                    {isLiked ? "お気に入り済み" : "お気に入り"}
+                  </button>
+                </div>
+                <div
+                  className={`${styles.interaction_block__item} ${styles["interaction_block__item--review"]}`}
+                >
+                  <button onClick={onReview}>
+                    <span>
+                      <MdOutlineRateReview />
+                    </span>
+                    レビューを投稿
+                  </button>
+                </div>
               </div>
-              <ResponsivePieChart
-                value={
-                  recipe.nutritionPercentage
-                    ? recipe.nutritionPercentage.calories
-                    : 0
-                }
-                type="calories"
-              />
-            </li>
-            <li className={styles.nutrition_block__item}>
-              <div className={styles.nutrition_block__texts}>
-                <p className={styles.nutrition_block__title}>炭水化物</p>
-                <p className={styles.nutrition_block__num}>
-                  {recipe.nutrition && recipe.nutrition.carbohydrates}
-                  <span>g</span>
-                </p>
-              </div>
-              <ResponsivePieChart
-                value={
-                  recipe.nutritionPercentage
-                    ? recipe.nutritionPercentage.carbohydrates
-                    : 0
-                }
-                type="carbohydrates"
-              />
-            </li>
-            <li className={styles.nutrition_block__item}>
-              <div className={styles.nutrition_block__texts}>
-                <p className={styles.nutrition_block__title}>脂質</p>
-                <p className={styles.nutrition_block__num}>
-                  {recipe.nutrition && recipe.nutrition.fat}
-                  <span>g</span>
-                </p>
-              </div>
-              <ResponsivePieChart
-                value={
-                  recipe.nutritionPercentage
-                    ? recipe.nutritionPercentage.fat
-                    : 0
-                }
-                type="fat"
-              />
-            </li>
-            <li className={styles.nutrition_block__item}>
-              <div className={styles.nutrition_block__texts}>
-                <p className={styles.nutrition_block__title}>タンパク質</p>
-                <p className={styles.nutrition_block__num}>
-                  {recipe.nutrition && recipe.nutrition.protein}
-                  <span>g</span>
-                </p>
-              </div>
-              <ResponsivePieChart
-                value={
-                  recipe.nutritionPercentage
-                    ? recipe.nutritionPercentage.protein
-                    : 0
-                }
-                type="protein"
-              />
-            </li>
-            <li className={styles.nutrition_block__item}>
-              <div className={styles.nutrition_block__texts}>
-                <p className={styles.nutrition_block__title}>塩分</p>
-                <p className={styles.nutrition_block__num}>
-                  {recipe.nutrition && recipe.nutrition.salt}
-                  <span>g</span>
-                </p>
-              </div>
-              <ResponsivePieChart
-                value={
-                  recipe.nutritionPercentage
-                    ? recipe.nutritionPercentage.salt
-                    : 0
-                }
-                type="salt"
-              />
-            </li>
-            <li className={styles.nutrition_block__item}>
-              <div className={styles.nutrition_block__texts}>
-                <p className={styles.nutrition_block__title}>糖分</p>
-                <p className={styles.nutrition_block__num}>
-                  {recipe.nutrition && recipe.nutrition.sugar}
-                  <span>g</span>
-                </p>
-              </div>
-              <ResponsivePieChart
-                value={
-                  recipe.nutritionPercentage
-                    ? recipe.nutritionPercentage.sugar
-                    : 0
-                }
-                type="sugar"
-              />
-            </li>
-          </ul>
-          <section className={styles.ingredient_block}>
-            <h3 className={styles.ingredient_block__title}>材料【1人分】</h3>
-            <ul className={styles.ingredient_block__list}>
-              {recipe.ingredients.map((ingredient, idx) => (
-                <li className={styles.ingredient_block__item} key={idx}>
-                  <p className={styles.ingredient_block__name}>
-                    {ingredient.name}
+            )}
+            <p className={styles.info_block__summary}>{recipe.summary}</p>
+            <ul className={styles.nutrition_block}>
+              <li className={styles.nutrition_block__item}>
+                <div className={styles.nutrition_block__texts}>
+                  <p className={styles.nutrition_block__title}>カロリー</p>
+                  <p className={styles.nutrition_block__num}>
+                    {recipe.nutrition && recipe.nutrition.calories}
+                    <span>kcal</span>
                   </p>
-                  <p className={styles.ingredient_block__quantity}>
-                    {ingredient.quantity} {ingredient.unit.name}
+                </div>
+                <ResponsivePieChart
+                  value={
+                    recipe.nutritionPercentage
+                      ? recipe.nutritionPercentage.calories
+                      : 0
+                  }
+                  type="calories"
+                />
+              </li>
+              <li className={styles.nutrition_block__item}>
+                <div className={styles.nutrition_block__texts}>
+                  <p className={styles.nutrition_block__title}>炭水化物</p>
+                  <p className={styles.nutrition_block__num}>
+                    {recipe.nutrition && recipe.nutrition.carbohydrates}
+                    <span>g</span>
                   </p>
-                </li>
-              ))}
+                </div>
+                <ResponsivePieChart
+                  value={
+                    recipe.nutritionPercentage
+                      ? recipe.nutritionPercentage.carbohydrates
+                      : 0
+                  }
+                  type="carbohydrates"
+                />
+              </li>
+              <li className={styles.nutrition_block__item}>
+                <div className={styles.nutrition_block__texts}>
+                  <p className={styles.nutrition_block__title}>脂質</p>
+                  <p className={styles.nutrition_block__num}>
+                    {recipe.nutrition && recipe.nutrition.fat}
+                    <span>g</span>
+                  </p>
+                </div>
+                <ResponsivePieChart
+                  value={
+                    recipe.nutritionPercentage
+                      ? recipe.nutritionPercentage.fat
+                      : 0
+                  }
+                  type="fat"
+                />
+              </li>
+              <li className={styles.nutrition_block__item}>
+                <div className={styles.nutrition_block__texts}>
+                  <p className={styles.nutrition_block__title}>タンパク質</p>
+                  <p className={styles.nutrition_block__num}>
+                    {recipe.nutrition && recipe.nutrition.protein}
+                    <span>g</span>
+                  </p>
+                </div>
+                <ResponsivePieChart
+                  value={
+                    recipe.nutritionPercentage
+                      ? recipe.nutritionPercentage.protein
+                      : 0
+                  }
+                  type="protein"
+                />
+              </li>
+              <li className={styles.nutrition_block__item}>
+                <div className={styles.nutrition_block__texts}>
+                  <p className={styles.nutrition_block__title}>塩分</p>
+                  <p className={styles.nutrition_block__num}>
+                    {recipe.nutrition && recipe.nutrition.salt}
+                    <span>g</span>
+                  </p>
+                </div>
+                <ResponsivePieChart
+                  value={
+                    recipe.nutritionPercentage
+                      ? recipe.nutritionPercentage.salt
+                      : 0
+                  }
+                  type="salt"
+                />
+              </li>
+              <li className={styles.nutrition_block__item}>
+                <div className={styles.nutrition_block__texts}>
+                  <p className={styles.nutrition_block__title}>糖分</p>
+                  <p className={styles.nutrition_block__num}>
+                    {recipe.nutrition && recipe.nutrition.sugar}
+                    <span>g</span>
+                  </p>
+                </div>
+                <ResponsivePieChart
+                  value={
+                    recipe.nutritionPercentage
+                      ? recipe.nutritionPercentage.sugar
+                      : 0
+                  }
+                  type="sugar"
+                />
+              </li>
             </ul>
-          </section>
+            <section className={styles.ingredient_block}>
+              <h3 className={styles.ingredient_block__title}>材料【1人分】</h3>
+              <ul className={styles.ingredient_block__list}>
+                {recipe.ingredients.map((ingredient, idx) => (
+                  <li className={styles.ingredient_block__item} key={idx}>
+                    <p className={styles.ingredient_block__name}>
+                      {ingredient.name}
+                    </p>
+                    <p className={styles.ingredient_block__quantity}>
+                      {ingredient.quantity} {ingredient.unit.name}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
         </div>
+        {recipe.faq && recipe.faq.length > 0 && (
+            <section className={styles.faq_block}>
+              <h3 className={styles.faq_block__title}>よくある質問</h3>
+              <ul className={styles.faq_block__list}>
+                {recipe.faq.map((faq, idx) => (
+                  <li className={styles.faq_block__item} key={idx}>
+                    <h4 className={styles.faq_block__question}>{faq.question}</h4>
+                    <p className={styles.faq_block__answer}>{faq.answer}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
       </div>
 
       {showReviewModal && (

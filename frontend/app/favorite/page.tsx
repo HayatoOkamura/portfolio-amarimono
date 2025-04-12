@@ -24,10 +24,12 @@ const FavoritesPage = () => {
 
   const favoriteRecipes = data || [];
 
+
   if (favoriteRecipes.length > 0)
     return (
       <div className={styles.container_block}>
-        <div className={styles.recipe_list}>
+        <h1 className={styles.container_block__title}>お気に入りレシピ</h1>
+        <div className={styles.container_block__list}>
           {favoriteRecipes.map((recipe: Recipe) => (
             <div
               key={recipe.id}

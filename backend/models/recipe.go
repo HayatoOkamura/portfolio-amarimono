@@ -20,7 +20,7 @@ type Recipe struct {
 	Summary             string             `json:"summary"`
 	Nutrition           NutritionInfo      `json:"nutrition" gorm:"type:jsonb"`
 	Catchphrase         string             `json:"catchphrase"`
-	FAQ                 JSONBFaq           `json:"faq" gorm:"type:jsonb"`
+	FAQ                 JSONBFaq           `json:"faq" gorm:"type:jsonb;default:'[]'"`
 	Likes               []Like             `json:"likes"`
 	UserID              *uuid.UUID         `json:"user_id" gorm:"type:uuid"`
 	IsPublic            bool               `json:"is_public" gorm:"default:true"`

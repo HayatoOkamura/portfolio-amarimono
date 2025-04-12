@@ -1,4 +1,4 @@
-import { Nutrition, Unit } from "@/app/types/index";
+import { Nutrition, Unit, FAQ } from "@/app/types/index";
 
 export interface RecipeFormData {
   id?: string;
@@ -33,6 +33,7 @@ export interface RecipeFormData {
   imageUrl?: string;
   isPublic: boolean;
   isDraft: boolean;
+  faq?: FAQ[];
 }
 
 export interface RecipeFormProps {
