@@ -9,6 +9,13 @@ services:
     volumes:
       - ./backend:/app
       - ./backend/uploads:/app/uploads
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=amarimono
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       db:
         condition: service_healthy
