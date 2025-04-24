@@ -5,7 +5,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'portfolio-amarimono-backend.onrender.com',
+        hostname: 'amarimono-backend.onrender.com',
         port: '',
         pathname: '/uploads/**',
       },
@@ -31,12 +31,12 @@ const nextConfig = {
     // クライアントサイドでの API アクセス用
     BACKEND_URL: process.env.NODE_ENV === 'development' 
       ? 'http://localhost:8080'  // ブラウザからアクセスする時用
-      : process.env.NEXT_PUBLIC_BACKEND_URL || 'https://portfolio-amarimono-backend.onrender.com',
+      : process.env.NEXT_PUBLIC_BACKEND_URL || 'https://amarimono-backend.onrender.com',
     
     // 画像表示用
     IMAGE_BASE_URL: process.env.NODE_ENV === 'development'
       ? 'http://backend:8080'  // Docker内の画像表示用
-      : process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'https://portfolio-amarimono-backend.onrender.com',
+      : process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'https://amarimono-backend.onrender.com',
   },
   async rewrites() {
     // APIエンドポイントのみをリライト
@@ -45,7 +45,7 @@ const nextConfig = {
         source: '/api/:path*',
         destination: process.env.NODE_ENV === 'development'
           ? 'http://localhost:8080/api/:path*'
-          : 'https://portfolio-amarimono-backend.onrender.com/api/:path*',
+          : 'https://amarimono-backend.onrender.com/api/:path*',
       }
     ];
   },
