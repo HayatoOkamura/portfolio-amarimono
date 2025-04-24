@@ -95,3 +95,10 @@ frontend サービスでは、front_node_modules ボリュームを使用して 
 トラブルシューティング
 1. ポート競合エラー
 他のアプリケーションがポート 3000, 8080, または 5432 を使用している場合、競合が発生します。docker-compose.yml のポート設定を変更してください。
+
+
+vercel（frontend）
+https://vercel.com/hayatookamuras-projects/portfolio-amarimono
+
+render（backend、db）
+https://dashboard.render.com/
