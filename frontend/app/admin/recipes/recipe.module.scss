@@ -22,7 +22,7 @@
       font-weight: bold;
       letter-spacing: 0.03em;
       line-height: 1;
-      background: #de616a;
+      background: var(--primary-accent-color);
       border-radius: 4px;
 
       a {
@@ -87,6 +87,8 @@
       overflow: hidden;
 
       img {
+        width: 100%;
+        height: 100%;
       }
     }
 
@@ -137,14 +139,14 @@
       border-radius: 4px;
 
       &--edit {
-        border: 1px solid #de616a;
+        border: 1px solid var(--primary-accent-color);
         a {
-          color: #de616a;
+          color: var(--primary-accent-color);
         }
       }
 
       &--delete { 
-        background: #de616a;
+        background: var(--primary-accent-color);
         button {
           color: #fff;
         }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { backendUrl } from "@/app/utils/api";
 
 export async function GET() {
   try {

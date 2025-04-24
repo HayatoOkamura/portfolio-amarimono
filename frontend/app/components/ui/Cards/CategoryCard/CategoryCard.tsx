@@ -12,6 +12,10 @@ type CategoryCardProps = {
 };
 
 const CategoryCard: React.FC<CategoryCardProps> = ({ genre, onClick }) => {
+  // IDが1桁の場合は0を付加し、2桁の場合はそのまま使用
+  const imageId = genre.id < 10 ? `0${genre.id}` : genre.id;
+  
+
   return (
     <button
       className={styles.card_block}
@@ -19,9 +23,12 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ genre, onClick }) => {
     >
       <div className={styles.card_block__image}>
         <Image
-          fill
-          src={`/images/top/pic_category0${genre.id}.jpg`}
+          // fill
+          src={`/images/top/pic_category${imageId}.jpg`}
           alt={genre.name}
+          // priority
+          width={100}
+          height={100}
         />
       </div>
       <p className={styles.card_block__text}>{genre.name}</p>

@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import { backendUrl } from "@/app/utils/apiUtils";
+import { backendUrl } from "@/app/utils/api";
 import { Review } from "@/app/types/index"; // レビューデータの型定義
 
 // Goのレスポンスをキャメルケースに変換する関数

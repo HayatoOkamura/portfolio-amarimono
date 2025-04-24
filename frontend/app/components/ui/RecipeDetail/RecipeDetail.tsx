@@ -1,5 +1,5 @@
 import styles from "./RecipeDetail.module.scss";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { imageBaseUrl } from "@/app/utils/api";
 import ResponsivePieChart from "@/app/components/ui/PieChart/PieChart";
 import { Recipe } from "@/app/types/index";
 import Image from "next/image";
@@ -70,14 +70,15 @@ const RecipeDetail = ({
           <div className={styles.description_block}>
             <div className={styles.description_block__img}>
               <Image
-                fill
                 src={
                   recipe.imageUrl
-                    ? `${backendUrl}/uploads/${recipe.imageUrl}`
+                    ? `${imageBaseUrl}/uploads/${recipe.imageUrl}`
                     : "/pic_recipe_default.webp"
                 }
                 alt={recipe.name}
-                unoptimized
+                width={500}
+                height={500}
+                priority
               />
             </div>
             <section className={styles.instruction_block}>
@@ -88,14 +89,14 @@ const RecipeDetail = ({
                     {step.imageUrl && (
                       <div className={styles.instruction_block__sub_img}>
                         <Image
-                          fill
                           src={
                             step.imageUrl
-                              ? `${backendUrl}/uploads/${step.imageUrl}`
+                              ? `${imageBaseUrl}/uploads/${step.imageUrl}`
                               : "/pic_recipe_default.webp"
                           }
                           alt={recipe.name}
-                          unoptimized
+                          width={100}
+                          height={100}
                         />
                       </div>
                     )}
@@ -139,7 +140,9 @@ const RecipeDetail = ({
                 </button>
               </div>
             )}
-            <p className={styles.info_block__catchphrase}>{recipe.catchphrase}</p>
+            <p className={styles.info_block__catchphrase}>
+              {recipe.catchphrase}
+            </p>
             <h1 className={styles.info_block__name}>{recipe.name}</h1>
             <div className={styles.detail_block}>
               <div className={styles.detail_block__item}>
@@ -317,7 +320,10 @@ const RecipeDetail = ({
                       {ingredient.name}
                     </p>
                     <p className={styles.ingredient_block__quantity}>
-                      {ingredient.quantity} {ingredient.unit.name}
+                      {Number.isInteger(ingredient.quantity)
+                        ? ingredient.quantity
+                        : Number(ingredient.quantity).toFixed(1)}{" "}
+                      {ingredient.unit.name}
                     </p>
                   </li>
                 ))}
@@ -326,18 +332,18 @@ const RecipeDetail = ({
           </div>
         </div>
         {recipe.faq && recipe.faq.length > 0 && (
-            <section className={styles.faq_block}>
-              <h3 className={styles.faq_block__title}>よくある質問</h3>
-              <ul className={styles.faq_block__list}>
-                {recipe.faq.map((faq, idx) => (
-                  <li className={styles.faq_block__item} key={idx}>
-                    <h4 className={styles.faq_block__question}>{faq.question}</h4>
-                    <p className={styles.faq_block__answer}>{faq.answer}</p>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          <section className={styles.faq_block}>
+            <h3 className={styles.faq_block__title}>よくある質問</h3>
+            <ul className={styles.faq_block__list}>
+              {recipe.faq.map((faq, idx) => (
+                <li className={styles.faq_block__item} key={idx}>
+                  <h4 className={styles.faq_block__question}>{faq.question}</h4>
+                  <p className={styles.faq_block__answer}>{faq.answer}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
 
       {showReviewModal && (

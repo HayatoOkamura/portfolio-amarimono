@@ -1,0 +1,153 @@
+.form_block {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    input {
+      padding: 8px 12px;
+      border-radius: 5px;
+      border: 1px solid #e5e7eb;
+      font-size: 16px;
+      color: #374151;
+    }
+  }
+
+  &__label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+  }
+
+  &__input {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+
+    &:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    &.error {
+      border-color: #dc2626;
+      &:focus {
+        box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+      }
+    }
+
+    &::placeholder {
+      color: #9ca3af;
+    }
+  }
+
+  &__error {
+    margin: 1rem 0;
+    padding: 1rem;
+    border-radius: 4px;
+    background-color: #fef2f2;
+    border: 1px solid #fee2e2;
+    text-align: center;
+
+    p {
+      color: #dc2626;
+      font-size: 0.875rem;
+      margin: 0;
+      font-weight: 500;
+
+      &:not(:first-child) {
+        margin-top: 0.5rem;
+      }
+    }
+  }
+
+  &__error_action {
+    color: #4b5563;
+    font-size: 0.875rem;
+  }
+
+  &__submit_button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #DE616A;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #DE616A;
+    }
+
+    &:disabled {
+      background-color: #7c7c7c;
+      cursor: not-allowed;
+    }
+  }
+
+  &__toggle {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  &__link_button {
+    background: none;
+    border: none;
+    color: #3b82f6;
+    cursor: pointer;
+    padding: 0;
+    font-size: inherit;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__account_exists_error {
+    color: #dc2626;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    text-align: center;
+  }
+
+  &__success {
+    margin: 1rem 0;
+    padding: 1rem;
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    text-align: center;
+  }
+}
+
+
+.form_block {
+  &__error {
+    margin: 1rem 0;
+    padding: 1rem;
+    border-radius: 4px;
+    background-color: #fef2f2;
+    border: 1px solid #fee2e2;
+    text-align: center;
+
+    p {
+      color: #dc2626;
+      font-size: 0.875rem;
+      margin: 0;
+      font-weight: 500;
+    }
+  }
+} 

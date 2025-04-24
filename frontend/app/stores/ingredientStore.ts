@@ -2,7 +2,7 @@
 import { create } from "zustand";
 import { Ingredient, EditIngredient } from "@/app/types/index";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { backendUrl } from "../utils/apiUtils";
+import { backendUrl } from "../utils/api";
 
 interface IngredientStore {
   ingredients: Ingredient[];
@@ -24,9 +24,10 @@ const useIngredientStore = create<IngredientStore>()(
       ingredients: [],
       error: null,
       newIngredient: {
+        id: 0,
         name: "",
-        genre: null,
-        unit: null,
+        genre: { id: 0, name: "" },
+        unit: { id: 0, name: "", description: "", step: 1 },
         imageUrl: null,
         quantity: 0
       } as EditIngredient,
@@ -57,7 +58,6 @@ const useIngredientStore = create<IngredientStore>()(
         }));
       },
       fetchIngredients: () => {
-        // APIリクエストはhooksで行うため、ここでは何もしない
         return Promise.resolve();
       },
     }),

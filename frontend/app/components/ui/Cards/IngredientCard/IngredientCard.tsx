@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import styles from "./IngredientCard.module.scss";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { imageBaseUrl } from "@/app/utils/api";
 import { Unit } from "@/app/types/index";
 import Image from "next/image";
 import useIngredientStore from "@/app/stores/ingredientStore";
@@ -33,7 +33,7 @@ const IngredientCard: React.FC<IngredientCardProps> = ({
   const handleQuantityUpdate = (id: number, delta: number) => {
     const newQuantity = Math.max(0, currentQuantity + delta);
     if (newQuantity > 0 || currentQuantity > 0) {
-      updateQuantity({ ...ingredient, quantity: newQuantity });
+      updateQuantity({ ...ingredient, quantity: newQuantity, imageUrl: ingredient.imageUrl || null });
     }
   };
 
@@ -41,14 +41,14 @@ const IngredientCard: React.FC<IngredientCardProps> = ({
     <li className={styles.card_block}>
       <div className={styles.card_block__image}>
         <Image
-          fill
           src={
             ingredient.imageUrl
-              ? `${backendUrl}/${ingredient.imageUrl}`
+              ? `${imageBaseUrl}/uploads/${ingredient.imageUrl}`
               : "/pic_recipe_default.webp"
           }
           alt={ingredient.name}
-          unoptimized
+          width={100}
+          height={100}
         />
       </div>
       <p className={styles.card_block__name}>{ingredient.name}</p>
@@ -60,7 +60,7 @@ const IngredientCard: React.FC<IngredientCardProps> = ({
         />
 
         <span>
-          {currentQuantity}
+          {Number.isInteger(currentQuantity) ? currentQuantity : Number(currentQuantity).toFixed(1)}
           {ingredient.unit.name}
         </span>
         <button

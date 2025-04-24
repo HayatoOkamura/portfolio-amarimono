@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import { useUserStore } from "@/app/stores/userStore";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { backendUrl } from "@/app/utils/api";
 import { UserData } from "@/app/types/index";
 
 export default function SignUpPage() {

@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { backendUrl } from "@/app/utils/api";
 import { Recipe } from "@/app/types/index";
 import { fetchRecipeByIdService } from "@/app/hooks/recipes";
 import { useRouter } from "next/navigation";
@@ -24,6 +24,7 @@ const AdminRecipeDetail = () => {
         })
         .catch((error) => console.error("Error fetching recipe:", error));
     }
+    console.log("recipe", recipe);
   }, []);
 
   const handleDelete = async () => {

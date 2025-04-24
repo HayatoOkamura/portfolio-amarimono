@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import Image from "next/image";
 import styles from "./RecipeCard.module.scss";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { backendUrl } from "@/app/utils/api";
 import { Recipe } from "@/app/types/index";
 import Link from "next/link";
 

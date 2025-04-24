@@ -29,9 +29,11 @@ const Header = () => {
         <div className={styles.header_block__logo}>
           <Link href="/">
             <Image
-              fill
               src="/images/common/logo_main.svg"
               alt="あまりもの ロゴ"
+              width={100}
+              height={100}
+              priority
             />
           </Link>
         </div>

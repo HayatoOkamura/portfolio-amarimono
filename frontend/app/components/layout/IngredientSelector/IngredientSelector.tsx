@@ -18,7 +18,9 @@ const IngredientSelector = () => {
   useEffect(() => {
     const loadGenres = async () => {
       setIsGenresLoading(true);
+      console.log("Loading genres...");
       await fetchIngredientGenres();
+      console.log("Current ingredientGenres:", ingredientGenres);
       setIsGenresLoading(false);
     };
     loadGenres();
@@ -26,7 +28,11 @@ const IngredientSelector = () => {
 
   useEffect(() => {
     const updateHeight = () => {
+      // ローディング中は高さの計算を行わない
+      if (isIngredientsLoading || isGenresLoading) return;
+
       const element = document.getElementById("target");
+      console.log("element", element);
       
       if (element) {
         const topOffset = element.getBoundingClientRect().top;
@@ -38,12 +44,14 @@ const IngredientSelector = () => {
     updateHeight(); // 初回設定
 
     return () => window.removeEventListener("resize", updateHeight);
-  }, []);
+  }, [isIngredientsLoading, isGenresLoading]); // 依存配列にローディング状態を追加
 
   const genres = [
     { id: 0, name: "すべて" },
     ...ingredientGenres,
   ];
+
+  console.log("Available genres:", genres);
 
   const filteredIngredients =
     selectedGenre === "すべて"

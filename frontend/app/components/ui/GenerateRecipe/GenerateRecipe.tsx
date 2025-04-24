@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import styles from "./GenerateRecipe.module.scss";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { imageBaseUrl } from "@/app/utils/api";
 import { useRouter } from "next/navigation";
 import useRecipeStore from "@/app/stores/recipeStore";
 import useIngredientStore from "@/app/stores/ingredientStore";
@@ -27,7 +27,7 @@ const GenerateRecipe = () => {
 
   const handleRecipe = async () => {
     setLoading(true);
-    
+
     try {
       const filteredIngredients = ingredients
         .filter((ingredient: Ingredient) => ingredient.quantity > 0)
@@ -46,7 +46,7 @@ const GenerateRecipe = () => {
       setLoading(false);
     }
   };
-  
+
   const selectedIngredients = ingredients.filter(
     (ingredient: Ingredient) => ingredient.quantity > 0
   ) as Ingredient[];
@@ -65,22 +65,24 @@ const GenerateRecipe = () => {
                 >
                   <div className={styles.ingredients_list__image}>
                     <Image
-                      fill
                       src={
                         ingredient.imageUrl
-                          ? `${backendUrl}/${ingredient.imageUrl}`
+                          ? `${imageBaseUrl}/uploads/${ingredient.imageUrl}`
                           : "/pic_recipe_default.webp"
                       }
                       alt={ingredient.name}
-                      unoptimized
+                      width={100}
+                      height={100}
                     />
                   </div>
                   <p className={styles.ingredients_list__name}>
                     {ingredient.name}
                   </p>
                   <p className={styles.ingredients_list__quantity}>
-                    {ingredient.quantity}
-                    {ingredient.unit?.name || ''}
+                    {Number.isInteger(ingredient.quantity)
+                      ? ingredient.quantity
+                      : Number(ingredient.quantity).toFixed(1)}
+                    {ingredient.unit?.name || ""}
                   </p>
                 </li>
               ))}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { backendUrl, handleApiResponse } from "../utils/apiUtils";
+import { backendUrl, handleApiResponse } from "../utils/api";
 
 export const useUserLikeCount = (userId?: string) => {
   const [likeCount, setLikeCount] = useState<number | null>(null);

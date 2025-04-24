@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from "axios";
 
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "";
 
 export const api: AxiosInstance = axios.create({
   baseURL: backendUrl,

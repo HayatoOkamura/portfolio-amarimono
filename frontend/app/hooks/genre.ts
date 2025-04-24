@@ -1,4 +1,4 @@
-import { backendUrl, handleApiResponse } from "../utils/apiUtils";
+import { backendUrl, handleApiResponse } from "../utils/api";
 
 // レシピのジャンルを取得
 export const fetchRecipeGenres = async () => {
@@ -9,5 +9,6 @@ export const fetchRecipeGenres = async () => {
 // 食材のジャンルを取得
 export const fetchIngredientGenres = async () => {
   const res = await fetch(`${backendUrl}/api/ingredient_genres`);
-  return handleApiResponse(res);
+  const data = await handleApiResponse(res);
+  return data;
 };

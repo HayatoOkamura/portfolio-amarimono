@@ -47,6 +47,7 @@ const mapIngredients = (ingredients: any[]): Ingredient[] => {
 // Service functions
 const fetchIngredientsService = async (): Promise<Ingredient[]> => {
   const response = await api.get("/admin/ingredients");
+  
   const mappedIngredients = mapIngredients(response.data);
   return mappedIngredients;
 };
@@ -85,11 +86,20 @@ const updateIngredientService = async ({
 }): Promise<Ingredient> => {
   const formData = new FormData();
   if (data.name) formData.append("name", data.name);
-  if (data.imageUrl) formData.append("imageUrl", data.imageUrl);
-  if (data.genre) formData.append("genre", JSON.stringify(data.genre));
-  if (data.unit) formData.append("unit", JSON.stringify(data.unit));
+  if (data.genre) formData.append("genre", JSON.stringify({ id: data.genre.id }));
+  if (data.unit) formData.append("unit", JSON.stringify({ 
+    id: data.unit.id,
+    step: data.unit.step 
+  }));
+  
+  // 画像の処理
+  if (data.imageUrl instanceof File) {
+    formData.append("image", data.imageUrl);
+  } else if (typeof data.imageUrl === "string") {
+    formData.append("image_url", data.imageUrl);
+  }
 
-  const response = await api.patch(`/ingredients/${id}`, formData, {
+  const response = await api.patch(`/admin/ingredients/${id}`, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },

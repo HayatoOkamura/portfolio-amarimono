@@ -1,7 +1,64 @@
+import React from "react";
 import { useImageUpload } from "../hooks/useImageUpload";
 import { RecipeFormData } from "../types/recipeForm";
 import { VALIDATION_MESSAGES } from "../constants/validationMessages";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { backendUrl } from "@/app/utils/api";
+import styles from "./InstructionInput.module.scss";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { FaCirclePlus } from "react-icons/fa6";
+import { FaGripLines, FaTrash } from "react-icons/fa";
+import { LuImagePlus } from "react-icons/lu";
+
+interface SortableItemProps {
+  id: string;
+  children: React.ReactNode;
+  listeners?: any;
+}
+
+const SortableItem = ({ id, children, listeners }: SortableItemProps) => {
+  const { attributes, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 999 : 0,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      {React.cloneElement(children as React.ReactElement, { listeners })}
+    </div>
+  );
+};
+
+interface DragHandleProps {
+  id: string;
+}
+
+const DragHandle = ({ id }: DragHandleProps) => {
+  const { listeners } = useSortable({ id });
+
+  return (
+    <button className={styles.instruction_block__drag_handle} {...listeners}>
+      <FaGripLines />
+    </button>
+  );
+};
 
 interface InstructionInputProps {
   instructions: RecipeFormData["instructions"];
@@ -13,6 +70,38 @@ export const InstructionInput = ({
   onUpdateInstructions,
 }: InstructionInputProps) => {
   const { handleImageChange, getImageUrl, revokeImageUrl } = useImageUpload();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      const oldIndex = instructions.findIndex(
+        (_, i) => `step-${i}` === active.id
+      );
+      const newIndex = instructions.findIndex(
+        (_, i) => `step-${i}` === over.id
+      );
+
+      const newInstructions = [...instructions];
+      const [movedItem] = newInstructions.splice(oldIndex, 1);
+      newInstructions.splice(newIndex, 0, movedItem);
+
+      // ステップ番号を更新
+      const updatedInstructions = newInstructions.map((step, index) => ({
+        ...step,
+        step: index + 1,
+      }));
+
+      onUpdateInstructions(updatedInstructions);
+    }
+  };
 
   const handleDeleteInstruction = (index: number) => {
     if (instructions.length === 1) {
@@ -32,99 +121,149 @@ export const InstructionInput = ({
   };
 
   return (
-    <div>
-      {instructions.map((instruction, index) => (
-        <div key={index} className="flex flex-col gap-2 mb-4">
-          <div className="flex items-center gap-2">
-            <textarea
-              placeholder={`Step ${instruction.step}`}
-              value={instruction.description}
-              onChange={(e) =>
-                onUpdateInstructions(
-                  instructions.map((step, i) =>
-                    i === index
-                      ? { ...step, description: e.target.value }
-                      : step
-                  )
-                )
-              }
-              className="border p-2 w-full rounded text-gray-700"
-            ></textarea>
-            <button
-              onClick={() => handleDeleteInstruction(index)}
-              className="bg-red-500 text-white px-2 py-1 rounded h-10"
-            >
-              削除
-            </button>
-          </div>
-          <div className="relative">
-            {instruction.imageURL ? (
-              <div className="relative group">
-                <img
-                  src={
-                    instruction.imageURL instanceof File
-                      ? URL.createObjectURL(instruction.imageURL)
-                      : typeof instruction.imageURL === 'string' && instruction.imageURL.startsWith('http')
-                      ? instruction.imageURL
-                      : typeof instruction.imageURL === 'string'
-                      ? `${backendUrl}/uploads/${instruction.imageURL}`
-                      : ""
-                  }
-                  alt={`Step ${instruction.step}`}
-                  className="w-full h-48 object-cover rounded-lg"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center">
-                  <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    画像を変更
-                  </span>
+    <div className={styles.instruction_block}>
+      <div className={styles.instruction_block__container}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={instructions.map((_, index) => `step-${index}`)}
+            strategy={verticalListSortingStrategy}
+          >
+            {instructions.map((instruction, index) => (
+              <SortableItem key={`step-${index}`} id={`step-${index}`}>
+                <div className={styles.instruction_block__step}>
+                  <div className={styles.instruction_block__header}>
+                    <div className={styles.instruction_block__step_number}>
+                      {instruction.step}
+                    </div>
+                    <div className={styles.instruction_block__actions}>
+                      <DragHandle id={`step-${index}`} />
+                      <button
+                        className={styles.instruction_block__delete}
+                        onClick={() => handleDeleteInstruction(index)}
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </div>
+                  <div className={styles.instruction_block__image_container}>
+                    {instruction.imageURL ? (
+                      <>
+                        <img
+                          src={
+                            instruction.imageURL instanceof File
+                              ? URL.createObjectURL(instruction.imageURL)
+                              : typeof instruction.imageURL === "string" &&
+                                instruction.imageURL.startsWith("http")
+                              ? instruction.imageURL
+                              : typeof instruction.imageURL === "string"
+                              ? `${backendUrl}/uploads/${instruction.imageURL}`
+                              : ""
+                          }
+                          alt={`Step ${instruction.step}`}
+                          className={styles.instruction_block__image}
+                        />
+                        <div
+                          className={styles.instruction_block__image_overlay}
+                        >
+                          <span
+                            className={styles.instruction_block__image_text}
+                          >
+                            画像を変更
+                          </span>
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const updatedInstructions = instructions.map(
+                                (step, i) =>
+                                  i === index
+                                    ? {
+                                        ...step,
+                                        imageURL: file,
+                                      }
+                                    : step
+                              );
+                              onUpdateInstructions(updatedInstructions);
+                            }
+                          }}
+                          className={styles.instruction_block__image_input}
+                        />
+                      </>
+                    ) : (
+                      <div className={styles.instruction_block__placeholder}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const updatedInstructions = instructions.map(
+                                (step, i) =>
+                                  i === index
+                                    ? {
+                                        ...step,
+                                        imageURL: file,
+                                      }
+                                    : step
+                              );
+                              onUpdateInstructions(updatedInstructions);
+                            }
+                          }}
+                          className={styles.instruction_block__image_input}
+                        />
+                        <div
+                          className={
+                            styles.instruction_block__placeholder_content
+                          }
+                        >
+                          <div className={styles.instruction_block__icon}>
+                            <LuImagePlus />
+                          </div>
+                          <div
+                            className={styles.instruction_block__upload_text}
+                          >
+                            <label
+                              className={styles.instruction_block__upload_label}
+                            >
+                              手順の画像を<br />アップロード
+                            </label>
+                          </div>
+                          <p className={styles.instruction_block__file_info}>
+                            PNG, JPG, GIF up to 10MB
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.instruction_block__controls}>
+                    <textarea
+                      placeholder={`Step ${instruction.step}`}
+                      value={instruction.description}
+                      onChange={(e) =>
+                        onUpdateInstructions(
+                          instructions.map((step, i) =>
+                            i === index
+                              ? { ...step, description: e.target.value }
+                              : step
+                          )
+                        )
+                      }
+                      className={styles.instruction_block__textarea}
+                    />
+                  </div>
                 </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const updatedInstructions = instructions.map((step, i) =>
-                        i === index
-                          ? {
-                              ...step,
-                              imageURL: file,
-                            }
-                          : step
-                      );
-                      onUpdateInstructions(updatedInstructions);
-                    }
-                  }}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                画像なし
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const updatedInstructions = instructions.map((step, i) =>
-                        i === index
-                          ? {
-                              ...step,
-                              imageURL: file,
-                            }
-                          : step
-                      );
-                      onUpdateInstructions(updatedInstructions);
-                    }
-                  }}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      ))}
+              </SortableItem>
+            ))}
+          </SortableContext>
+        </DndContext>
+      </div>
       <button
         onClick={() =>
           onUpdateInstructions([
@@ -136,10 +275,11 @@ export const InstructionInput = ({
             },
           ])
         }
-        className="bg-green-500 text-white px-4 py-2 rounded w-full mb-2"
+        className={styles.instruction_block__add}
       >
-        Add Step
+        <FaCirclePlus />
+        手順を追加
       </button>
     </div>
   );
-}; 
+};

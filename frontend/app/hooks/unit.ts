@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { backendUrl, handleApiResponse } from "../utils/apiUtils";
+import { backendUrl, handleApiResponse } from "../utils/api";
 import { Unit } from "../types/index";
 
 // 単位(Unit)一覧を取得

@@ -41,7 +41,7 @@
   }
 
   &__button {
-    background: #DE616A;
+    background: var(--primary-accent-color);
     border-radius: 100%;
     width: 25px;
     height: 25px;

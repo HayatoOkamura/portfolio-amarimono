@@ -60,7 +60,7 @@ export const IngredientInput = ({
               >
                 増加
               </button>
-              <span className="mx-4">{quantity}</span>
+              <span className="mx-4">{Number.isInteger(quantity) ? quantity : Number(quantity).toFixed(1)}</span>
               <button
                 onClick={() => {
                   const updatedIngredients = ingredients.map((item) =>

@@ -1,60 +1,112 @@
 services:
   backend:
+    platform: linux/arm64/v8
     build:
       context: ./backend/
       dockerfile: Dockerfile
     ports:
       - 8080:8080
     volumes:
-      - ./backend:/app 
+      - ./backend:/app
       - ./backend/uploads:/app/uploads
     depends_on:
-      - db
-      - redis
-    command: >
-     sh -c "
-     migrate -path /app/db/migrations -database 'postgres://postgres:password@db:5432/db?sslmode=disable' up &&
-     go run main.go
-     "
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: go run main.go
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+    networks:
+      - app-network
+    hostname: backend
   frontend:
+    platform: linux/arm64/v8
     build:
       context: ./frontend/
       dockerfile: Dockerfile
     volumes:
-      - ./frontend:/app
-      - front_node_modules:/workspace/node_modules
+      - ./frontend:/frontend
+      - front_node_modules:/frontend/node_modules
     ports:
       - 3000:3000
     stdin_open: true
     tty: true
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+      - NEXT_PUBLIC_BACKEND_INTERNAL_URL=http://backend:8080
+      - NEXT_PUBLIC_IMAGE_BASE_URL=http://backend:8080
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - NEXT_TELEMETRY_DISABLED=1
+    command: >
+      sh -c "
+        npm install && npm run dev
+      "
+    depends_on:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
+    networks:
+      - app-network
+    restart: unless-stopped
   db:
     image: "postgres:17-alpine"
+    platform: linux/arm64/v8
     ports:
       - "5432:5432"
     environment:
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=db
+      - POSTGRES_DB=amarimono
+      - POSTGRES_INITDB_ARGS=--data-checksums
+      - POSTGRES_HOST_AUTH_METHOD=trust
     volumes:
       - db-store:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    networks:
+      - app-network
   redis:
     image: "redis:alpine"
+    platform: linux/arm64/v8
     ports:
       - "6379:6379"
     volumes:
       - redis-store:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    networks:
+      - app-network
 
 volumes:
   db-store:
   front_node_modules:
+  front_next:
   redis-store:
-  
+
+networks:
+  app-network:
+    driver: bridge

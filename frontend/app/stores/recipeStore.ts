@@ -2,7 +2,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { Recipe, NewRecipe } from "../types/index";
-import { backendUrl } from "../utils/apiUtils";
+import { backendUrl } from "../utils/api";
 
 export type SortOption = "rating_desc" | "cost_asc" | "time_asc" | "calorie_asc";
 
@@ -67,7 +67,7 @@ const useRecipeStore = create<RecipeStore>()(
       setSelectedRecipe: (recipe) => set({ selectedRecipe: recipe }),
       setSearchType: (type) => set({ searchType: type }),
       setQuery: (query) => set({ query }),
-      setRecipes: (recipes) => set({ recipes }),
+      setRecipes: (recipes) => set((state) => ({ ...state, recipes })),
       setGeneratedRecipes: (recipes) => set({ generatedRecipes: recipes }),
       setSortBy: (sortBy) => set({ sortBy }),
       clearRecipes: () => set({ recipes: [] }),

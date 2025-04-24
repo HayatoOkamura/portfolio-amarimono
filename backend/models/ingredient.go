@@ -6,10 +6,8 @@ type Ingredient struct {
 	GenreID  int             `json:"genre_id" binding:"required"`
 	Genre    IngredientGenre `json:"genre" gorm:"foreignKey:GenreID;references:ID"`
 	ImageUrl string          `json:"image_url"`
-	Quantity int             `json:"quantity" gorm:"not null"`
-
-	UnitID uint `json:"unit_id" gorm:"not null"`
-	Unit   Unit `json:"unit" gorm:"foreignKey:UnitID;references:ID"`
+	UnitID   uint            `json:"unit_id" gorm:"not null"`
+	Unit     Unit            `json:"unit" gorm:"foreignKey:UnitID;references:ID"`
 }
 
 func (Ingredient) TableName() string {

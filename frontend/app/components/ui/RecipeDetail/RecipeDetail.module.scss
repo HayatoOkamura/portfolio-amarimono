@@ -19,6 +19,11 @@
     &__img {
       position: relative;
       aspect-ratio: 1 / 1;
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
     }
 
     &__label {
@@ -211,8 +216,8 @@
 
         &--edit {
           background: #fff;
-          border: 1px solid #de616a;
-          color: #de616a;
+          border: 1px solid var(--primary-accent-color);
+          color: var(--primary-accent-color);
         }
 
         &--publish {
@@ -228,7 +233,7 @@
         }
 
         &--delete {
-          background: #de616a;
+          background: var(--primary-accent-color);
         }
       }
     }
@@ -412,7 +417,7 @@
     }
 
     &__submit {
-      background: #DE616A;
+      background: var(--primary-accent-color);
       color: white;
       padding: 10px 20px;
       border: none;
@@ -480,7 +485,7 @@
     }
 
     &__login {
-      background: #de616a;
+      background: var(--primary-accent-color);
       color: #fff;
       padding: 10px 20px;
       border: none;

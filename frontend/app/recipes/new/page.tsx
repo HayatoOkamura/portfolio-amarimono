@@ -12,7 +12,7 @@ import {
   useDeleteRecipe,
   useUpdateRecipe,
 } from "@/app/hooks/recipes";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { backendUrl } from "@/app/utils/api";
 import Image from "next/image";
 import { useState } from "react";
 import { Ingredient, Instruction, Recipe } from "@/app/types/index";

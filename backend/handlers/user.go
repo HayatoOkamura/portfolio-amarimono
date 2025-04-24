@@ -67,7 +67,12 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	// ユーザーをデータベースに保存
 	if err := models.CreateUser(h.DB, user); err != nil {
 		log.Printf("Failed to create user: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		// PostgreSQLのユニーク制約違反エラーをチェック
+		if err.Error() == "ERROR: duplicate key value violates unique constraint \"users_pkey\" (SQLSTATE 23505)" {
+			c.JSON(http.StatusConflict, gin.H{"error": "このメールアドレスは既に登録されています"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー登録に失敗しました"})
 		return
 	}
 

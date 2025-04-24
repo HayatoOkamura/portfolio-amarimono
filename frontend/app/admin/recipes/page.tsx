@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { imageBaseUrl } from "@/app/utils/api";
 import Image from "next/image";
 import {
   useRecipes,
@@ -124,15 +124,15 @@ const AdminRecipes = () => {
                   </div>
                 )}
                 <Image
-                  fill
                   src={
                     recipe.imageUrl
-                      ? `${backendUrl}/uploads/${recipe.imageUrl}`
+                      ? `${imageBaseUrl}/uploads/${recipe.imageUrl}`
                       : "/images/common/pic_recipe_default.webp"
                   }
                   alt={recipe.name}
                   className={styles.recipes_block}
-                  unoptimized
+                  width={200}
+                  height={200}
                 />
               </div>
               <div className={styles.detail_block__contents}>
@@ -148,7 +148,7 @@ const AdminRecipes = () => {
                   <div
                     className={`${styles.btn_block__item} ${styles["btn_block__item--edit"]}`}
                   >
-                    <Link href={`/admin/recipes/${recipe.id}`}>編集</Link>
+                    <Link href={`/admin/recipes/${recipe.id}`}>詳細</Link>
                   </div>
                   <div
                     className={`${styles.btn_block__item} ${styles["btn_block__item--delete"]}`}

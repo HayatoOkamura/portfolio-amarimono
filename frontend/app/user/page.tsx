@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import styles from "./user.module.scss";
 import Image from "next/image";
 import Link from "next/link";
-import { backendUrl } from "../utils/apiUtils";
+import { backendUrl } from "../utils/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useUserLikeCount, useUserRecipeAverageRating } from "@/app/hooks/user";
 import { useRecommendedRecipes } from "@/app/hooks/recipes";
@@ -15,27 +15,39 @@ import { FaHeart } from "react-icons/fa";
 import { FaStar } from "react-icons/fa";
 import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";
 import { Recipe } from "@/app/types/index";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 
 export default function UserPage() {
   const { user } = useAuth();
+  const router = useRouter();
 
-  const { likeCount, loading: likesLoading } = useUserLikeCount(user?.id);
-  const { averageRating, loading: ratingLoading } = useUserRecipeAverageRating(
-    user?.id
-  );
-  const { data: recommendedRecipes, isLoading: recommendedLoading, isError, error } = useRecommendedRecipes(user?.id);
+  useEffect(() => {
+    if (!user) {
+      router.push("/login");
+    }
+  }, [user, router]);
+
+  if (!user) {
+    return null;
+  }
+
+  const { likeCount, loading: likesLoading } = useUserLikeCount(user.id);
+  const { averageRating, loading: ratingLoading } = useUserRecipeAverageRating(user.id);
+  const { data: recommendedRecipes, isLoading: recommendedLoading } = useRecommendedRecipes(user.id);
+
+  if (recommendedLoading || likesLoading || ratingLoading) {
+    return <p>Loading...</p>;
+  }
 
   const [recipeCount, setRecipeCount] = useState(0);
 
   useEffect(() => {
     if (recommendedRecipes) {
+      console.log("Recommended recipes:", recommendedRecipes);
       setRecipeCount(recommendedRecipes.length);
     }
   }, [recommendedRecipes]);
-
-  if (!user || recommendedLoading || likesLoading || ratingLoading) {
-    return <p>Loading...</p>;
-  }
 
   return (
     <section className={styles.profile_block}>

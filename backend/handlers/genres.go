@@ -29,5 +29,6 @@ func (h *GenreHandler) ListIngredientGenres(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch ingredient genres"})
 		return
 	}
+
 	c.JSON(http.StatusOK, genres)
 }

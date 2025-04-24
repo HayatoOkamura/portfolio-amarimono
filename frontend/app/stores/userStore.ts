@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { create } from "zustand";
 import { supabase } from "@/app/lib/api/supabase/supabaseClient";
-import { backendUrl } from "../utils/apiUtils";
+import { backendUrl } from "../utils/api";
 import { persist } from 'zustand/middleware';
 
 type UserState = {
@@ -59,8 +59,23 @@ const useUserStore = create<UserState>()(
         }
 
         // ログイン後にユーザー情報を取得してzustandに保存
-        await useUserStore.getState().fetchUser(); // fetchUserを呼び出して情報を取得
-        alert("ログイン成功！");
+        const userId = data?.user?.id;
+        if (userId) {
+          // 取得したuser.idを使ってGoのAPIからユーザー詳細を取得
+          const response = await fetch(`${backendUrl}/api/users/${userId}`);
+          const userDetails = await response.json();
+
+          if (response.ok) {
+            // ユーザー情報をzustandストアに保存
+            set({ user: { ...data.user, ...userDetails }, isLoading: false });
+            alert("ログイン成功！");
+          } else {
+            // バックエンドにユーザーが存在しない場合はログアウト
+            await supabase.auth.signOut();
+            set({ user: null, isLoading: false });
+            alert("ユーザー情報が正しく設定されていません。管理者にお問い合わせください。");
+          }
+        }
       },
     }),
     {

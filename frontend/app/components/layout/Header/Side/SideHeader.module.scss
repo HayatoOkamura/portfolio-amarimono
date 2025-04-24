@@ -19,8 +19,7 @@
     display: block;
 
     img {
-      object-fit: contain;
-      position: relative !important;
+      width: 100%;
     }
   }
 
@@ -60,12 +59,12 @@
 
     &.is-active {
       background: var(--secondary-bg-color);
-      color: var(--accent-color);
+      color: var(--primary-accent-color);
     }
 
     &:hover {
       background: var(--secondary-bg-color);
-      color: var(--accent-color);
+      color: var(--primary-accent-color);
     }
   }
 

@@ -5,7 +5,7 @@ import styles from "./favorite.module.scss";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { backendUrl } from "@/app/utils/api";
 import { useFavorites } from "@/app/hooks/recipes";
 import { Recipe, Ingredient } from "@/app/types/index";
 import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";

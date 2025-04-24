@@ -1,7 +1,7 @@
 /* eslint-disable */
 "use client";
 import styles from "./recipe.detail.module.scss";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { backendUrl } from "@/app/utils/api";
 import ResponsivePieChart from "@/app/components/ui/PieChart/PieChart";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

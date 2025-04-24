@@ -36,8 +36,8 @@ func extractIngredientIDs(ingredients []models.RecipeIngredient) []int {
 // SerchRecipes handles POST /api/recipes
 func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 	type RecipeIngredientRequest struct {
-		IngredientID     int `json:"ingredientId"`
-		QuantityRequired int `json:"quantityRequired"`
+		IngredientID     int     `json:"ingredientId"`
+		QuantityRequired float64 `json:"quantityRequired"`
 	}
 	var requestIngredients []RecipeIngredientRequest
 
@@ -67,7 +67,7 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 	}
 
 	// マップで数量を管理
-	quantityMap := make(map[int]int)
+	quantityMap := make(map[int]float64)
 	for _, ing := range ingredients {
 		quantityMap[ing.IngredientID] = ing.QuantityRequired
 	}

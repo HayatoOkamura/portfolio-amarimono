@@ -19,7 +19,7 @@ import { RecipeSort } from "../components/ui/RecipeSort/RecipeSort";
 import { useFetchRecipesAPI, useSearchRecipes } from "../hooks/recipes";
 import { useSortedRecipes } from "../hooks/recipes";
 // Utils
-import { backendUrl } from "@/app/utils/apiUtils";
+import { backendUrl } from "@/app/utils/api";
 import { calculateAverageRating } from "@/app/utils/calculateAverageRating";
 // Icon
 import { IoMdTime } from "react-icons/io";
@@ -29,34 +29,37 @@ import { Recipe, Ingredient } from "@/app/types/index";
 
 const RecipeClientComponent = () => {
   const { ingredients } = useIngredientStore();
-  const { 
-    recipes: persistedRecipes, 
+  const {
+    recipes: persistedRecipes = [],
     selectedRecipe: persistedSelectedRecipe,
-    setRecipes, 
+    setRecipes,
     setSelectedRecipe,
-    searchType, 
+    searchType,
     query,
-    searchExecuted
+    searchExecuted,
   } = useRecipeStore();
   const [loading, setLoading] = useState<boolean>(true);
   const { recipeGenres, fetchRecipeGenres } = useGenreStore();
   const [selectedGenre, setSelectedGenre] = useState<string>("すべて");
-  const genres = [
-    { id: 0, name: "すべて" },
-    ...recipeGenres,
-  ];
+  const genres = [{ id: 0, name: "すべて" }, ...(recipeGenres || [])];
   const [nextRecipe, setNextRecipe] = useState<Recipe | null>(null);
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [rotate, setRotate] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [borderPosition, setBorderPosition] = useState({ top: 0, left: 0 });
   const [borderSize, setBorderSize] = useState({ width: 0, height: 0 });
-  const [containerElement, setContainerElement] = useState<HTMLDivElement | null>(null);
+  const [containerElement, setContainerElement] =
+    useState<HTMLDivElement | null>(null);
 
-  const { data: fetchedRecipes, isLoading: isFetchingRecipes } = useFetchRecipesAPI(
-    ingredients.map((ingredient) => ({ id: ingredient.id, quantity: ingredient.quantity }))
-  );
-  const { data: searchResults, isLoading: isSearching } = useSearchRecipes(query);
+  const { data: fetchedRecipes = [], isLoading: isFetchingRecipes } =
+    useFetchRecipesAPI(
+      ingredients.map((ingredient) => ({
+        id: ingredient.id,
+        quantity: ingredient.quantity,
+      }))
+    );
+  const { data: searchResults = [], isLoading: isSearching } =
+    useSearchRecipes(query);
 
   const handleRecipeClick = (recipe: Recipe) => {
     if (recipe.id === persistedSelectedRecipe?.id) return;
@@ -77,7 +80,9 @@ const RecipeClientComponent = () => {
   const filteredRecipes =
     selectedGenre === "すべて"
       ? persistedRecipes || []
-      : (persistedRecipes || []).filter((recipe: Recipe) => recipe.genre?.name === selectedGenre);
+      : (persistedRecipes || []).filter(
+          (recipe: Recipe) => recipe.genre?.name === selectedGenre
+        );
 
   const sortedRecipes = useSortedRecipes(filteredRecipes);
 
@@ -91,9 +96,10 @@ const RecipeClientComponent = () => {
       const selectedElement = containerRef.current.querySelector(
         `[data-recipe-id="${nextRecipe.id}"]`
       ) as HTMLDivElement;
-      
+
       if (nextRecipe) {
-        const { offsetTop, offsetLeft, offsetWidth, offsetHeight } = selectedElement;
+        const { offsetTop, offsetLeft, offsetWidth, offsetHeight } =
+          selectedElement;
         setBorderPosition({ top: offsetTop, left: offsetLeft });
         setBorderSize({ width: offsetWidth, height: offsetHeight });
       }
@@ -123,7 +129,8 @@ const RecipeClientComponent = () => {
 
   useEffect(() => {
     if (containerElement) {
-      const { offsetTop, offsetLeft, offsetWidth, offsetHeight } = containerElement;
+      const { offsetTop, offsetLeft, offsetWidth, offsetHeight } =
+        containerElement;
       setBorderPosition({ top: offsetTop, left: offsetLeft });
       setBorderSize({ width: offsetWidth, height: offsetHeight });
     }
@@ -135,33 +142,49 @@ const RecipeClientComponent = () => {
 
   useEffect(() => {
     if (searchType === "ingredients" && fetchedRecipes) {
+      console.log("🔍 Ingredients search triggered");
+      console.log("🔍 Fetched recipes:", fetchedRecipes);
+
+      if (JSON.stringify(persistedRecipes) === JSON.stringify(fetchedRecipes)) {
+        console.log("⏭️ Skipping update - recipes unchanged");
+        return;
+      }
+
       const sortedRecipes = [...fetchedRecipes].sort((a, b) => {
         const ratingA = calculateAverageRating(a.reviews);
         const ratingB = calculateAverageRating(b.reviews);
         return ratingB - ratingA;
       });
-      
+
       setRecipes(sortedRecipes);
-      
-      // レシピが存在する場合、最初のレシピを選択
-      if (sortedRecipes.length > 0) {
+      if (sortedRecipes.length > 0 && !persistedSelectedRecipe) {
         setSelectedRecipe(sortedRecipes[0]);
       }
     } else if (searchType === "name" && searchResults && searchExecuted) {
+      if (JSON.stringify(persistedRecipes) === JSON.stringify(searchResults)) {
+        console.log("⏭️ Skipping update - search results unchanged");
+        return;
+      }
+
       const sortedRecipes = [...searchResults].sort((a, b) => {
         const ratingA = calculateAverageRating(a.reviews);
         const ratingB = calculateAverageRating(b.reviews);
         return ratingB - ratingA;
       });
-      
+
       setRecipes(sortedRecipes);
-      
-      // レシピが存在する場合、最初のレシピを選択
-      if (sortedRecipes.length > 0) {
+      if (sortedRecipes.length > 0 && !persistedSelectedRecipe) {
         setSelectedRecipe(sortedRecipes[0]);
       }
     }
-  }, [searchType, fetchedRecipes, searchResults, searchExecuted]);
+  }, [
+    searchType,
+    fetchedRecipes,
+    searchResults,
+    searchExecuted,
+    persistedRecipes,
+    persistedSelectedRecipe,
+  ]);
 
   useEffect(() => {
     if (isFetchingRecipes || isSearching) {
@@ -214,7 +237,9 @@ const RecipeClientComponent = () => {
                       />
                     </div>
                   </div>
-                  <div className={`${styles.current_recipe__img} ${styles["next"]}`}>
+                  <div
+                    className={`${styles.current_recipe__img} ${styles["next"]}`}
+                  >
                     <div className={styles.current_recipe__img_inner}>
                       <Image
                         fill
@@ -245,7 +270,7 @@ const RecipeClientComponent = () => {
                   exit="hidden"
                   transition={{ duration: 0.4, ease: "easeInOut" }}
                 >
-                      <p className={styles.current_recipe__catchphrase}>
+                  <p className={styles.current_recipe__catchphrase}>
                     {persistedSelectedRecipe?.catchphrase}
                   </p>
                   <h2 className={styles.current_recipe__title}>
@@ -268,9 +293,11 @@ const RecipeClientComponent = () => {
                 </select>
               </div>
               <div className={styles.sort_block__item}>
-                <RecipeSort onSortChange={(sortBy: string) => {
-                  useRecipeStore.getState().setSortBy(sortBy as SortOption);
-                }} />
+                <RecipeSort
+                  onSortChange={(sortBy: string) => {
+                    useRecipeStore.getState().setSortBy(sortBy as SortOption);
+                  }}
+                />
               </div>
             </div>
             <div className={styles.recipe_list} ref={containerRef}>
@@ -316,7 +343,9 @@ const RecipeClientComponent = () => {
                     transition={{ duration: 0.4, ease: "easeInOut" }}
                   >
                     <p className={styles.detail_block__genre}>
-                      {persistedSelectedRecipe.genre ? persistedSelectedRecipe.genre.name : "ジャンルなし"}
+                      {persistedSelectedRecipe.genre
+                        ? persistedSelectedRecipe.genre.name
+                        : "ジャンルなし"}
                     </p>
                   </motion.div>
                   <motion.div
@@ -332,7 +361,9 @@ const RecipeClientComponent = () => {
                   >
                     <p className={styles.review_block__average}>
                       {averageRating.toFixed(1)}{" "}
-                      <span>({persistedSelectedRecipe.reviews?.length ?? 0}件)</span>
+                      <span>
+                        ({persistedSelectedRecipe.reviews?.length ?? 0}件)
+                      </span>
                     </p>
                     <div className={styles.review_block__stars}>
                       <StarRating
@@ -373,14 +404,17 @@ const RecipeClientComponent = () => {
                           <p>費用目安</p>
                         </div>
                         <p className={styles.units_block__text}>
-                          約<span>{persistedSelectedRecipe.costEstimate}</span>円
+                          約<span>{persistedSelectedRecipe.costEstimate}</span>
+                          円
                         </p>
                       </div>
                     </div>
                     {persistedSelectedRecipe.nutrition && (
                       <ul className={styles.nutrition_block}>
                         <li className={styles.nutrition_block__item}>
-                          <p className={styles.nutrition_block__title}>カロリー</p>
+                          <p className={styles.nutrition_block__title}>
+                            カロリー
+                          </p>
                           <div className={styles.nutrition_block__contents}>
                             <p className={styles.nutrition_block__num}>
                               {persistedSelectedRecipe.nutrition.calories}
@@ -389,7 +423,8 @@ const RecipeClientComponent = () => {
                             <ResponsivePieChart
                               value={
                                 persistedSelectedRecipe.nutritionPercentage
-                                  ? persistedSelectedRecipe.nutritionPercentage.calories
+                                  ? persistedSelectedRecipe.nutritionPercentage
+                                      .calories
                                   : 0
                               }
                               type="calories"
@@ -397,7 +432,9 @@ const RecipeClientComponent = () => {
                           </div>
                         </li>
                         <li className={styles.nutrition_block__item}>
-                          <p className={styles.nutrition_block__title}>炭水化物</p>
+                          <p className={styles.nutrition_block__title}>
+                            炭水化物
+                          </p>
                           <div className={styles.nutrition_block__contents}>
                             <p className={styles.nutrition_block__num}>
                               {persistedSelectedRecipe.nutrition.carbohydrates}
@@ -406,7 +443,8 @@ const RecipeClientComponent = () => {
                             <ResponsivePieChart
                               value={
                                 persistedSelectedRecipe.nutritionPercentage
-                                  ? persistedSelectedRecipe.nutritionPercentage.carbohydrates
+                                  ? persistedSelectedRecipe.nutritionPercentage
+                                      .carbohydrates
                                   : 0
                               }
                               type="carbohydrates"
@@ -423,7 +461,8 @@ const RecipeClientComponent = () => {
                             <ResponsivePieChart
                               value={
                                 persistedSelectedRecipe.nutritionPercentage
-                                  ? persistedSelectedRecipe.nutritionPercentage.fat
+                                  ? persistedSelectedRecipe.nutritionPercentage
+                                      .fat
                                   : 0
                               }
                               type="fat"
@@ -431,7 +470,9 @@ const RecipeClientComponent = () => {
                           </div>
                         </li>
                         <li className={styles.nutrition_block__item}>
-                          <p className={styles.nutrition_block__title}>タンパク質</p>
+                          <p className={styles.nutrition_block__title}>
+                            タンパク質
+                          </p>
                           <div className={styles.nutrition_block__contents}>
                             <p className={styles.nutrition_block__num}>
                               {persistedSelectedRecipe.nutrition.protein}
@@ -440,7 +481,8 @@ const RecipeClientComponent = () => {
                             <ResponsivePieChart
                               value={
                                 persistedSelectedRecipe.nutritionPercentage
-                                  ? persistedSelectedRecipe.nutritionPercentage.protein
+                                  ? persistedSelectedRecipe.nutritionPercentage
+                                      .protein
                                   : 0
                               }
                               type="protein"
@@ -457,7 +499,8 @@ const RecipeClientComponent = () => {
                             <ResponsivePieChart
                               value={
                                 persistedSelectedRecipe.nutritionPercentage
-                                  ? persistedSelectedRecipe.nutritionPercentage.salt
+                                  ? persistedSelectedRecipe.nutritionPercentage
+                                      .salt
                                   : 0
                               }
                               type="salt"
@@ -474,7 +517,8 @@ const RecipeClientComponent = () => {
                             <ResponsivePieChart
                               value={
                                 persistedSelectedRecipe.nutritionPercentage
-                                  ? persistedSelectedRecipe.nutritionPercentage.sugar
+                                  ? persistedSelectedRecipe.nutritionPercentage
+                                      .sugar
                                   : 0
                               }
                               type="sugar"
@@ -486,16 +530,31 @@ const RecipeClientComponent = () => {
                     <div className={styles.ingredients_block}>
                       <h3 className={styles.ingredients_block__title}>材料</h3>
                       <ul className={styles.ingredients_block__list}>
-                        {persistedSelectedRecipe.ingredients.map((ingredient: Ingredient, idx: number) => (
-                          <li key={idx} className={styles.ingredients_block__item}>
-                            <p>{getIngredientName(ingredient.id)}</p>
-                            <p>
-                              {["大さじ", "小さじ"].includes(ingredient.unit.name)
-                                ? `${ingredient.unit.name}${ingredient.quantity}`
-                                : `${ingredient.quantity}${ingredient.unit.name}`}
-                            </p>
-                          </li>
-                        ))}
+                        {persistedSelectedRecipe.ingredients.map(
+                          (ingredient: Ingredient, idx: number) => (
+                            <li
+                              key={idx}
+                              className={styles.ingredients_block__item}
+                            >
+                              <p>{getIngredientName(ingredient.id)}</p>
+                              <p>
+                                {["大さじ", "小さじ"].includes(
+                                  ingredient.unit.name
+                                )
+                                  ? `${ingredient.unit.name}${
+                                      Number.isInteger(ingredient.quantity)
+                                        ? ingredient.quantity
+                                        : Number(ingredient.quantity).toFixed(1)
+                                    }`
+                                  : `${
+                                      Number.isInteger(ingredient.quantity)
+                                        ? ingredient.quantity
+                                        : Number(ingredient.quantity).toFixed(1)
+                                    }${ingredient.unit.name}`}
+                              </p>
+                            </li>
+                          )
+                        )}
                       </ul>
                     </div>
                   </motion.div>

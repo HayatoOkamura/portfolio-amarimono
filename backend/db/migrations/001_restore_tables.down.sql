@@ -1,0 +1,11 @@
+DROP TABLE IF EXISTS likes;
+DROP TABLE IF EXISTS reviews;
+DROP TABLE IF EXISTS recipe_ingredients;
+DROP TABLE IF EXISTS user_ingredient_defaults;
+DROP TABLE IF EXISTS ingredients;
+DROP TABLE IF EXISTS recipes;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS ingredient_genres;
+DROP TABLE IF EXISTS recipe_genres;
+DROP TABLE IF EXISTS units;
+DROP EXTENSION IF EXISTS "uuid-ossp"; 

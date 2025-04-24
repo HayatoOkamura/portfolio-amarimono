@@ -5,23 +5,25 @@
 
   &__head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 32px;
   }
 
   &__image {
     position: relative;
     aspect-ratio: 1 / 1;
-    width: 200px;
+    width: 170px;
     border-radius: 100%;
     overflow: hidden;
 
-    img {
+    img, svg {
       width: 100%;
+      color: var(--secondary-font-color);
     }
   }
 
   &__detail {
+    margin-top: 14px;
   }
 
   &__name {
@@ -49,7 +51,7 @@
 
   &__btn {
     display: block;
-    background: var(--accent-color);
+    background: var(--primary-accent-color);
     border-radius: 5px;
     color: #fff;
     font-size: 1rem;
@@ -73,7 +75,7 @@
       padding: 15px;
       font-size: 1.75rem;
       border-radius: 5px;
-      color: #de616a;
+      color: var(--primary-accent-color);
     }
 
     &__num {

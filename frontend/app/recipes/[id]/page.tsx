@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Recipe } from "@/app/types/index";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { backendUrl } from "@/app/utils/api";
 import { fetchRecipeByIdService, handleLikeService, checkLikeStatusService } from "@/app/hooks/recipes";
 import { useUserStore } from "@/app/stores/userStore";
 import { useRouter } from "next/navigation";

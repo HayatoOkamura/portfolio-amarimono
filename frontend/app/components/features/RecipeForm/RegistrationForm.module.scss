@@ -1,70 +1,79 @@
-.faq_block {
-  margin-top: 2rem;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-radius: 0.5rem;
+.container_block {
+  display: flex;
+  gap: 30px;
+  padding-bottom: 100px;
 
-  h2 {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 1rem;
-    color: #323232;
+  .side_block {
+    max-width: 380px;
+    width: 100%;
+
+    .instructions_block {
+      margin-top: 30px;
+
+      &__title {
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+    }
   }
-}
 
-.faq_item {
-  margin-bottom: 1rem;
-  padding: 1rem;
-  background-color: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.faq_input {
-  width: 100%;
-  padding: 0.5rem;
-  margin-bottom: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 0.25rem;
-  font-size: 1rem;
-}
-
-.faq_textarea {
-  width: 100%;
-  padding: 0.5rem;
-  margin-bottom: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 0.25rem;
-  font-size: 1rem;
-  min-height: 100px;
-  resize: vertical;
-}
-
-.faq_remove_button {
-  background-color: #ff4444;
-  color: white;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  font-size: 0.9rem;
-
-  &:hover {
-    background-color: #cc0000;
+  .main_block {
+    max-width: 815px;
+    width: 100%;
   }
-}
 
-.faq_add_button {
-  background-color: #4CAF50;
-  color: white;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  font-size: 0.9rem;
-  margin-top: 1rem;
+  .head_block {
+    display: flex;
+    justify-content: space-between;
 
-  &:hover {
-    background-color: #45a049;
+    &__list {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    &__item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: 5px;
+
+      &--add {
+        background: var(--primary-accent-color);
+        color: #fff;
+      }
+
+      &--save {
+        background: #fff;
+        border: 1px solid var(--primary-accent-color);
+        color: var(--primary-accent-color);
+      }
+
+      &--reset {
+        background: #8f8f8f;
+        color: #fff;
+      }
+
+      button {
+        padding: 8px 20px 9px;
+        font-weight: 500;
+        font-size: 0.875rem;
+      }
+    }
+  }
+
+  .contents_block {
+    display: flex;
+    gap: 30px;
+    margin-top: 30px;
+  }
+
+  .detail_block {
+    flex: 1;
+  }
+
+  .ingredients_block {
+    max-width: 250px;
+    width: 100%;
   }
 }

@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Image from "next/image";
 import styles from "./edit.module.scss";
 import { useUserStore } from "@/app/stores/userStore";
 import { updateUserProfile } from "@/app/hooks/user";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function EditProfilePage() {
+function EditProfileContent() {
   const { user, isLoading, fetchUser } = useUserStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isSetupMode = searchParams.get("setup") === "true";
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [username, setUsername] = useState("");
@@ -18,6 +20,7 @@ export default function EditProfilePage() {
   const [age, setAge] = useState<number | "">("");
   const [gender, setGender] = useState("male");
   const [updating, setUpdating] = useState(false);
+  const [error, setError] = useState("");
 
   // ユーザー情報を Zustand から取得
   useEffect(() => {
@@ -34,22 +37,28 @@ export default function EditProfilePage() {
     if (!user?.id) return;
 
     setUpdating(true);
+    setError("");
     try {
       const formData = new FormData();
       formData.append("username", username);
       formData.append("age", age !== "" ? String(age) : "");
       formData.append("gender", gender);
       if (profileImage) {
-        formData.append("profileImage", profileImage); // File を送信
+        formData.append("profileImage", profileImage);
       }
 
       await updateUserProfile(user.id, formData);
-      await fetchUser(); // Zustand の状態を更新
+      await fetchUser();
 
-      alert("プロフィールを更新しました");
-      router.push("/user");
-    } catch {
-      alert("プロフィールの更新に失敗しました");
+      if (isSetupMode) {
+        alert("プロフィールの設定が完了しました");
+        router.push("/");
+      } else {
+        alert("プロフィールを更新しました");
+        router.push("/user");
+      }
+    } catch (err) {
+      setError("プロフィールの更新に失敗しました");
     } finally {
       setUpdating(false);
     }
@@ -79,6 +88,9 @@ export default function EditProfilePage() {
       <div className={styles.edit_block__inner}>
         <form onSubmit={handleUpdateProfile}>
           <div className={styles.edit_block__head}>
+            <h1>{isSetupMode ? "プロフィール設定" : "プロフィール編集"}</h1>
+            <p>{isSetupMode ? "アカウントの基本情報を設定してください" : "プロフィール情報を編集できます"}</p>
+            
             {/* プロフィール画像のアップロード */}
             <div
               className={styles.edit_block__img_wrap}
@@ -108,6 +120,9 @@ export default function EditProfilePage() {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    required
+                    minLength={2}
+                    maxLength={20}
                   />
                 </div>
               </div>
@@ -134,13 +149,22 @@ export default function EditProfilePage() {
                   </select>
                 </div>
               </div>
+              {error && <div className={styles.error_message}>{error}</div>}
               <button className={styles.edit_block__btn} type="submit" disabled={updating}>
-                {updating ? "更新中..." : "更新"}
+                {updating ? "更新中..." : isSetupMode ? "プロフィールを設定" : "更新"}
               </button>
             </div>
           </div>
         </form>
       </div>
     </div>
+  );
+}
+
+export default function EditProfilePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <EditProfileContent />
+    </Suspense>
   );
 }

@@ -6,11 +6,15 @@
     "dev": "export NODE_OPTIONS='--max-old-space-size=2048' && next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "vercel-build": "next build"
   },
   "dependencies": {
     "@chakra-ui/next-js": "^2.4.2",
     "@chakra-ui/react": "^3.1.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@supabase/supabase-js": "^2.48.1",
@@ -23,8 +27,8 @@
     "openai": "^4.68.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-icons": "^5.4.0",
-    "sass": "^1.83.4",
+    "react-icons": "^5.5.0",
+    "resend": "^4.4.0",
     "swiper": "^11.2.1",
     "uuid": "^11.0.5",
     "zustand": "^5.0.1"
@@ -42,16 +46,20 @@
     "@types/webpack": "^5.28.5",
     "@types/webpack-dev-middleware": "^5.3.0",
     "autoprefixer": "^10.4.21",
+    "css-loader": "^7.1.2",
     "eslint": "^8",
     "eslint-config-next": "^14.1.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "node-mocks-http": "^1.16.1",
     "postcss": "^8.5.3",
+    "sass": "^1.86.3",
+    "sass-loader": "^10.1.1",
+    "style-loader": "^4.0.0",
     "tailwindcss": "^3.4.14",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5",
+    "typescript": "5.8.3",
     "vite": "^5.4.10"
   }
 }

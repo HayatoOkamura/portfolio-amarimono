@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { backendUrl } from "@/app/utils/apiUtils";
+import { backendUrl } from "@/app/utils/api";
 
 export const useImageUpload = () => {
   const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {

@@ -2,7 +2,7 @@
 "use client"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Recipe, Instruction, Ingredient, Review } from "../types/index";
-import { backendUrl, handleApiResponse } from "../utils/apiUtils";
+import { backendUrl, handleApiResponse } from "../utils/api";
 import useRecipeStore from "@/app/stores/recipeStore";
 import { sortRecipes } from "@/app/utils/sortRecipes";
 import { api } from "@/app/utils/api";
@@ -250,23 +250,26 @@ export const fetchSearchRecipes = async (query: string): Promise<Recipe[]> => {
 // レシピIDで詳細を取得
 export const fetchRecipeByIdService = async (id: string) => {
   try {
-    const response = await api.get(`/api/recipes/${id}`);
+    const response = await api.get(`/admin/recipes/${id}`);
+    
+    if (!response.data) {
+      throw new Error('Recipe data not found');
+    }
     
     // レスポンスデータが直接recipeオブジェクトの場合
-    if (response.data && !response.data.recipe) {
+    if (!response.data.recipe) {
       return mapRecipe(response.data);
     }
     
     // レスポンスデータが{ recipe: ... }の形式の場合
-    if (response.data && response.data.recipe) {
-      return mapRecipe(response.data.recipe);
-    }
-    
-    throw new Error('Recipe data not found');
+    return mapRecipe(response.data.recipe);
   } catch (error: any) {
     console.error('Error in fetchRecipeByIdService:', error);
-    console.error('Error response:', error.response?.data);
-    console.error('Error status:', error.response?.status);
+    if (error.response) {
+      console.error('Error response:', error.response.data);
+      console.error('Error status:', error.response.status);
+      throw new Error(error.response.data.error || 'Failed to fetch recipe');
+    }
     throw error;
   }
 };
@@ -310,26 +313,34 @@ export const addRecipeService = async (formData: FormData): Promise<Recipe> => {
         console.log('Upload progress:', percentCompleted, '%');
       }
     });
+
+    console.log('Response data:', response.data);
     
-    // レスポンスデータが直接recipeオブジェクトの場合
-    if (response.data && !response.data.recipe) {
-      return mapRecipe(response.data);
-    }
-    
-    // レスポンスデータが{ recipe: ... }の形式の場合
-    if (response.data && response.data.recipe) {
-      return mapRecipe(response.data.recipe);
-    }
-    
-    // レスポンスデータが空の場合
+    // レスポンスデータの型チェック
     if (!response.data) {
       throw new Error('No data received from server');
     }
-    
-    throw new Error('Invalid response format');
+
+    // レスポンスデータの構造を確認
+    if (response.data.recipe) {
+      console.log('Recipe data from response:', response.data.recipe);
+      return mapRecipe(response.data.recipe);
+    }
+
+    if (typeof response.data === 'object' && 'id' in response.data) {
+      console.log('Direct recipe data from response:', response.data);
+      return mapRecipe(response.data);
+    }
+
+    throw new Error('Invalid response format: ' + JSON.stringify(response.data));
   } catch (error: any) {
+    console.error('Error in addRecipeService:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
     
-    throw error;
+    // エラーメッセージの詳細を追加
+    const errorMessage = error.response?.data?.error || error.message || 'Failed to add recipe';
+    throw new Error(`Failed to add recipe: ${errorMessage}`);
   }
 };
 
@@ -622,10 +633,17 @@ export const useAddRecipe = () => {
       }
       return addRecipeService(formData);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Recipe added successfully:', data);
       queryClient.invalidateQueries({ queryKey: recipeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: recipeKeys.userRecipes("") });
     },
+    onError: (error: Error) => {
+      console.error('Error adding recipe:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      throw error;
+    }
   });
 };
 

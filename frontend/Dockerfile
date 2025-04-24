@@ -1,31 +1,34 @@
-# 1. ビルド用のコンテナ
-FROM node:20-alpine AS builder
-WORKDIR /app
+# 開発環境用のコンテナ
+FROM node:20-alpine
+WORKDIR /frontend
+
+# 環境変数を設定
+ENV NODE_ENV=development
+ENV NEXT_PUBLIC_BACKEND_URL=http://backend:8080
+ENV NEXT_PUBLIC_IMAGE_BASE_URL=http://backend:8080
+ENV WATCHPACK_POLLING=true
+ENV CHOKIDAR_USEPOLLING=true
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV npm_config_arch=arm64
 
 # パッケージ関連のファイルをコピー
 COPY package.json package-lock.json ./
 
 # 依存関係をインストール
-RUN npm ci
+RUN npm install
 
 # ソースコードをコピー
 COPY . .
 
-# Next.js のビルドを実行
-RUN npm run build
+# ディレクトリの所有権を変更
+RUN chown -R node:node /frontend
 
-# 2. 本番用の軽量コンテナ
-FROM node:20-alpine
-WORKDIR /app
+# .nextディレクトリの作成とパーミッション設定
+RUN mkdir -p /frontend/.next && \
+    chown -R node:node /frontend/.next
 
-# 必要なファイルをコピー（package.json, package-lock.json, .next, public）
-COPY --from=builder /app/package.json .
-COPY --from=builder /app/package-lock.json .
-COPY --from=builder /app/.next .next
-COPY --from=builder /app/public ./public
-
-# 本番環境の依存関係をインストール
-RUN npm ci --omit=dev  
+# nodeユーザーに切り替え
+USER node
 
 # Next.js を起動
 CMD ["npm", "run", "dev"]
