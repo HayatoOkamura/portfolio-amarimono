@@ -18,11 +18,11 @@ jobs:
           postgresql version: '17'
           postgresql db: 'postgres'
           postgresql user: 'postgres'
-          postgresql password: 'password'
+          postgresql password: 'postgres'
 
       - name: Dump local database
         run: |
-          pg_dump -U postgres -h localhost -d postgres > dump.sql
+          PGPASSWORD=postgres pg_dump -U postgres -h localhost -d postgres > dump.sql
 
       - name: Backup Supabase database
         run: |
