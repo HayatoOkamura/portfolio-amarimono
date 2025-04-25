@@ -5,9 +5,9 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'amarimono-backend.onrender.com',
+        hostname: 'qmrjsqeigdkizkrpiahs.supabase.co',
         port: '',
-        pathname: '/uploads/**',
+        pathname: '/storage/v1/object/public/images/**',
       },
       {
         protocol: 'http',
@@ -21,12 +21,6 @@ const nextConfig = {
         port: '8080',
         pathname: '/uploads/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'qmrjsqeigdkizkrpiahs.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/public/images/**',
-      },
     ],
     minimumCacheTTL: 60,
     formats: ['image/avif', 'image/webp'],
@@ -37,12 +31,12 @@ const nextConfig = {
     // クライアントサイドでの API アクセス用
     BACKEND_URL: process.env.NODE_ENV === 'development' 
       ? 'http://localhost:8080'  // ブラウザからアクセスする時用
-      : process.env.NEXT_PUBLIC_BACKEND_URL || 'https://amarimono-backend.onrender.com',
+      : process.env.NEXT_PUBLIC_BACKEND_URL || 'https://portfolio-amarimono-backend.vercel.app',
     
     // 画像表示用
     IMAGE_BASE_URL: process.env.NODE_ENV === 'development'
       ? 'http://backend:8080'  // Docker内の画像表示用
-      : process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'https://amarimono-backend.onrender.com',
+      : process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'https://portfolio-amarimono-backend.vercel.app',
   },
   async rewrites() {
     // APIエンドポイントのみをリライト
@@ -51,7 +45,7 @@ const nextConfig = {
         source: '/api/:path*',
         destination: process.env.NODE_ENV === 'development'
           ? 'http://localhost:8080/api/:path*'
-          : 'https://amarimono-backend.onrender.com/api/:path*',
+          : 'https://portfolio-amarimono-backend.vercel.app/api/:path*',
       }
     ];
   },
