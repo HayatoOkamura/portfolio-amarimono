@@ -31,7 +31,7 @@ func main() {
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000", "https://portfolio-amarimono.vercel.app"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
-    AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "Accept-Encoding"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "Accept-Encoding"},
 		AllowCredentials: true,
 		MaxAge:           12 * 60 * 60, // 12 hours
 	}))
@@ -81,7 +81,13 @@ func main() {
 		DB: dbConn,
 	}
 
+	// ハンドラーの初期化
+	uploadHandler := handlers.NewUploadHandler()
+
 	routes.SetupRoutes(r, recipeHandler, likeHandler, userHandler, genreHandler, adminHandler, reviewHandler, recommendationHandler)
+
+	// 画像アップロード用のエンドポイント
+	r.POST("/api/upload", uploadHandler.UploadImage)
 
 	// サーバーを起動
 	port := os.Getenv("PORT")

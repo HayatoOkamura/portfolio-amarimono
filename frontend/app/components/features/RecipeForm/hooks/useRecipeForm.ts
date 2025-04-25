@@ -14,7 +14,7 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
 
   const [formData, setFormData] = useState<RecipeFormData>({
     name: "",
-    genre: { id: 1, name: "すべて" },
+    genre: { id: 1, name: "和食" },
     cookingTime: 0,
     costEstimate: 0,
     summary: "",
@@ -73,7 +73,7 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
   const resetFormData = useCallback(() => {
     setFormData({
       name: "",
-      genre: { id: 1, name: "すべて" },
+      genre: { id: 1, name: "和食" },
       cookingTime: 0,
       costEstimate: 0,
       summary: "",

@@ -21,6 +21,12 @@ const nextConfig = {
         port: '8080',
         pathname: '/uploads/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'qmrjsqeigdkizkrpiahs.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/images/**',
+      },
     ],
     minimumCacheTTL: 60,
     formats: ['image/avif', 'image/webp'],

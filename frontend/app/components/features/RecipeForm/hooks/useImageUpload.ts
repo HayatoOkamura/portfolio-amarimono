@@ -2,13 +2,12 @@ import { useCallback } from "react";
 import { backendUrl } from "@/app/utils/api";
 
 export const useImageUpload = () => {
-  const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const previewUrl = URL.createObjectURL(file);
       return {
         image: file,
-        imageUrl: previewUrl,
+        imageUrl: URL.createObjectURL(file),
       };
     }
     return null;
@@ -19,7 +18,7 @@ export const useImageUpload = () => {
       return URL.createObjectURL(image);
     }
     if (imageUrl) {
-      return imageUrl.startsWith("http") ? imageUrl : `${backendUrl}/uploads/${imageUrl}`;
+      return imageUrl.startsWith('http') ? imageUrl : `${backendUrl}/uploads/${imageUrl}`;
     }
     return undefined;
   }, []);

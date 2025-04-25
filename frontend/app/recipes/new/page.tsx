@@ -84,7 +84,7 @@ const RecipeRegistration: React.FC = () => {
       formData.append("catchphrase", editingRecipe.catchphrase);
       formData.append("nutrition", JSON.stringify(editingRecipe.nutrition));
       formData.append("faq", JSON.stringify(editingRecipe.faq));
-      formData.append("genre", editingRecipe.genre.id.toString());
+      formData.append("genre_id", editingRecipe.genre.id.toString());
       formData.append("ingredients", JSON.stringify(editingRecipe.ingredients));
       formData.append(
         "instructions",

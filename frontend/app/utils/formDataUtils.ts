@@ -23,7 +23,7 @@ export const createFormData = (
   // 基本情報の追加
   formData.append("nutrition", JSON.stringify(recipe.nutrition));
   formData.append("name", recipe.name);
-  formData.append("genre", recipe.genre.id.toString());
+  formData.append("genre_id", recipe.genre.id.toString());
   formData.append("cooking_time", recipe.cookingTime.toString());
   formData.append("cost_estimate", recipe.costEstimate.toString());
   formData.append("summary", recipe.summary || "");

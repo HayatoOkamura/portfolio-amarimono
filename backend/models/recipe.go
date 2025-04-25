@@ -10,7 +10,7 @@ type Recipe struct {
 	ID                  uuid.UUID          `json:"id" gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
 	Name                string             `json:"name" binding:"required"`
 	Instructions        JSONBInstructions  `json:"instructions" gorm:"type:jsonb" binding:"required"`
-	ImageUrl            string             `json:"image_url"`
+	MainImage           string             `json:"image_url" gorm:"column:image_url"`
 	GenreID             int                `json:"genre_id" binding:"required"`
 	Genre               RecipeGenre        `json:"genre" gorm:"foreignKey:GenreID;references:ID"`
 	Ingredients         []RecipeIngredient `json:"ingredients" gorm:"foreignKey:RecipeID;references:ID" binding:"required,dive"`

@@ -53,7 +53,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		profileImage := files[0]
 
 		// 保存先ディレクトリに保存
-		imageURL, err := utils.SaveImage(c, profileImage, "user")
+		imageURL, err := utils.SaveImage(c, profileImage, "user", "")
 		if err != nil {
 			log.Printf("File upload error: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload profile image"})
@@ -178,7 +178,7 @@ func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
 		profileImage := files[0]
 
 		// 画像を保存し、パスを取得
-		imageURL, err := utils.SaveImage(c, profileImage, "user")
+		imageURL, err := utils.SaveImage(c, profileImage, "user", "")
 		if err != nil {
 			log.Printf("File upload error: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload profile image"})

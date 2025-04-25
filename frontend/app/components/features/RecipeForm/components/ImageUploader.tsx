@@ -7,14 +7,14 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 interface ImageUploaderProps {
   imageUrl?: string;
   image?: File;
-  onImageChange: (image: File, imageUrl: string) => void;
+  onImageChange: (image: File) => void;
 }
 
 export const ImageUploader = ({ imageUrl, image, onImageChange }: ImageUploaderProps) => {
   const { handleImageChange, getImageUrl } = useImageUpload();
   const currentImageUrl = getImageUrl(imageUrl, image);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -23,9 +23,9 @@ export const ImageUploader = ({ imageUrl, image, onImageChange }: ImageUploaderP
       return;
     }
 
-    const result = handleImageChange(e);
+    const result = await handleImageChange(e);
     if (result) {
-      onImageChange(result.image, result.imageUrl);
+      onImageChange(result.image);
     }
   };
 
