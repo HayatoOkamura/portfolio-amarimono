@@ -63,9 +63,10 @@ export const RegistrationForm = ({
           <ImageUploader
             imageUrl={formData.imageUrl}
             image={formData.image}
-            onImageChange={(image, imageUrl) =>
-              updateFormData({ image, imageUrl })
-            }
+            onImageChange={(image) => {
+              const imageUrl = image ? URL.createObjectURL(image) : "";
+              updateFormData({ image, imageUrl });
+            }}
           />
         </div>
         <section className={styles.instructions_block}>
