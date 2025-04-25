@@ -58,27 +58,27 @@ func main() {
 	}
 
 	// `RecipeHandler` を初期化
-	recipeHandler := handlers.NewRecipeHandler(dbConn)
+	recipeHandler := handlers.NewRecipeHandler(dbConn.Postgres)
 
 	// ハンドラの初期化
-	likeHandler := handlers.NewLikeHandler(dbConn)
+	likeHandler := handlers.NewLikeHandler(dbConn.Postgres)
 
 	// `UserHandler` を初期化
-	userHandler := handlers.NewUserHandler(dbConn)
+	userHandler := handlers.NewUserHandler(dbConn.Postgres)
 
 	adminHandler := &handlers.AdminHandler{
-		DB:          dbConn,
+		DB:          dbConn.Postgres,
 		RedisClient: rdb,
 	}
 	genreHandler := &handlers.GenreHandler{
-		DB: dbConn,
+		DB: dbConn.Postgres,
 	}
 	reviewHandler := &handlers.ReviewHandler{
-		DB: dbConn,
+		DB: dbConn.Postgres,
 	}
 
 	recommendationHandler := &handlers.RecommendationHandler{
-		DB: dbConn,
+		DB: dbConn.Postgres,
 	}
 
 	// ハンドラーの初期化

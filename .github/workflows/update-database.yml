@@ -16,19 +16,19 @@ jobs:
         uses: harmon758/postgresql-action@v1
         with:
           postgresql version: '17'
-          postgresql db: 'amarimono'
+          postgresql db: 'postgres'
           postgresql user: 'postgres'
           postgresql password: 'password'
 
       - name: Dump local database
         run: |
-          pg_dump -U postgres -h localhost -d amarimono > dump.sql
+          pg_dump -U postgres -h localhost -d postgres > dump.sql
 
-      - name: Backup Render database
+      - name: Backup Supabase database
         run: |
-          PGPASSWORD=${{ secrets.RENDER_DB_PASSWORD }} pg_dump -h dpg-d04spp6uk2gs73e0qgrg-a.oregon-postgres.render.com -U amarimono_user -d amarimono --format=custom > backup.dump
+          PGPASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }} pg_dump "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" --format=custom > backup.dump
 
-      - name: Update Render database
+      - name: Update Supabase database
         run: |
-          PGPASSWORD=${{ secrets.RENDER_DB_PASSWORD }} psql "postgresql://amarimono_user@dpg-d04spp6uk2gs73e0qgrg-a.oregon-postgres.render.com/amarimono?sslmode=require" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-          PGPASSWORD=${{ secrets.RENDER_DB_PASSWORD }} psql "postgresql://amarimono_user@dpg-d04spp6uk2gs73e0qgrg-a.oregon-postgres.render.com/amarimono?sslmode=require" < dump.sql 
+          PGPASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }} psql "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\" SCHEMA public;"
+          PGPASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }} psql "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" < dump.sql 

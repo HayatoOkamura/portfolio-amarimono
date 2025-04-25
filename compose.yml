@@ -10,11 +10,14 @@ services:
       - ./backend:/app
       - ./backend/uploads:/app/uploads
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=password
-      - DB_NAME=amarimono
+      - USE_SUPABASE=${USE_SUPABASE:-false}
+      - DB_HOST=${DB_HOST:-db}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - DB_NAME=${DB_NAME:-amarimono}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       db:
@@ -43,16 +46,24 @@ services:
     stdin_open: true
     tty: true
     environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
-      - NEXT_PUBLIC_BACKEND_INTERNAL_URL=http://backend:8080
-      - NEXT_PUBLIC_IMAGE_BASE_URL=http://backend:8080
+      - NODE_ENV=${NODE_ENV:-development}
+      - USE_SUPABASE=${USE_SUPABASE:-false}
+      - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL:-http://localhost:8080}
+      - NEXT_PUBLIC_BACKEND_INTERNAL_URL=${NEXT_PUBLIC_BACKEND_INTERNAL_URL:-http://backend:8080}
+      - NEXT_PUBLIC_IMAGE_BASE_URL=${NEXT_PUBLIC_IMAGE_BASE_URL:-http://backend:8080}
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
       - NEXT_TELEMETRY_DISABLED=1
     command: >
       sh -c "
-        npm install && npm run dev
+        npm install && 
+        if [ \"$NODE_ENV\" = \"production\" ]; then
+          npm run build && npm start
+        else
+          npm run dev
+        fi
       "
     depends_on:
       - backend
@@ -70,8 +81,8 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=amarimono
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-password}
+      - POSTGRES_DB=${DB_NAME:-amarimono}
       - POSTGRES_INITDB_ARGS=--data-checksums
       - POSTGRES_HOST_AUTH_METHOD=trust
     volumes:
