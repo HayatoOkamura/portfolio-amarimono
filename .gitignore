@@ -16,5 +16,6 @@ yarn-error.log*
 .codegpt
 .vercel
 
-database_dumps/
-!database_dumps/dump_*.sql
+# Database dumps are now tracked in Git
+# database_dumps/
+# !database_dumps/dump_*.sql
