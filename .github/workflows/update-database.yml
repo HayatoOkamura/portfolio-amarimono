@@ -18,7 +18,7 @@ jobs:
         id: check_changes
         run: |
           # データベースダンプファイルの存在を確認
-          if [ -f "database_dumps/dump_*.sql" ]; then
+          if ls database_dumps/dump_*.sql 1> /dev/null 2>&1; then
             echo "Database dump file exists"
             echo "changes=true" >> $GITHUB_OUTPUT
           else
