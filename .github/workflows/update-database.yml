@@ -11,17 +11,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 2  # 直前のコミットも取得する
 
       - name: Check for database dump changes
         id: check_changes
         run: |
-          git fetch origin main
-          CHANGES=$(git diff --name-only HEAD HEAD^ | grep -E "database_dumps/dump_.*\.sql" || true)
-          if [ -n "$CHANGES" ]; then
-            echo "Database dump changes detected"
+          # データベースダンプファイルの存在を確認
+          if [ -f "database_dumps/dump_*.sql" ]; then
+            echo "Database dump file exists"
             echo "changes=true" >> $GITHUB_OUTPUT
           else
-            echo "No database dump changes"
+            echo "No database dump file found"
             echo "changes=false" >> $GITHUB_OUTPUT
           fi
 
