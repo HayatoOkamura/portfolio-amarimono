@@ -37,11 +37,13 @@ DB_NAME=${DB_NAME:-amarimono}
 # タイムスタンプとバージョンを生成
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 VERSION=$(git rev-parse --short HEAD)
-DUMP_FILE="database_dumps/dump_${TIMESTAMP}_${VERSION}.sql"
-STATE_FILE="database_dumps/last_state.txt"
+DUMP_DIR="database_dumps"
+LATEST_DUMP="$DUMP_DIR/dump_${TIMESTAMP}_${VERSION}.sql"
+SYMLINK="dump.sql"
+STATE_FILE="$DUMP_DIR/last_state.txt"
 
-# database_dumpsディレクトリが存在しない場合は作成
-mkdir -p database_dumps
+# ディレクトリの作成
+mkdir -p "$DUMP_DIR"
 
 # データベース接続の確認
 echo "Checking database connection..."
@@ -100,31 +102,38 @@ else
   HAS_PREVIOUS_STATE=false
 fi
 
-# データベースのダンプを作成
-echo "Creating database dump..."
-if ! PGPASSWORD=$DB_PASSWORD pg_dump -U $DB_USER -h $DB_HOST -p $DB_PORT -d $DB_NAME > "$DUMP_FILE"; then
-  echo "Error: Failed to create database dump. Please check database credentials and connection."
-  exit 1
-fi
-
-# ダンプファイルのサイズを確認
-DUMP_SIZE=$(stat -f%z "$DUMP_FILE")
-echo "Dump file size: $DUMP_SIZE bytes"
-
-if [ "$DUMP_SIZE" -eq 0 ]; then
-  echo "Error: Created dump file is empty. Please check database content and permissions."
-  exit 1
-fi
-
-# 変更があった場合、または初回実行の場合はコミット
+# 変更があった場合、または初回実行の場合はダンプを作成
 if [ "$HAS_PREVIOUS_STATE" = false ] || [ "$CURRENT_STATE" != "$LAST_STATE" ]; then
   echo "Database changes detected or first run"
+  
+  # データベースのダンプを作成
+  echo "Creating database dump..."
+  if ! PGPASSWORD=$DB_PASSWORD pg_dump -U $DB_USER -h $DB_HOST -p $DB_PORT -d $DB_NAME > "$LATEST_DUMP"; then
+    echo "Error: Failed to create database dump. Please check database credentials and connection."
+    exit 1
+  fi
+
+  # ダンプファイルのサイズを確認
+  DUMP_SIZE=$(stat -f%z "$LATEST_DUMP")
+  echo "Dump file size: $DUMP_SIZE bytes"
+
+  if [ "$DUMP_SIZE" -eq 0 ]; then
+    echo "Error: Created dump file is empty. Please check database content and permissions."
+    exit 1
+  fi
+
+  # 状態を保存
   echo "$CURRENT_STATE" > "$STATE_FILE"
   
-  # 古いダンプファイルを削除（最新の5つを残す）
-  ls -t database_dumps/dump_*.sql | tail -n +6 | xargs -r rm
+  # シンボリックリンクを更新
+  rm -f "$SYMLINK"
+  ln -s "$LATEST_DUMP" "$SYMLINK"
   
-  git add "$DUMP_FILE" "$STATE_FILE"
+  # 古いダンプファイルを削除（最新の5つを残す）
+  ls -t "$DUMP_DIR"/dump_*.sql | tail -n +6 | xargs -r rm
+  
+  # 変更をコミット
+  git add "$LATEST_DUMP" "$STATE_FILE" "$SYMLINK"
   git commit -m "Update database dump ${TIMESTAMP}"
   
   # プッシュ前に再度同期を確認
@@ -149,8 +158,6 @@ if [ "$HAS_PREVIOUS_STATE" = false ] || [ "$CURRENT_STATE" != "$LAST_STATE" ]; t
   fi
 else
   echo "No changes in database detected"
-  # 変更がない場合はダンプファイルを削除
-  rm "$DUMP_FILE"
 fi
 
 echo "=== Script completed ===" 
