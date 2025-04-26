@@ -21,31 +21,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
 
-      - name: Set up PostgreSQL 17
-        uses: harmon758/postgresql-action@v1
-        with:
-          postgresql version: '17'
-          postgresql db: 'postgres'
-          postgresql user: 'postgres'
-          postgresql password: 'postgres'
-
-      - name: Wait for PostgreSQL
-        run: |
-          for i in {1..10}; do
-            if PGPASSWORD=postgres psql -U postgres -h localhost -d postgres -c "SELECT 1" >/dev/null 2>&1; then
-              echo "PostgreSQL is ready"
-              exit 0
-            fi
-            echo "Waiting for PostgreSQL... ($i/10)"
-            sleep 2
-          done
-          echo "PostgreSQL is not ready"
-          exit 1
-
-      - name: Dump local database
-        run: |
-          PGPASSWORD=postgres pg_dump -U postgres -h localhost -d postgres > dump.sql
-
       - name: Backup Supabase database
         run: |
           PGPASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }} pg_dump "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" --format=custom > backup.dump
