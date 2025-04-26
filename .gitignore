@@ -17,5 +17,5 @@ yarn-error.log*
 .vercel
 
 # Database dumps
-# database_dumps/
-# !database_dumps/dump_*.sql
+database_dumps/
+!database_dumps/dump_*.sql
