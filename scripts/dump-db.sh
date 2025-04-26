@@ -8,9 +8,23 @@ echo "Git status:"
 git status
 
 # Gitの同期状態を確認
-if git status | grep -q "ahead of"; then
-  echo "Local branch is ahead of remote. Pulling changes first..."
-  git pull origin develop
+echo "Checking Git synchronization..."
+git fetch origin
+
+# ローカルとリモートの差分を確認
+LOCAL_COMMITS=$(git rev-list HEAD...origin/develop --count)
+REMOTE_COMMITS=$(git rev-list origin/develop...HEAD --count)
+
+if [ "$LOCAL_COMMITS" -gt 0 ] || [ "$REMOTE_COMMITS" -gt 0 ]; then
+  echo "Local commits: $LOCAL_COMMITS"
+  echo "Remote commits: $REMOTE_COMMITS"
+  
+  # リモートの変更を取得
+  echo "Pulling remote changes..."
+  if ! git pull origin develop; then
+    echo "Error: Failed to pull changes. Please resolve conflicts manually."
+    exit 1
+  fi
 fi
 
 # データベース接続設定
@@ -113,9 +127,26 @@ if [ "$HAS_PREVIOUS_STATE" = false ] || [ "$CURRENT_STATE" != "$LAST_STATE" ]; t
   git add "$DUMP_FILE" "$STATE_FILE"
   git commit -m "Update database dump ${TIMESTAMP}"
   
-  # プッシュ前に再度プルを実行
-  git pull origin develop
-  git push origin develop
+  # プッシュ前に再度同期を確認
+  echo "Checking for new remote changes..."
+  git fetch origin
+  LOCAL_COMMITS=$(git rev-list HEAD...origin/develop --count)
+  REMOTE_COMMITS=$(git rev-list origin/develop...HEAD --count)
+  
+  if [ "$REMOTE_COMMITS" -gt 0 ]; then
+    echo "New remote changes detected. Pulling changes..."
+    if ! git pull origin develop; then
+      echo "Error: Failed to pull changes. Please resolve conflicts manually."
+      exit 1
+    fi
+  fi
+  
+  # プッシュを実行
+  echo "Pushing changes..."
+  if ! git push origin develop; then
+    echo "Error: Failed to push changes. Please try again."
+    exit 1
+  fi
 else
   echo "No changes in database detected"
   # 変更がない場合はダンプファイルを削除
