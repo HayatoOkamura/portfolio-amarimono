@@ -4,8 +4,16 @@
 echo "=== Starting dump-db.sh ==="
 echo "Current directory: $(pwd)"
 echo "Current time: $(date)"
-echo "Git status:"
-git status
+
+# 現在のブランチを取得
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+echo "Current branch: $CURRENT_BRANCH"
+
+# mainブランチでない場合は終了
+if [ "$CURRENT_BRANCH" != "main" ]; then
+  echo "Not on main branch. Skipping database dump."
+  exit 0
+fi
 
 # Gitの同期状態を確認
 echo "Checking Git synchronization..."
@@ -28,7 +36,7 @@ if [ "$LOCAL_COMMITS" -gt 0 ] || [ "$REMOTE_COMMITS" -gt 0 ]; then
 fi
 
 # データベース接続設定
-DB_HOST=${DB_HOST:-db}
+DB_HOST=${DB_HOST:-localhost}
 DB_PORT=${DB_PORT:-5432}
 DB_USER=${DB_USER:-postgres}
 DB_PASSWORD=${DB_PASSWORD:-password}
@@ -53,8 +61,10 @@ echo "Port: $DB_PORT"
 echo "User: $DB_USER"
 echo "Database: $DB_NAME"
 
-if ! PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h $DB_HOST -p $DB_PORT -d $DB_NAME -c "SELECT 1" > /dev/null 2>&1; then
+if ! PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h $DB_HOST -p $DB_PORT -d $DB_NAME -c "SELECT 1" 2>&1; then
   echo "Error: Cannot connect to database. Please check if the database container is running."
+  echo "Error details:"
+  PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h $DB_HOST -p $DB_PORT -d $DB_NAME -c "SELECT 1" 2>&1
   exit 1
 fi
 
@@ -65,11 +75,12 @@ CURRENT_STATE=$(PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h $DB_HOST -p $DB_PORT
     SELECT 
       schemaname,
       tablename,
-      (SELECT COUNT(*) FROM \"\".schemaname.\"\" || '.' || \"\".tablename.\"\") as row_count,
+      (SELECT COUNT(*) FROM \"public\".\"recipes\") as row_count,
       (SELECT md5(string_agg(md5(row_to_json(t)::text), ''))
-       FROM (SELECT * FROM \"\".schemaname.\"\" || '.' || \"\".tablename.\"\") t) as data_hash
+       FROM (SELECT * FROM \"public\".\"recipes\") t) as data_hash
     FROM pg_tables
     WHERE schemaname = 'public'
+      AND tablename = 'recipes'
   )
   SELECT string_agg(
     format(
@@ -152,7 +163,7 @@ if [ "$HAS_PREVIOUS_STATE" = false ] || [ "$CURRENT_STATE" != "$LAST_STATE" ]; t
   
   # プッシュを実行
   echo "Pushing changes..."
-  if ! git push origin develop; then
+  if ! git push origin main; then
     echo "Error: Failed to push changes. Please try again."
     exit 1
   fi

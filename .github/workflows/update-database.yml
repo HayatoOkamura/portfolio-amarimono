@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'database_dumps/dump_*.sql'
 
 jobs:
   update-database:
@@ -14,7 +12,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Check for database dump changes
+        id: check_changes
+        run: |
+          git fetch origin main
+          CHANGES=$(git diff --name-only HEAD HEAD^ | grep -E "database_dumps/dump_.*\.sql" || true)
+          if [ -n "$CHANGES" ]; then
+            echo "Database dump changes detected"
+            echo "changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "No database dump changes"
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install PostgreSQL 17 client tools
+        if: steps.check_changes.outputs.changes == 'true'
         run: |
           sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
@@ -22,10 +34,12 @@ jobs:
           sudo apt-get install -y postgresql-client-17
 
       - name: Backup Supabase database
+        if: steps.check_changes.outputs.changes == 'true'
         run: |
           PGPASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }} pg_dump "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" --format=custom > backup.dump
 
       - name: Update Supabase database
+        if: steps.check_changes.outputs.changes == 'true'
         run: |
           # 最新のダンプファイルを取得
           LATEST_DUMP=$(ls -t database_dumps/dump_*.sql | head -n 1)
