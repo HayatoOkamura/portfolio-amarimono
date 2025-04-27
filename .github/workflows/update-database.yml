@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'database_dumps/dump_*.sql'  # ダンプファイルの変更がある場合のみ実行
 
 jobs:
   update-database:
@@ -22,7 +24,7 @@ jobs:
             echo "Database dump file exists"
             echo "changes=true" >> $GITHUB_OUTPUT
           else
-            echo "No database dump file found"
+            echo "No database dump file found - skipping database update"
             echo "changes=false" >> $GITHUB_OUTPUT
           fi
 
