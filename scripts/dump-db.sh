@@ -52,6 +52,7 @@ STATE_FILE="$DUMP_DIR/last_state.txt"
 
 # ディレクトリの作成
 mkdir -p "$DUMP_DIR"
+echo "Created/verified dump directory: $DUMP_DIR"
 
 # データベース接続の確認
 echo "Checking database connection..."
@@ -70,6 +71,7 @@ fi
 
 # 現在のデータベースの状態を取得
 echo "Checking database state..."
+echo "Executing SQL query to get current state..."
 CURRENT_STATE=$(PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h $DB_HOST -p $DB_PORT -d $DB_NAME -t -c "
   WITH table_info AS (
     SELECT 
@@ -95,6 +97,8 @@ CURRENT_STATE=$(PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h $DB_HOST -p $DB_PORT
   FROM table_info;
 ")
 
+echo "SQL query result: $CURRENT_STATE"
+
 if [ -z "$CURRENT_STATE" ]; then
   echo "Error: Failed to get database state. Please check if tables exist in the public schema."
   exit 1
@@ -119,6 +123,8 @@ if [ "$HAS_PREVIOUS_STATE" = false ] || [ "$CURRENT_STATE" != "$LAST_STATE" ]; t
   
   # データベースのダンプを作成
   echo "Creating database dump..."
+  echo "Dump file path: $LATEST_DUMP"
+  
   if ! PGPASSWORD=$DB_PASSWORD pg_dump -U $DB_USER -h $DB_HOST -p $DB_PORT -d $DB_NAME > "$LATEST_DUMP"; then
     echo "Error: Failed to create database dump. Please check database credentials and connection."
     exit 1
@@ -133,33 +139,27 @@ if [ "$HAS_PREVIOUS_STATE" = false ] || [ "$CURRENT_STATE" != "$LAST_STATE" ]; t
     exit 1
   fi
 
+  # ダンプファイルの内容を確認
+  echo "Dump file content preview:"
+  head -n 5 "$LATEST_DUMP"
+
   # 状態を保存
   echo "$CURRENT_STATE" > "$STATE_FILE"
+  echo "Saved current state to $STATE_FILE"
   
   # シンボリックリンクを更新
   rm -f "$SYMLINK"
   ln -s "$LATEST_DUMP" "$SYMLINK"
+  echo "Updated symlink $SYMLINK to point to $LATEST_DUMP"
   
   # 古いダンプファイルを削除（最新の5つを残す）
+  echo "Cleaning up old dump files..."
   ls -t "$DUMP_DIR"/dump_*.sql | tail -n +6 | xargs -r rm
   
   # 変更をコミット
   git add "$LATEST_DUMP" "$STATE_FILE" "$SYMLINK"
   git commit -m "Update database dump ${TIMESTAMP}"
-  
-  # プッシュ前に再度同期を確認
-  echo "Checking for new remote changes..."
-  git fetch origin
-  LOCAL_COMMITS=$(git rev-list HEAD...origin/develop --count)
-  REMOTE_COMMITS=$(git rev-list origin/develop...HEAD --count)
-  
-  if [ "$REMOTE_COMMITS" -gt 0 ]; then
-    echo "New remote changes detected. Pulling changes..."
-    if ! git pull origin develop; then
-      echo "Error: Failed to pull changes. Please resolve conflicts manually."
-      exit 1
-    fi
-  fi
+  echo "Committed changes to git"
   
   # プッシュを実行
   echo "Pushing changes..."
@@ -167,6 +167,7 @@ if [ "$HAS_PREVIOUS_STATE" = false ] || [ "$CURRENT_STATE" != "$LAST_STATE" ]; t
     echo "Error: Failed to push changes. Please try again."
     exit 1
   fi
+  echo "Successfully pushed changes to main branch"
 else
   echo "No changes in database detected"
 fi
