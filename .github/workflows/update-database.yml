@@ -17,6 +17,17 @@ jobs:
           fetch-depth: 2
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Debug repository state
+        run: |
+          echo "Current branch:"
+          git branch -vv
+          echo "Git status:"
+          git status
+          echo "Recent commits:"
+          git log --oneline -n 5
+          echo "Dump files:"
+          ls -la database_dumps/
+
       - name: Check for database dump changes
         id: check_changes
         run: |
@@ -75,12 +86,28 @@ jobs:
       - name: Clean up dump files
         if: steps.check_changes.outputs.changes == 'true'
         run: |
+          echo "Current state before cleanup:"
+          git status
+          echo "Dump files before cleanup:"
+          ls -la database_dumps/
+          
           # ダンプファイルを削除
           rm -f database_dumps/dump_*.sql
           rm -f database_dumps/last_state.txt
+          
+          echo "State after file removal:"
+          git status
+          
           # 変更をコミット
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add database_dumps/
           git commit -m "Clean up database dump files after update"
-          git push 
+          
+          echo "State after commit:"
+          git status
+          
+          git push
+          
+          echo "Final state:"
+          git status 
