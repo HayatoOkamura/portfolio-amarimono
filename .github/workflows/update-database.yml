@@ -1,11 +1,8 @@
 name: Update Database
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'database_dumps/**'  # database_dumpsディレクトリ内の変更を監視
+  schedule:
+    - cron: '0 * * * *'  # 毎時実行
   workflow_dispatch:  # 手動実行を許可
 
 jobs:
@@ -18,38 +15,13 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Debug repository state
-        run: |
-          echo "Current branch:"
-          git branch -vv
-          echo "Git status:"
-          git status
-          echo "Recent commits:"
-          git log --oneline -n 5
-          echo "Dump files:"
-          ls -la database_dumps/
-
-      - name: Check for database dump changes
-        id: check_changes
-        run: |
-          # データベースダンプファイルの存在を確認
-          if ls database_dumps/dump_*.sql 1> /dev/null 2>&1; then
-            echo "Database dump file exists"
-            echo "changes=true" >> $GITHUB_OUTPUT
-          else
-            echo "No database dump file found - skipping database update"
-            echo "changes=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Get current IP address
-        if: steps.check_changes.outputs.changes == 'true'
         run: |
           echo "Current IP address:"
           curl -s https://api.ipify.org
           echo ""
 
       - name: Install PostgreSQL 17 client tools
-        if: steps.check_changes.outputs.changes == 'true'
         run: |
           sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
@@ -57,21 +29,15 @@ jobs:
           sudo apt-get install -y postgresql-client-17
 
       - name: Backup Supabase database
-        if: steps.check_changes.outputs.changes == 'true'
         env:
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
           pg_dump "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" --format=custom > backup.dump
 
       - name: Update Supabase database
-        if: steps.check_changes.outputs.changes == 'true'
         env:
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
-          # 最新のダンプファイルを取得
-          LATEST_DUMP=$(ls -t database_dumps/dump_*.sql | head -n 1)
-          echo "Using dump file: $LATEST_DUMP"
-          
           # データベースを更新（スキーマを再作成）
           echo "Recreating database schema..."
           psql "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
@@ -79,41 +45,12 @@ jobs:
           echo "Creating required extensions..."
           psql "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\" SCHEMA public;"
           
-          echo "Applying database dump..."
-          psql "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" < "$LATEST_DUMP"
-          
-          echo "Database update completed successfully"
-
-      - name: Clean up dump files
-        if: steps.check_changes.outputs.changes == 'true'
-        run: |
-          # 最新の状態を取得
-          git pull origin main
-          
-          echo "Current state before cleanup:"
-          git status
-          echo "Dump files before cleanup:"
-          ls -la database_dumps/
-          
-          # ダンプファイルを削除
-          rm -f database_dumps/dump_*.sql
-          rm -f database_dumps/last_state.txt
-          
-          echo "State after file removal:"
-          git status
-          
-          # 変更をコミット
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add database_dumps/
-          git commit -m "Clean up database dump files after update"
-          
-          echo "State after commit:"
-          git status
-          
-          # プッシュ前に再度最新の状態を取得
-          git pull origin main --rebase
-          git push origin main
-          
-          echo "Final state:"
-          git status 
+          # 最新のダンプファイルを取得
+          LATEST_DUMP=$(ls -t database_dumps/dump_*.sql | head -n 1)
+          if [ -n "$LATEST_DUMP" ]; then
+            echo "Using dump file: $LATEST_DUMP"
+            psql "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" < "$LATEST_DUMP"
+            echo "Database update completed successfully"
+          else
+            echo "No dump file found - skipping database update"
+          fi 
