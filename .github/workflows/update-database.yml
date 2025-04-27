@@ -57,5 +57,14 @@ jobs:
           LATEST_DUMP=$(ls -t database_dumps/dump_*.sql | head -n 1)
           echo "Using dump file: $LATEST_DUMP"
           
-          psql "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\" SCHEMA public;"
-          psql "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" < "$LATEST_DUMP" 
+          # データベースを更新（スキーマを再作成）
+          echo "Recreating database schema..."
+          psql "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+          
+          echo "Creating required extensions..."
+          psql "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\" SCHEMA public;"
+          
+          echo "Applying database dump..."
+          psql "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" < "$LATEST_DUMP"
+          
+          echo "Database update completed successfully" 
