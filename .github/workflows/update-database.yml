@@ -15,6 +15,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 2  # 直前のコミットも取得する
+          token: ${{ secrets.GITHUB_TOKEN }}  # プッシュ権限のために追加
 
       - name: Check for database dump changes
         id: check_changes
@@ -69,4 +70,19 @@ jobs:
           echo "Applying database dump..."
           psql "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" < "$LATEST_DUMP"
           
-          echo "Database update completed successfully" 
+          echo "Database update completed successfully"
+
+      - name: Auto-sync repository
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          # 最新の変更を取得
+          git pull origin main
+          
+          # 変更がある場合のみコミット
+          if [[ -n $(git status -s) ]]; then
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add .
+            git commit -m "Auto-sync after database update"
+            git push
+          fi 
