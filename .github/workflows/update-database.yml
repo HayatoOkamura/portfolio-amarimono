@@ -14,7 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Debug repository state
@@ -86,6 +86,9 @@ jobs:
       - name: Clean up dump files
         if: steps.check_changes.outputs.changes == 'true'
         run: |
+          # 最新の状態を取得
+          git pull origin main
+          
           echo "Current state before cleanup:"
           git status
           echo "Dump files before cleanup:"
@@ -107,7 +110,9 @@ jobs:
           echo "State after commit:"
           git status
           
-          git push
+          # プッシュ前に再度最新の状態を取得
+          git pull origin main --rebase
+          git push origin main
           
           echo "Final state:"
           git status 
