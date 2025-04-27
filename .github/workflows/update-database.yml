@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'database_dumps/dump_*.sql'  # ダンプファイルの変更がある場合のみ実行
+      - 'database_dumps/**'  # database_dumpsディレクトリ内の変更を監視
+  workflow_dispatch:  # 手動実行を許可
 
 jobs:
   update-database:

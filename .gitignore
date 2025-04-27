@@ -19,3 +19,4 @@ yarn-error.log*
 # Database dumps
 database_dumps/
 !database_dumps/dump_*.sql
+!database_dumps/last_state.txt
