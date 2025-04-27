@@ -10,13 +10,12 @@ on:
 jobs:
   update-database:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read  # プッシュ権限を明示的に制限
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2  # 直前のコミットも取得する
+          fetch-depth: 2
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check for database dump changes
         id: check_changes
@@ -71,4 +70,17 @@ jobs:
           echo "Applying database dump..."
           psql "postgresql://postgres.qmrjsqeigdkizkrpiahs:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" < "$LATEST_DUMP"
           
-          echo "Database update completed successfully" 
+          echo "Database update completed successfully"
+
+      - name: Clean up dump files
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          # ダンプファイルを削除
+          rm -f database_dumps/dump_*.sql
+          rm -f database_dumps/last_state.txt
+          # 変更をコミット
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add database_dumps/
+          git commit -m "Clean up database dump files after update"
+          git push 
