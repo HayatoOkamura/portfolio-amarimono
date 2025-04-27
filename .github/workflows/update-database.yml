@@ -26,6 +26,13 @@ jobs:
             echo "changes=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Get current IP address
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          echo "Current IP address:"
+          curl -s https://api.ipify.org
+          echo ""
+
       - name: Install PostgreSQL 17 client tools
         if: steps.check_changes.outputs.changes == 'true'
         run: |
