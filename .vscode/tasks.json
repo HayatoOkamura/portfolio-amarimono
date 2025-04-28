@@ -1,0 +1,47 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Database: Dump",
+            "type": "shell",
+            "command": "./dump-db.sh",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Create a database dump and optionally restore to Supabase"
+        },
+        {
+            "label": "Database: Migrate Up",
+            "type": "shell",
+            "command": "cd backend && migrate -database \"postgres://postgres:password@localhost:5432/amarimono?sslmode=disable\" -path db/migrations up",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Run all pending database migrations"
+        },
+        {
+            "label": "Database: Migrate Down",
+            "type": "shell",
+            "command": "cd backend && migrate -database \"postgres://postgres:password@localhost:5432/amarimono?sslmode=disable\" -path db/migrations down",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Rollback the last database migration"
+        }
+    ]
+} 
