@@ -89,6 +89,13 @@ func saveToLocal(c *gin.Context, file *multipart.FileHeader, dir string, id stri
 
 // saveToSupabase はSupabase Storageに画像を保存
 func saveToSupabase(file *multipart.FileHeader, dir string, recipeID string) (string, error) {
+	// 環境変数のチェック
+	supabaseKey := os.Getenv("SUPABASE_SERVICE_KEY")
+	if supabaseKey == "" {
+		log.Printf("ERROR: SUPABASE_SERVICE_KEY is not set")
+		return "", fmt.Errorf("SUPABASE_SERVICE_KEY is not set")
+	}
+
 	// レシピIDが指定されていない場合は一時的なディレクトリを使用
 	if recipeID == "" {
 		recipeID = "temp"
@@ -97,14 +104,16 @@ func saveToSupabase(file *multipart.FileHeader, dir string, recipeID string) (st
 	// ファイルを開く
 	src, err := file.Open()
 	if err != nil {
-		return "", err
+		log.Printf("ERROR: Failed to open file: %v", err)
+		return "", fmt.Errorf("failed to open file: %v", err)
 	}
 	defer src.Close()
 
 	// ファイルの内容を読み込む
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, src); err != nil {
-		return "", err
+		log.Printf("ERROR: Failed to read file content: %v", err)
+		return "", fmt.Errorf("failed to read file content: %v", err)
 	}
 
 	// 一意のファイル名を生成
@@ -113,28 +122,42 @@ func saveToSupabase(file *multipart.FileHeader, dir string, recipeID string) (st
 
 	// Supabase Storageにアップロード
 	supabaseURL := "https://qmrjsqeigdkizkrpiahs.supabase.co/storage/v1/object/public/images/" + filePath
+	log.Printf("INFO: Uploading to Supabase URL: %s", supabaseURL)
+
 	req, err := http.NewRequest("PUT", supabaseURL, bytes.NewReader(buf.Bytes()))
 	if err != nil {
-		return "", err
+		log.Printf("ERROR: Failed to create request: %v", err)
+		return "", fmt.Errorf("failed to create request: %v", err)
 	}
 
 	// ヘッダーを設定
 	req.Header.Set("Content-Type", file.Header.Get("Content-Type"))
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_SERVICE_KEY"))
+	req.Header.Set("Authorization", "Bearer "+supabaseKey)
 
 	// リクエストを送信
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		log.Printf("ERROR: Failed to send request: %v", err)
+		return "", fmt.Errorf("failed to send request: %v", err)
 	}
 	defer resp.Body.Close()
 
+	// レスポンスの内容を読み込む
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("ERROR: Failed to read response body: %v", err)
+	} else {
+		log.Printf("INFO: Response body: %s", string(body))
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to upload image: %s", resp.Status)
+		log.Printf("ERROR: Upload failed with status: %d, body: %s", resp.StatusCode, string(body))
+		return "", fmt.Errorf("failed to upload image: status %d, body: %s", resp.StatusCode, string(body))
 	}
 
 	// 公開URLを返す
+	log.Printf("INFO: Successfully uploaded image to: %s", supabaseURL)
 	return supabaseURL, nil
 }
 
