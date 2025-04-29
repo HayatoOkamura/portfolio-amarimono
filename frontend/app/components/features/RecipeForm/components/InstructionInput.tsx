@@ -2,7 +2,7 @@ import React from "react";
 import { useImageUpload } from "../hooks/useImageUpload";
 import { RecipeFormData } from "../types/recipeForm";
 import { VALIDATION_MESSAGES } from "../constants/validationMessages";
-import { backendUrl } from "@/app/utils/api";
+import { imageBaseUrl } from "@/app/utils/api";
 import styles from "./InstructionInput.module.scss";
 import {
   DndContext,
@@ -160,7 +160,7 @@ export const InstructionInput = ({
                                 instruction.imageURL.startsWith("http")
                               ? instruction.imageURL
                               : typeof instruction.imageURL === "string"
-                              ? `${backendUrl}/uploads/${instruction.imageURL}`
+                              ? `${imageBaseUrl}/${instruction.imageURL}`
                               : ""
                           }
                           alt={`Step ${instruction.step}`}

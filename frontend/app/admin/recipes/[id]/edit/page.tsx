@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { Recipe, NewRecipe } from "@/app/types/index";
-import { backendUrl } from "@/app/utils/api";
+import { imageBaseUrl } from "@/app/utils/api";
 import { fetchRecipeByIdService } from "@/app/hooks/recipes";
 import { RegistrationForm } from "@/app/components/features/RecipeForm/RegistrationForm";
 import { useRouter } from "next/navigation";
@@ -36,7 +36,7 @@ const AdminRecipeEdit = () => {
             instructions: recipeData.instructions.map(step => ({
               step: step.stepNumber,
               description: step.description,
-              imageURL: step.imageUrl ? `${backendUrl}/uploads/${step.imageUrl}` : undefined
+              imageURL: step.imageUrl ? `${imageBaseUrl}/${step.imageUrl}` : undefined
             })),
             ingredients: recipeData.ingredients.map(ing => ({
               id: ing.id,
