@@ -116,8 +116,14 @@ func saveToSupabase(file *multipart.FileHeader, dir string, recipeID string) (st
 		return "", fmt.Errorf("failed to read file content: %v", err)
 	}
 
-	// 一意のファイル名を生成
-	uniqueFilename := fmt.Sprintf("%d-%s", time.Now().UnixNano(), file.Filename)
+	// ファイルの拡張子を取得
+	ext := filepath.Ext(file.Filename)
+	if ext == "" {
+		ext = ".png" // デフォルトの拡張子
+	}
+
+	// 一意のファイル名を生成（日本語を除去）
+	uniqueFilename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
 	filePath := filepath.Join("recipes", recipeID, dir, uniqueFilename)
 
 	// Supabase Storageにアップロード
