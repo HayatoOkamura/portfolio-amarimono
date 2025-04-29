@@ -162,8 +162,12 @@ func saveToSupabase(file *multipart.FileHeader, dir string, recipeID string) (st
 		return "", fmt.Errorf("failed to upload image: status %d, body: %s", resp.StatusCode, string(body))
 	}
 
-	// 公開URLを返す（相対パスのみ）
-	return filePath, nil
+	// 環境に応じたURLを返す
+	if os.Getenv("ENVIRONMENT") == "production" {
+		return filePath, nil
+	} else {
+		return filepath.Join("uploads", filePath), nil
+	}
 }
 
 // DeleteImage は環境に応じて画像を削除する
