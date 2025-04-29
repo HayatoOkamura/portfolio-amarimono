@@ -121,7 +121,7 @@ func saveToSupabase(file *multipart.FileHeader, dir string, recipeID string) (st
 	filePath := filepath.Join("recipes", recipeID, dir, uniqueFilename)
 
 	// Supabase Storageにアップロード
-	supabaseURL := "https://qmrjsqeigdkizkrpiahs.supabase.co/storage/v1/object/public/images/" + filePath
+	supabaseURL := "https://qmrjsqeigdkizkrpiahs.supabase.co/storage/v1/object/images/" + filePath
 	log.Printf("INFO: Uploading to Supabase URL: %s", supabaseURL)
 
 	req, err := http.NewRequest("PUT", supabaseURL, bytes.NewReader(buf.Bytes()))
