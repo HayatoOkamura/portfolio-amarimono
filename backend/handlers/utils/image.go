@@ -163,7 +163,7 @@ func saveToSupabase(file *multipart.FileHeader, dir string, recipeID string) (st
 	}
 
 	// 環境に応じたURLを返す
-	if os.Getenv("ENVIRONMENT") == "production" {
+	if os.Getenv("GO_ENV") == "production" {
 		return filePath, nil
 	} else {
 		return filepath.Join("uploads", filePath), nil
