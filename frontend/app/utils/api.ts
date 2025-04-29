@@ -23,4 +23,4 @@ export const handleApiResponse = async (response: Response) => {
   return response.json();
 };
 
-export { backendUrl, imageBaseUrl };
+export { backendUrl };
