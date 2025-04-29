@@ -126,7 +126,7 @@ const AdminRecipes = () => {
                 <Image
                   src={
                     recipe.imageUrl
-                      ? `${imageBaseUrl}/uploads/${recipe.imageUrl}`
+                      ? `${imageBaseUrl}/${recipe.imageUrl}`
                       : "/images/common/pic_recipe_default.webp"
                   }
                   alt={recipe.name}

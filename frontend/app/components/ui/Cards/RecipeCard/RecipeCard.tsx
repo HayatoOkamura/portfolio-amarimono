@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect } from "react";
 import Image from "next/image";
+import { imageBaseUrl } from "@/app/utils/api";
 import styles from "./RecipeCard.module.scss";
 import { backendUrl } from "@/app/utils/api";
 import { Recipe } from "@/app/types/index";
@@ -46,7 +47,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
           fill
           src={
             recipe.imageUrl
-              ? `${backendUrl}/uploads/${recipe.imageUrl}`
+              ? `${imageBaseUrl}/${recipe.imageUrl}`
               : "/pic_recipe_default.webp"
           }
           alt={recipe.name}

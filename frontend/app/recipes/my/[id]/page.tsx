@@ -1,7 +1,7 @@
 /* eslint-disable */
 "use client";
 import styles from "./recipe.detail.module.scss";
-import { backendUrl } from "@/app/utils/api";
+import { backendUrl, imageBaseUrl } from "@/app/utils/api";
 import ResponsivePieChart from "@/app/components/ui/PieChart/PieChart";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -111,7 +111,7 @@ const EditMyRecipe = () => {
             <Image
               fill
               src={
-                `${backendUrl}/uploads/${recipe.imageUrl}` ||
+                `${imageBaseUrl}/${recipe.imageUrl}` ||
                 "/pic_recipe_default.webp"
               }
               alt={recipe.name}
@@ -125,7 +125,7 @@ const EditMyRecipe = () => {
                   <Image
                     fill
                     src={
-                      `${backendUrl}/uploads/${step.imageUrl}` ||
+                      `${imageBaseUrl}/${step.imageUrl}` ||
                       "/pic_recipe_default.webp"
                     }
                     alt={recipe.name}
