@@ -420,38 +420,54 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	c.JSON(http.StatusOK, recipe)
 }
 
-// DeleteRecipe はレシピを削除する
+// DeleteRecipe はレシピを削除
 func (h *AdminHandler) DeleteRecipe(c *gin.Context) {
-	recipeID := c.Param("id")
-	if recipeID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "レシピIDが必要です"})
+	// トランザクションを開始
+	tx := h.DB.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
 		return
 	}
 
-	// レシピを取得
-	var recipe models.Recipe
-	if err := h.DB.Where("id = ?", recipeID).First(&recipe).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "レシピが見つかりません"})
-		return
-	}
-
-	// レシピのディレクトリパスを構築
-	recipeDir := filepath.Join(".", "uploads", "recipes", recipeID)
-
-	// ディレクトリが存在する場合は削除
-	if _, err := os.Stat(recipeDir); err == nil {
-		if err := os.RemoveAll(recipeDir); err != nil {
-			log.Printf("WARN: レシピディレクトリの削除に失敗しました: %v", err)
+	// エラーが発生した場合はロールバック
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
 		}
+	}()
+
+	recipeID := c.Param("id")
+
+	// レシピの存在確認
+	var recipe models.Recipe
+	if err := tx.First(&recipe, "id = ?", recipeID).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusNotFound, gin.H{"error": "Recipe not found"})
+		return
+	}
+
+	// 関連するrecipe_ingredientsを削除
+	if err := tx.Where("recipe_id = ?", recipeID).Delete(&models.RecipeIngredient{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete recipe ingredients"})
+		return
 	}
 
 	// レシピを削除
-	if err := h.DB.Delete(&recipe).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "レシピの削除に失敗しました"})
+	if err := tx.Delete(&recipe).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete recipe"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "レシピを削除しました"})
+	// トランザクションをコミット
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Recipe deleted successfully"})
 }
 
 // UpdateRecipe /admin/recipes/:id(Update) レシピを更新
