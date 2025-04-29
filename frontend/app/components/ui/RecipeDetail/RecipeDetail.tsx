@@ -72,7 +72,7 @@ const RecipeDetail = ({
               <Image
                 src={
                   recipe.imageUrl
-                    ? `${imageBaseUrl}/uploads/${recipe.imageUrl}`
+                    ? `${imageBaseUrl}/${recipe.imageUrl}`
                     : "/pic_recipe_default.webp"
                 }
                 alt={recipe.name}
@@ -91,7 +91,7 @@ const RecipeDetail = ({
                         <Image
                           src={
                             step.imageUrl
-                              ? `${imageBaseUrl}/uploads/${step.imageUrl}`
+                              ? `${imageBaseUrl}/${step.imageUrl}`
                               : "/pic_recipe_default.webp"
                           }
                           alt={recipe.name}

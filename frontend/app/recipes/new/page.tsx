@@ -12,7 +12,7 @@ import {
   useDeleteRecipe,
   useUpdateRecipe,
 } from "@/app/hooks/recipes";
-import { backendUrl } from "@/app/utils/api";
+import { imageBaseUrl } from "@/app/utils/api";
 import Image from "next/image";
 import { useState } from "react";
 import { Ingredient, Instruction, Recipe } from "@/app/types/index";
@@ -133,7 +133,7 @@ const RecipeRegistration: React.FC = () => {
                     fill
                     src={
                       recipe.imageUrl
-                        ? `${backendUrl}/uploads/${recipe.imageUrl}`
+                        ? `${imageBaseUrl}/${recipe.imageUrl}`
                         : "/pic_recipe_default.webp"
                     }
                     alt={recipe.name}

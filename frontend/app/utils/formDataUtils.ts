@@ -4,12 +4,13 @@ import { RecipeFormData } from "@/app/components/features/RecipeForm/types/recip
 const normalizeImageUrl = (url: string | undefined): string | undefined => {
   if (!url) return undefined;
   
-  // localhost:8080を含むURLの場合、相対パスに変換
-  const match = url.match(/\/uploads\/(.+)$/);
-  if (match) {
-    return match[1];
+  // 既に完全なURLの場合はそのまま返す
+  if (url.startsWith('http')) {
+    return url;
   }
-  return url;
+  
+  // 相対パスのみを返す
+  return url.replace(/^\/uploads\//, '');
 };
 
 export const createFormData = (

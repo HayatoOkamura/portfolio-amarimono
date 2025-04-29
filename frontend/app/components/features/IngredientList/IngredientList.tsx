@@ -23,7 +23,7 @@ const IngredientList = ({
             <Image
               src={
                 ing.imageUrl
-                  ? `${imageBaseUrl}/uploads/${ing.imageUrl}`
+                  ? `${imageBaseUrl}/${ing.imageUrl}`
                   : "/pic_recipe_default.webp"
               }
               alt={ing.name || ""}

@@ -19,7 +19,7 @@ import { RecipeSort } from "../components/ui/RecipeSort/RecipeSort";
 import { useFetchRecipesAPI, useSearchRecipes } from "../hooks/recipes";
 import { useSortedRecipes } from "../hooks/recipes";
 // Utils
-import { backendUrl } from "@/app/utils/api";
+import { imageBaseUrl } from "@/app/utils/api";
 import { calculateAverageRating } from "@/app/utils/calculateAverageRating";
 // Icon
 import { IoMdTime } from "react-icons/io";
@@ -229,7 +229,7 @@ const RecipeClientComponent = () => {
                       <Image
                         fill
                         src={
-                          `${backendUrl}/uploads/${persistedSelectedRecipe.imageUrl}` ||
+                          `${imageBaseUrl}/${persistedSelectedRecipe.imageUrl}` ||
                           "/pic_recipe_default.webp"
                         }
                         alt={persistedSelectedRecipe.name}
@@ -245,8 +245,8 @@ const RecipeClientComponent = () => {
                         fill
                         src={
                           nextRecipe
-                            ? `${backendUrl}/uploads/${nextRecipe.imageUrl}`
-                            : `${backendUrl}/uploads/${persistedSelectedRecipe?.imageUrl}` ||
+                            ? `${imageBaseUrl}/${nextRecipe.imageUrl}`
+                            : `${imageBaseUrl}/${persistedSelectedRecipe?.imageUrl}` ||
                               "/pic_recipe_default.webp"
                         }
                         alt={
