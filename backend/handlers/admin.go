@@ -141,6 +141,7 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	imagePath := filepath.Join("ingredients", filename)
 
 	ingredient := models.Ingredient{
+		ID:       0, // 明示的に0を設定
 		Name:     name,
 		GenreID:  genreIDInt,
 		UnitID:   uint(unitIDInt),
