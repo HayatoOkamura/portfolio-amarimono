@@ -4,13 +4,8 @@ import { RecipeFormData } from "@/app/components/features/RecipeForm/types/recip
 const normalizeImageUrl = (url: string | undefined): string | undefined => {
   if (!url) return undefined;
   
-  // 既に完全なURLの場合は相対パスを抽出
+  // 既に完全なURLの場合はそのまま返す
   if (url.startsWith('http')) {
-    // imageBaseUrlを含む場合は、その部分を除去
-    const imageBaseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || '';
-    if (imageBaseUrl && url.includes(imageBaseUrl)) {
-      return url.replace(imageBaseUrl, '').replace(/^\//, '');
-    }
     return url;
   }
   
