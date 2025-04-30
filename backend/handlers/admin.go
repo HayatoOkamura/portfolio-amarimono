@@ -141,12 +141,13 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	imagePath := filepath.Join("ingredients", filename)
 
 	ingredient := models.Ingredient{
-		ID:       0, // 明示的に0を設定
 		Name:     name,
 		GenreID:  genreIDInt,
 		UnitID:   unitIDInt,
 		ImageUrl: imagePath,
 	}
+
+	log.Printf("🔥Debug - Creating ingredient: %+v", ingredient)
 
 	// 具材名の重複をチェック
 	var count int64
