@@ -583,8 +583,8 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 				imageURLKey := fmt.Sprintf("instruction_image_url_%d", i)
 				if existingImageURL := c.PostForm(imageURLKey); existingImageURL != "" {
 					log.Printf("📝 Processing existing image URL for instruction %d: %s", i, existingImageURL)
-					// 正規表現で完全なURLから相対パスを抽出
-					re := regexp.MustCompile(`http://[^/]+/uploads/(.+)`)
+					// SupabaseのURLから相対パスを抽出
+					re := regexp.MustCompile(`/storage/v1/object/public/images/(.+)`)
 					matches := re.FindStringSubmatch(existingImageURL)
 					if len(matches) > 1 {
 						tempInstructions[i].ImageURL = matches[1]
