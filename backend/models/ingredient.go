@@ -6,7 +6,7 @@ type Ingredient struct {
 	GenreID  int             `json:"genre_id" binding:"required"`
 	Genre    IngredientGenre `json:"genre" gorm:"foreignKey:GenreID;references:ID"`
 	ImageUrl string          `json:"image_url"`
-	UnitID   uint            `json:"unit_id" gorm:"not null"`
+	UnitID   int             `json:"unit_id" gorm:"not null"`
 	Unit     Unit            `json:"unit" gorm:"foreignKey:UnitID;references:ID"`
 }
 
