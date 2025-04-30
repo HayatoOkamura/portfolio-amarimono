@@ -148,10 +148,23 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	}
 
 	log.Printf("🔥Debug - Creating ingredient: %+v", ingredient)
+	log.Printf("🔥Debug - GenreID: %d, UnitID: %d", genreIDInt, unitIDInt)
+
+	// シーケンスの状態を確認
+	var sequenceStatus struct {
+		LastValue int64 `gorm:"column:last_value"`
+		IsCalled  bool  `gorm:"column:is_called"`
+	}
+	if err := h.DB.Raw("SELECT last_value, is_called FROM ingredients_id_seq").Scan(&sequenceStatus).Error; err != nil {
+		log.Printf("🔥Debug - Error checking sequence: %v", err)
+	} else {
+		log.Printf("🔥Debug - Sequence status: last_value=%d, is_called=%v", sequenceStatus.LastValue, sequenceStatus.IsCalled)
+	}
 
 	// 具材名の重複をチェック
 	var count int64
 	if err := h.DB.Model(&models.Ingredient{}).Where("name = ?", ingredient.Name).Count(&count).Error; err != nil {
+		log.Printf("🔥Debug - Error checking duplicate: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check for duplicate ingredient"})
 		return
 	}
@@ -163,8 +176,10 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	}
 
 	// 新規具材を追加
+	log.Printf("🔥Debug - Attempting to create ingredient with values: name=%s, genre_id=%d, unit_id=%d, image_url=%s",
+		ingredient.Name, ingredient.GenreID, ingredient.UnitID, ingredient.ImageUrl)
 	if err := h.DB.Create(&ingredient).Error; err != nil {
-		log.Printf("Error creating ingredient: %v", err)
+		log.Printf("🔥Debug - Error creating ingredient: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add ingredient"})
 		return
 	}
@@ -1160,4 +1175,22 @@ func (h *AdminHandler) UploadImage(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"url": imageURL})
+}
+
+// DebugSequence はシーケンスの状態を確認するためのデバッグエンドポイント
+func (h *AdminHandler) DebugSequence(c *gin.Context) {
+	var result struct {
+		LastValue int64 `gorm:"column:last_value"`
+		IsCalled  bool  `gorm:"column:is_called"`
+	}
+
+	if err := h.DB.Raw("SELECT last_value, is_called FROM ingredients_id_seq").Scan(&result).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check sequence", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"sequence_status": result,
+		"message":         "Sequence status retrieved successfully",
+	})
 }
