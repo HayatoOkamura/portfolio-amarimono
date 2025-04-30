@@ -642,7 +642,7 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 		updates["genre_id"] = genreID
 	}
 	if recipe.MainImage != "" {
-		updates["main_image"] = recipe.MainImage
+		updates["image_url"] = recipe.MainImage
 	}
 	if len(recipe.Instructions) > 0 {
 		updates["instructions"] = recipe.Instructions
