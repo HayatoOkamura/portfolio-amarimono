@@ -162,6 +162,7 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 
 	// 新規具材を追加
 	if err := h.DB.Create(&ingredient).Error; err != nil {
+		log.Printf("Error creating ingredient: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add ingredient"})
 		return
 	}
