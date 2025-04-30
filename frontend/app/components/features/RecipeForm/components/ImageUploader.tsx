@@ -13,8 +13,6 @@ interface ImageUploaderProps {
 export const ImageUploader = ({ imageUrl, image, onImageChange }: ImageUploaderProps) => {
   const { handleImageChange, getImageUrl } = useImageUpload();
   const currentImageUrl = getImageUrl(imageUrl, image);
-
-  console.log("currentImageUrl", currentImageUrl);
   
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

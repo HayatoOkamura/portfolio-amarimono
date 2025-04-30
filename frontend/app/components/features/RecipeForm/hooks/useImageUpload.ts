@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { backendUrl } from "@/app/utils/api";
+import { imageBaseUrl } from "@/app/utils/api";
 
 export const useImageUpload = () => {
   const handleImageChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -18,7 +18,13 @@ export const useImageUpload = () => {
       return URL.createObjectURL(image);
     }
     if (imageUrl) {
-      return imageUrl.startsWith('http') ? imageUrl : `${backendUrl}/uploads/${imageUrl}`;
+      if (imageUrl.startsWith('http')) {
+        return imageUrl;
+      }
+      if (process.env.NODE_ENV === 'production') {
+        return `${imageBaseUrl}/${imageUrl}`;
+      }
+      return `${imageBaseUrl}/uploads/${imageUrl}`;
     }
     return undefined;
   }, []);
