@@ -4,9 +4,10 @@ import { RecipeFormData } from "@/app/components/features/RecipeForm/types/recip
 const normalizeImageUrl = (url: string | undefined): string | undefined => {
   if (!url) return undefined;
   
-  // 既に完全なURLの場合はそのまま返す
+  // SupabaseのURLから相対パスを抽出
   if (url.startsWith('http')) {
-    return url;
+    const match = url.match(/\/storage\/v1\/object\/public\/images\/(.+)/);
+    return match ? match[1] : url;
   }
   
   // 相対パスのみを返す
