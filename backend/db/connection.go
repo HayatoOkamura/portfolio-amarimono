@@ -69,7 +69,7 @@ func init() {
 
 		var err error
 		DB.Postgres, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Info),
+			Logger: logger.Default.LogMode(4),
 		})
 		if err != nil {
 			log.Fatalf("Failed to open database connection: %v", err)

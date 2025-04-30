@@ -144,7 +144,7 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 		ID:       0, // 明示的に0を設定
 		Name:     name,
 		GenreID:  genreIDInt,
-		UnitID:   uint(unitIDInt),
+		UnitID:   unitIDInt,
 		ImageUrl: imagePath,
 	}
 
@@ -246,7 +246,7 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 	// 具材情報を更新
 	ingredient.Name = name
 	ingredient.GenreID = genre.ID
-	ingredient.UnitID = uint(unit.ID)
+	ingredient.UnitID = unit.ID
 
 	log.Println("ingredient💩", ingredient)
 
