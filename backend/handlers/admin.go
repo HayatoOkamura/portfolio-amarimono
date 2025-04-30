@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -114,51 +113,11 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 		return
 	}
 
-	// ファイルを保存するディレクトリ
-	saveDir := filepath.Join(".", "uploads", "ingredients")
-
-	// ディレクトリが存在しない場合は作成
-	if _, err := os.Stat(saveDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(saveDir, 0755); err != nil {
-			log.Println("Error: Failed to create directory:", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
-			return
-		}
-	}
-
-	// ファイル名を生成
-	filename := fmt.Sprintf("%d-%s", time.Now().UnixNano(), file.Filename)
-	savePath := filepath.Join(saveDir, filename)
-
-	// ファイルを保存
-	if err := c.SaveUploadedFile(file, savePath); err != nil {
-		log.Println("Error: Failed to save file:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
-		return
-	}
-
-	// 画像のパスを相対パスで保存
-	imagePath := filepath.Join("ingredients", filename)
-
+	// 具材を先に作成してIDを取得
 	ingredient := models.Ingredient{
-		Name:     name,
-		GenreID:  genreIDInt,
-		UnitID:   unitIDInt,
-		ImageUrl: imagePath,
-	}
-
-	log.Printf("🔥Debug - Creating ingredient: %+v", ingredient)
-	log.Printf("🔥Debug - GenreID: %d, UnitID: %d", genreIDInt, unitIDInt)
-
-	// シーケンスの状態を確認
-	var sequenceStatus struct {
-		LastValue int64 `gorm:"column:last_value"`
-		IsCalled  bool  `gorm:"column:is_called"`
-	}
-	if err := h.DB.Raw("SELECT last_value, is_called FROM ingredients_id_seq").Scan(&sequenceStatus).Error; err != nil {
-		log.Printf("🔥Debug - Error checking sequence: %v", err)
-	} else {
-		log.Printf("🔥Debug - Sequence status: last_value=%d, is_called=%v", sequenceStatus.LastValue, sequenceStatus.IsCalled)
+		Name:    name,
+		GenreID: genreIDInt,
+		UnitID:  unitIDInt,
 	}
 
 	// 具材名の重複をチェック
@@ -181,6 +140,24 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	if err := h.DB.Create(&ingredient).Error; err != nil {
 		log.Printf("🔥Debug - Error creating ingredient: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add ingredient"})
+		return
+	}
+
+	// 画像を保存
+	imagePath, err := utils.SaveImage(c, file, "ingredients", fmt.Sprintf("%d", ingredient.ID))
+	if err != nil {
+		log.Printf("Error saving image: %v", err)
+		// 画像の保存に失敗した場合は具材を削除
+		h.DB.Delete(&ingredient)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
+		return
+	}
+
+	// 画像のパスを更新
+	ingredient.ImageUrl = imagePath
+	if err := h.DB.Save(&ingredient).Error; err != nil {
+		log.Printf("Error updating ingredient with image path: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update ingredient with image path"})
 		return
 	}
 

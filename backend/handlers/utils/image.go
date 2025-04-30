@@ -89,17 +89,12 @@ func saveToLocal(c *gin.Context, file *multipart.FileHeader, dir string, id stri
 }
 
 // saveToSupabase はSupabase Storageに画像を保存
-func saveToSupabase(file *multipart.FileHeader, dir string, recipeID string) (string, error) {
+func saveToSupabase(file *multipart.FileHeader, dir string, id string) (string, error) {
 	// 環境変数のチェック
 	supabaseKey := os.Getenv("SUPABASE_SERVICE_KEY")
 	if supabaseKey == "" {
 		log.Printf("ERROR: SUPABASE_SERVICE_KEY is not set")
 		return "", fmt.Errorf("SUPABASE_SERVICE_KEY is not set")
-	}
-
-	// レシピIDが指定されていない場合は一時的なディレクトリを使用
-	if recipeID == "" {
-		recipeID = "temp"
 	}
 
 	// ファイルを開く
@@ -123,16 +118,35 @@ func saveToSupabase(file *multipart.FileHeader, dir string, recipeID string) (st
 		ext = ".png" // デフォルトの拡張子
 	}
 
-	// 一意のファイル名を生成（日本語を除去）
+	// 一意のファイル名を生成
 	uniqueFilename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
 
 	// パス名を構築（URLエンコードは各コンポーネントに対してのみ行う）
-	encodedRecipeID := url.PathEscape(recipeID)
-	encodedDir := url.PathEscape(dir)
-	encodedFilename := url.PathEscape(uniqueFilename)
-
-	// パスを構築（区切り文字は/のまま）
-	filePath := fmt.Sprintf("recipes/%s/%s/%s", encodedRecipeID, encodedDir, encodedFilename)
+	var filePath string
+	if dir == "ingredients" {
+		// 具材の画像の場合
+		if id == "" {
+			log.Printf("ERROR: 具材IDが指定されていません")
+			return "", fmt.Errorf("具材IDが指定されていません")
+		}
+		encodedID := url.PathEscape(id)
+		encodedFilename := url.PathEscape(uniqueFilename)
+		filePath = fmt.Sprintf("ingredients/%s/%s", encodedID, encodedFilename)
+	} else if dir == "temp_uploads" {
+		// 一時的なアップロードの場合
+		encodedFilename := url.PathEscape(uniqueFilename)
+		filePath = fmt.Sprintf("temp/%s", encodedFilename)
+	} else {
+		// レシピの画像の場合
+		if id == "" {
+			log.Printf("ERROR: レシピIDが指定されていません")
+			return "", fmt.Errorf("レシピIDが指定されていません")
+		}
+		encodedID := url.PathEscape(id)
+		encodedDir := url.PathEscape(dir)
+		encodedFilename := url.PathEscape(uniqueFilename)
+		filePath = fmt.Sprintf("recipes/%s/%s/%s", encodedID, encodedDir, encodedFilename)
+	}
 
 	// Supabase Storageにアップロード
 	supabaseURL := "https://qmrjsqeigdkizkrpiahs.supabase.co/storage/v1/object/images/" + filePath
@@ -170,12 +184,7 @@ func saveToSupabase(file *multipart.FileHeader, dir string, recipeID string) (st
 		return "", fmt.Errorf("failed to upload image: status %d, body: %s", resp.StatusCode, string(body))
 	}
 
-	// 環境に応じたURLを返す
-	if os.Getenv("GO_ENV") == "production" {
-		return filePath, nil
-	} else {
-		return filepath.Join("uploads", filePath), nil
-	}
+	return filePath, nil
 }
 
 // DeleteImage は環境に応じて画像を削除する
