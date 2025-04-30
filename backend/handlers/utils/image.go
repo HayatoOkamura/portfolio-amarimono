@@ -126,13 +126,13 @@ func saveToSupabase(file *multipart.FileHeader, dir string, recipeID string) (st
 	// 一意のファイル名を生成（日本語を除去）
 	uniqueFilename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
 
-	// パス名をURLエンコード
+	// パス名を構築（URLエンコードは各コンポーネントに対してのみ行う）
 	encodedRecipeID := url.PathEscape(recipeID)
 	encodedDir := url.PathEscape(dir)
 	encodedFilename := url.PathEscape(uniqueFilename)
 
-	filePath := filepath.Join("recipes", encodedRecipeID, encodedDir, encodedFilename)
-	filePath = strings.ReplaceAll(filePath, "\\", "/") // Windowsのパス区切り文字を修正
+	// パスを構築（区切り文字は/のまま）
+	filePath := fmt.Sprintf("recipes/%s/%s/%s", encodedRecipeID, encodedDir, encodedFilename)
 
 	// Supabase Storageにアップロード
 	supabaseURL := "https://qmrjsqeigdkizkrpiahs.supabase.co/storage/v1/object/images/" + filePath

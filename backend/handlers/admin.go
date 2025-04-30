@@ -571,14 +571,13 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 					return
 				}
 				log.Printf("📝 Found new image file for instruction %d: %s", i, imageFile.Filename)
-				savePath := filepath.Join(recipeFolder, "instructions")
-				imageURL, err := utils.SaveImage(c, imageFile, savePath, fmt.Sprintf("%d", recipe.ID))
+				imageURL, err := utils.SaveImage(c, imageFile, "instructions", recipe.ID.String())
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save instruction image"})
 					return
 				}
 				log.Printf("📝 Saved new image for instruction %d: %s", i, imageURL)
-				tempInstructions[i].ImageURL = filepath.ToSlash(filepath.Join(recipeFolder, "instructions", filepath.Base(imageURL)))
+				tempInstructions[i].ImageURL = imageURL
 			} else {
 				// 既存の画像URLの処理
 				imageURLKey := fmt.Sprintf("instruction_image_url_%d", i)
