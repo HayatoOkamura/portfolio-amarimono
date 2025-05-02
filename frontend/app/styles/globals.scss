@@ -1,35 +1,10 @@
-@import "./reset.scss";
+@import './config/variables';
+@import './config/breakpoints';
+@import './config/mixins';
+@import './base/base';
+@import './base/reset';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --primary-bg-color: #EFF1F5;
-  --secondary-bg-color: #F7DEDC;
-
-  --primary-font-color: #2d2d2d;
-  --secondary-font-color: #a5a5a5;
-
-  --primary-accent-color: #DE616A;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-  }
-}
-
-html {
-  font-size: 16px; 
-  font-family: "Noto sans JP", "Roboto", sans-serif;
-}
-
-body {
-  color: var(--primary-font-color);
-  background: var(--primary-bg-color);
-  overflow: hidden;
-}
-
-main {
-  height: calc(100% - 65px);
-  overflow-y: auto;
-}

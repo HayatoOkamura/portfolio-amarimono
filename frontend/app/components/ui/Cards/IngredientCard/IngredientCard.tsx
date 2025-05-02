@@ -43,7 +43,7 @@ const IngredientCard: React.FC<IngredientCardProps> = ({
         <Image
           src={
             ingredient.imageUrl
-              ? `${imageBaseUrl}/uploads/${ingredient.imageUrl}`
+              ? `${imageBaseUrl}/${ingredient.imageUrl}`
               : "/pic_recipe_default.webp"
           }
           alt={ingredient.name}

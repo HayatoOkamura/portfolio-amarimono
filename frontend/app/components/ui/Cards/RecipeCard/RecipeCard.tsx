@@ -44,14 +44,14 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
           <span className={styles.card_block__draft}>下書き</span>
         )}
         <Image
-          fill
           src={
             recipe.imageUrl
               ? `${imageBaseUrl}/${recipe.imageUrl}`
               : "/pic_recipe_default.webp"
           }
           alt={recipe.name}
-          unoptimized
+          width={100}
+          height={100}
         />
       </div>
       <div className={styles.card_block__contents}>

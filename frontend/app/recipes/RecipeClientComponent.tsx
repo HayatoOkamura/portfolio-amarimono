@@ -27,7 +27,17 @@ import { RiMoneyCnyCircleLine } from "react-icons/ri";
 // Types
 import { Recipe, Ingredient } from "@/app/types/index";
 
+/**
+ * RecipeClientComponent
+ * 
+ * レシピ一覧と詳細を表示するメインコンポーネント
+ * - レシピの検索・表示
+ * - レシピの詳細情報表示
+ * - レシピのソート・フィルタリング
+ * - アニメーション効果
+ */
 const RecipeClientComponent = () => {
+  // 状態管理
   const { ingredients } = useIngredientStore();
   const {
     recipes: persistedRecipes = [],
@@ -42,25 +52,30 @@ const RecipeClientComponent = () => {
   const { recipeGenres, fetchRecipeGenres } = useGenreStore();
   const [selectedGenre, setSelectedGenre] = useState<string>("すべて");
   const genres = [{ id: 0, name: "すべて" }, ...(recipeGenres || [])];
+  
+  // アニメーション関連の状態
   const [nextRecipe, setNextRecipe] = useState<Recipe | null>(null);
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [rotate, setRotate] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [borderPosition, setBorderPosition] = useState({ top: 0, left: 0 });
   const [borderSize, setBorderSize] = useState({ width: 0, height: 0 });
-  const [containerElement, setContainerElement] =
-    useState<HTMLDivElement | null>(null);
+  const [containerElement, setContainerElement] = useState<HTMLDivElement | null>(null);
 
-  const { data: fetchedRecipes = [], isLoading: isFetchingRecipes } =
-    useFetchRecipesAPI(
-      ingredients.map((ingredient) => ({
-        id: ingredient.id,
-        quantity: ingredient.quantity,
-      }))
-    );
-  const { data: searchResults = [], isLoading: isSearching } =
-    useSearchRecipes(query);
+  // API呼び出し
+  const { data: fetchedRecipes = [], isLoading: isFetchingRecipes } = useFetchRecipesAPI(
+    ingredients.map((ingredient) => ({
+      id: ingredient.id,
+      quantity: ingredient.quantity,
+    }))
+  );
+  const { data: searchResults = [], isLoading: isSearching } = useSearchRecipes(query);
 
+  /**
+   * レシピクリック時のハンドラー
+   * - アニメーション効果の開始
+   * - 次のレシピの設定
+   */
   const handleRecipeClick = (recipe: Recipe) => {
     if (recipe.id === persistedSelectedRecipe?.id) return;
     setNextRecipe(recipe);
@@ -68,6 +83,11 @@ const RecipeClientComponent = () => {
     setIsFadingOut(true);
   };
 
+  /**
+   * 回転アニメーション完了時のハンドラー
+   * - 選択されたレシピの更新
+   * - アニメーション状態のリセット
+   */
   const handleRotateComplete = () => {
     if (nextRecipe) {
       setSelectedRecipe(nextRecipe);
@@ -77,20 +97,24 @@ const RecipeClientComponent = () => {
     }
   };
 
-  const filteredRecipes =
-    selectedGenre === "すべて"
-      ? persistedRecipes || []
-      : (persistedRecipes || []).filter(
-          (recipe: Recipe) => recipe.genre?.name === selectedGenre
-        );
+  // ジャンルによるフィルタリングとソート
+  const filteredRecipes = selectedGenre === "すべて"
+    ? persistedRecipes || []
+    : (persistedRecipes || []).filter(
+        (recipe: Recipe) => recipe.genre?.name === selectedGenre
+      );
 
   const sortedRecipes = useSortedRecipes(filteredRecipes);
 
+  /**
+   * 材料IDから材料名を取得
+   */
   const getIngredientName = (id: number): string => {
     const ingredient = ingredients.find((ing) => ing.id === id);
     return ingredient ? ingredient.name : "Unknown Ingredient";
   };
 
+  // レシピ選択時のボーダー位置更新
   useEffect(() => {
     if (nextRecipe && containerRef.current) {
       const selectedElement = containerRef.current.querySelector(
@@ -98,14 +122,14 @@ const RecipeClientComponent = () => {
       ) as HTMLDivElement;
 
       if (nextRecipe) {
-        const { offsetTop, offsetLeft, offsetWidth, offsetHeight } =
-          selectedElement;
+        const { offsetTop, offsetLeft, offsetWidth, offsetHeight } = selectedElement;
         setBorderPosition({ top: offsetTop, left: offsetLeft });
         setBorderSize({ width: offsetWidth, height: offsetHeight });
       }
     }
   }, [nextRecipe]);
 
+  // 初期レシピ選択時のボーダー位置設定
   useEffect(() => {
     if (persistedRecipes.length > 0) {
       requestAnimationFrame(() => {
@@ -127,28 +151,27 @@ const RecipeClientComponent = () => {
     }
   }, [persistedRecipes]);
 
+  // コンテナ要素変更時のボーダー位置更新
   useEffect(() => {
     if (containerElement) {
-      const { offsetTop, offsetLeft, offsetWidth, offsetHeight } =
-        containerElement;
+      const { offsetTop, offsetLeft, offsetWidth, offsetHeight } = containerElement;
       setBorderPosition({ top: offsetTop, left: offsetLeft });
       setBorderSize({ width: offsetWidth, height: offsetHeight });
     }
   }, [containerElement]);
 
+  // レシピジャンルの取得
   useEffect(() => {
     fetchRecipeGenres();
   }, [fetchRecipeGenres]);
 
+  /**
+   * レシピデータの更新処理
+   * - 材料検索時のレシピ更新
+   * - 名前検索時のレシピ更新
+   */
   useEffect(() => {
     if (searchType === "ingredients" && fetchedRecipes) {
-      console.log("🔍 Ingredients search triggered");
-      console.log("🔍 Fetched recipes:", fetchedRecipes);
-
-      if (JSON.stringify(persistedRecipes) === JSON.stringify(fetchedRecipes)) {
-        console.log("⏭️ Skipping update - recipes unchanged");
-        return;
-      }
 
       const sortedRecipes = [...fetchedRecipes].sort((a, b) => {
         const ratingA = calculateAverageRating(a.reviews);
@@ -161,11 +184,6 @@ const RecipeClientComponent = () => {
         setSelectedRecipe(sortedRecipes[0]);
       }
     } else if (searchType === "name" && searchResults && searchExecuted) {
-      if (JSON.stringify(persistedRecipes) === JSON.stringify(searchResults)) {
-        console.log("⏭️ Skipping update - search results unchanged");
-        return;
-      }
-
       const sortedRecipes = [...searchResults].sort((a, b) => {
         const ratingA = calculateAverageRating(a.reviews);
         const ratingB = calculateAverageRating(b.reviews);
@@ -186,6 +204,7 @@ const RecipeClientComponent = () => {
     persistedSelectedRecipe,
   ]);
 
+  // ローディング状態の更新
   useEffect(() => {
     if (isFetchingRecipes || isSearching) {
       setLoading(true);
@@ -210,7 +229,9 @@ const RecipeClientComponent = () => {
         </p>
       ) : (
         <div className={styles.recipes_block__inner}>
+          {/* レシピ一覧セクション */}
           <div className={styles.recipes_block__contents}>
+            {/* 現在選択中のレシピ表示 */}
             {persistedSelectedRecipe && (
               <div className={styles.current_recipe}>
                 <motion.div
@@ -224,25 +245,24 @@ const RecipeClientComponent = () => {
                   }
                   onAnimationComplete={handleRotateComplete}
                 >
+                  {/* 現在のレシピ画像 */}
                   <div className={styles.current_recipe__img}>
                     <div className={styles.current_recipe__img_inner}>
                       <Image
-                        fill
                         src={
                           `${imageBaseUrl}/${persistedSelectedRecipe.imageUrl}` ||
                           "/pic_recipe_default.webp"
                         }
                         alt={persistedSelectedRecipe.name}
-                        unoptimized
+                        width={300}
+                        height={300}
                       />
                     </div>
                   </div>
-                  <div
-                    className={`${styles.current_recipe__img} ${styles["next"]}`}
-                  >
+                  {/* 次のレシピ画像 */}
+                  <div className={`${styles.current_recipe__img} ${styles["next"]}`}>
                     <div className={styles.current_recipe__img_inner}>
                       <Image
-                        fill
                         src={
                           nextRecipe
                             ? `${imageBaseUrl}/${nextRecipe.imageUrl}`
@@ -254,11 +274,13 @@ const RecipeClientComponent = () => {
                           persistedSelectedRecipe?.name ||
                           "Recipe Image"
                         }
-                        unoptimized
+                        width={100}
+                        height={100}
                       />
                     </div>
                   </div>
                 </motion.div>
+                {/* レシピ名とキャッチフレーズ */}
                 <motion.div
                   className={styles.recipe_name}
                   variants={{
@@ -279,6 +301,7 @@ const RecipeClientComponent = () => {
                 </motion.div>
               </div>
             )}
+            {/* ソート・フィルターセクション */}
             <div className={styles.sort_block}>
               <div className={styles.sort_block__item}>
                 <select
@@ -300,6 +323,7 @@ const RecipeClientComponent = () => {
                 />
               </div>
             </div>
+            {/* レシピリスト */}
             <div className={styles.recipe_list} ref={containerRef}>
               <motion.div
                 className={styles.recipe_list__border}
@@ -327,10 +351,12 @@ const RecipeClientComponent = () => {
               ))}
             </div>
           </div>
+          {/* レシピ詳細セクション */}
           <section className={styles.detail_block}>
             <div className={styles.detail_block__inner}>
               {persistedSelectedRecipe && (
                 <div className={styles.detail_block__contents}>
+                  {/* ジャンル表示 */}
                   <motion.div
                     className={styles.recipe_name}
                     variants={{
@@ -348,6 +374,7 @@ const RecipeClientComponent = () => {
                         : "ジャンルなし"}
                     </p>
                   </motion.div>
+                  {/* レビュー表示 */}
                   <motion.div
                     className={styles.review_block}
                     variants={{
@@ -372,6 +399,7 @@ const RecipeClientComponent = () => {
                       />
                     </div>
                   </motion.div>
+                  {/* 詳細情報 */}
                   <motion.div
                     className={styles.recipe_name}
                     variants={{
@@ -383,11 +411,13 @@ const RecipeClientComponent = () => {
                     exit="hidden"
                     transition={{ duration: 0.4, ease: "easeInOut" }}
                   >
+                    {/* 詳細ページへのリンク */}
                     <div className={styles.detail_block__btn}>
                       <Link href={`/recipes/${persistedSelectedRecipe.id}`}>
                         <button>詳しく見る</button>
                       </Link>
                     </div>
+                    {/* 調理時間と費用目安 */}
                     <div className={styles.units_block}>
                       <div className={styles.units_block__item}>
                         <div className={styles.units_block__title}>
@@ -409,6 +439,7 @@ const RecipeClientComponent = () => {
                         </p>
                       </div>
                     </div>
+                    {/* 栄養情報 */}
                     {persistedSelectedRecipe.nutrition && (
                       <ul className={styles.nutrition_block}>
                         <li className={styles.nutrition_block__item}>
@@ -527,6 +558,7 @@ const RecipeClientComponent = () => {
                         </li>
                       </ul>
                     )}
+                    {/* 材料リスト */}
                     <div className={styles.ingredients_block}>
                       <h3 className={styles.ingredients_block__title}>材料</h3>
                       <ul className={styles.ingredients_block__list}>

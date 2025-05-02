@@ -1,6 +1,5 @@
 import { Noto_Sans_JP, Roboto } from "next/font/google";
 import "@/app/styles/globals.scss";
-import "./styles/reset.scss";
 import QueryProvider from "./providers/QueryProvider";
 import type { Metadata } from "next";
 import Container from "@/app/components/layout/Container/Container";

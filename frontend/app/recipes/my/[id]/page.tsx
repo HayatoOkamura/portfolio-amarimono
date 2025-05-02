@@ -109,13 +109,13 @@ const EditMyRecipe = () => {
         <div className={styles.description_block}>
           <div className={styles.description_block__img}>
             <Image
-              fill
               src={
                 `${imageBaseUrl}/${recipe.imageUrl}` ||
                 "/pic_recipe_default.webp"
               }
               alt={recipe.name}
-              unoptimized
+              width={100}
+              height={100}
             />
           </div>
           <ol className={styles.description_block__list}>
@@ -123,13 +123,13 @@ const EditMyRecipe = () => {
               <li className={styles.description_block__item} key={idx}>
                 <div className={styles.description_block__sub_img}>
                   <Image
-                    fill
                     src={
                       `${imageBaseUrl}/${step.imageUrl}` ||
                       "/pic_recipe_default.webp"
                     }
                     alt={recipe.name}
-                    unoptimized
+                    width={100}
+                    height={100}
                   />
                 </div>
                 <div className={styles.description_block__contents}>

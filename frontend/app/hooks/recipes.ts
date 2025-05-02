@@ -277,44 +277,20 @@ export const fetchRecipeByIdService = async (id: string) => {
 // 新規レシピの登録
 export const addRecipeService = async (formData: FormData): Promise<Recipe> => {
   try {
-    // FormDataの内容を詳細にログ出力
-    console.log('=== FormData Contents ===');
-    for (const [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(`${key}: File - ${value.name} (${value.type}, ${value.size} bytes)`);
-      } else {
-        console.log(`${key}:`, value);
-      }
-    }
-
     // 画像ファイルの存在確認
     const imageFiles = Array.from(formData.entries())
       .filter(([key, value]) => value instanceof File)
       .map(([key, value]) => ({ key, file: value as File }));
-    
-    console.log('Image files in FormData:', imageFiles);
 
     // 各instructionの詳細を確認
     const instructions = JSON.parse(formData.get('instructions') as string);
-    console.log('Instructions details:', instructions.map((inst: any, index: number) => ({
-      stepNumber: inst.stepNumber,
-      description: inst.description,
-      image_url: inst.image_url,
-      hasImageFile: formData.has(`instruction_image_${index}`)
-    })));
 
     const response = await api.post("/admin/recipes", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
-      },
-      // リクエストの進捗をログ出力
-      onUploadProgress: (progressEvent) => {
-        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total!);
-        console.log('Upload progress:', percentCompleted, '%');
       }
     });
 
-    console.log('Response data:', response.data);
     
     // レスポンスデータの型チェック
     if (!response.data) {
@@ -323,12 +299,10 @@ export const addRecipeService = async (formData: FormData): Promise<Recipe> => {
 
     // レスポンスデータの構造を確認
     if (response.data.recipe) {
-      console.log('Recipe data from response:', response.data.recipe);
       return mapRecipe(response.data.recipe);
     }
 
     if (typeof response.data === 'object' && 'id' in response.data) {
-      console.log('Direct recipe data from response:', response.data);
       return mapRecipe(response.data);
     }
 
@@ -355,34 +329,17 @@ export const updateRecipeService = async (
   updatedData: FormData
 ): Promise<Recipe> => {
   try {
-    // FormDataの内容を詳細にログ出力
-    console.log('=== FormData Contents Before Processing ===');
-    for (const [key, value] of updatedData.entries()) {
-      if (value instanceof File) {
-        console.log(`${key}: File - ${value.name} (${value.type}, ${value.size} bytes)`);
-      } else {
-        console.log(`${key}:`, value);
-      }
-    }
-
     const ingredientsRaw = updatedData.get("ingredients") as string;
     if (ingredientsRaw) {
-      console.log('=== Raw Ingredients Data ===');
-      console.log('Raw ingredients string:', ingredientsRaw);
       
       const ingredients = JSON.parse(ingredientsRaw);
-      console.log('=== Parsed Ingredients Data ===');
-      console.log('Parsed ingredients:', ingredients);
       
       // 配列であることを確認し、必要なプロパティが存在することを確認
       if (Array.isArray(ingredients)) {
-        console.log('=== Processing Ingredients Array ===');
-        console.log('Original ingredients array:', ingredients);
         
         const formattedIngredients = ingredients
           .filter(ing => ing && typeof ing === 'object')
           .map((ing: any) => {
-            console.log('Processing ingredient:', ing);
             return {
               ingredient_id: ing.ingredient_id,
               quantity_required: ing.quantity_required,
@@ -390,17 +347,12 @@ export const updateRecipeService = async (
             };
           });
 
-        console.log('=== Formatted Ingredients ===');
-        console.log('Formatted ingredients:', formattedIngredients);
-
         // 具材データが空でないことを確認
         if (formattedIngredients.length === 0) {
           throw new Error("具材を選択してください");
         }
 
         const newIngredientsString = JSON.stringify(formattedIngredients);
-        console.log('=== New Ingredients String ===');
-        console.log('New ingredients string:', newIngredientsString);
 
         updatedData.delete("ingredients");
         updatedData.append("ingredients", newIngredientsString);
@@ -409,33 +361,11 @@ export const updateRecipeService = async (
       }
     }
 
-    // 最終的なFormDataの内容を確認
-    console.log('=== Final FormData Contents ===');
-    for (const [key, value] of updatedData.entries()) {
-      if (value instanceof File) {
-        console.log(`${key}: File - ${value.name} (${value.type}, ${value.size} bytes)`);
-      } else {
-        console.log(`${key}:`, value);
-      }
-    }
-
-    // リクエストの詳細をログ出力
-    console.log('=== Request Details ===');
-    console.log('URL:', `/admin/recipes/${id}`);
-    console.log('Method: PUT');
-    console.log('Headers:', {
-      "Content-Type": "multipart/form-data",
-    });
-
     const response = await api.put(`/admin/recipes/${id}`, updatedData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
-
-    console.log('=== Response ===');
-    console.log('Status:', response.status);
-    console.log('Data:', response.data);
 
     return response.data;
   } catch (error) {
@@ -618,10 +548,6 @@ export const useAddRecipe = () => {
       isPublic?: boolean;
       isDraft?: boolean;
     }) => {
-      console.log('FormData contents⚡️:');
-      for (const [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-      }
       if (userId) {
         formData.append("user_id", userId);
       }
@@ -634,7 +560,6 @@ export const useAddRecipe = () => {
       return addRecipeService(formData);
     },
     onSuccess: (data) => {
-      console.log('Recipe added successfully:', data);
       queryClient.invalidateQueries({ queryKey: recipeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: recipeKeys.userRecipes("") });
     },

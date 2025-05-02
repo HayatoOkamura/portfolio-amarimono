@@ -1,6 +1,11 @@
+@import "../../../../styles/config/breakpoints";
+
 .imageUploader {
   aspect-ratio: 1/1;
   width: 100%;
+  background: #fff;
+  border-radius: 8px;
+  border: 2px dashed #d1d5db;
 
   &__container {
     position: relative;
@@ -23,7 +28,6 @@
   &__overlay {
     position: absolute;
     inset: 0;
-
     opacity: 0;
     background: rgba(0, 0, 0, 0.5);
     transition: opacity 0.3s;
@@ -52,8 +56,6 @@
   }
 
   &__placeholder {
-    border: 2px dashed #d1d5db;
-    border-radius: 8px;
     padding: 1.5rem;
     text-align: center;
     width: 100%;
@@ -67,6 +69,9 @@
     margin: 0 auto;
     width: 85px;
     color: #d7d7d7;
+    @include mq('tab') {
+      width: 40px;
+    }
 
     svg {
       width: 100%;

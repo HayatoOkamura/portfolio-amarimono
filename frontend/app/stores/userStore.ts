@@ -16,10 +16,11 @@ type UserState = {
 const useUserStore = create<UserState>()(
   persist(
     (set) => ({
-      user: undefined,
+      user: null,
       isLoading: true,
 
       fetchUser: async () => {
+        set({ isLoading: true });
         const { data, error } = await supabase.auth.getUser();
         if (error) {
           set({ user: null, isLoading: false });
@@ -27,59 +28,63 @@ const useUserStore = create<UserState>()(
         }
         const userId = data?.user?.id;
         if (userId) {
-          // 取得したuser.idを使ってGoのAPIからユーザー詳細を取得
-          const response = await fetch(`${backendUrl}/api/users/${userId}`);
-          const userDetails = await response.json();
-
-          if (response.ok) {
+          try {
+            // 取得したuser.idを使ってGoのAPIからユーザー詳細を取得
+            const response = await fetch(`${backendUrl}/api/users/${userId}`);
+            if (!response.ok) {
+              throw new Error("Failed to fetch user details");
+            }
+            const userDetails = await response.json();
             // ユーザー情報をzustandストアに保存
             set({ user: { ...data.user, ...userDetails }, isLoading: false });
-          } else {
+          } catch (error) {
+            console.error("Error fetching user details:", error);
             set({ user: null, isLoading: false });
           }
+        } else {
+          set({ user: null, isLoading: false });
         }
       },
 
-      setUser: (user) => set({ user }),
+      setUser: (user) => set({ user, isLoading: false }),
 
       signOut: async () => {
+        set({ isLoading: true });
         await supabase.auth.signOut();
         set({ user: null, isLoading: false });
       },
 
       login: async (email: string, password: string) => {
         set({ isLoading: true });
-        // Supabaseでログイン処理
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        try {
+          // Supabaseでログイン処理
+          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-        if (error) {
-          alert(error.message);
-          set({ isLoading: false });
-          return;
-        }
-
-        // ログイン後にユーザー情報を取得してzustandに保存
-        const userId = data?.user?.id;
-        if (userId) {
-          // 取得したuser.idを使ってGoのAPIからユーザー詳細を取得
-          const response = await fetch(`${backendUrl}/api/users/${userId}`);
-          const userDetails = await response.json();
-
-          if (response.ok) {
-            // ユーザー情報をzustandストアに保存
-            set({ user: { ...data.user, ...userDetails }, isLoading: false });
-            alert("ログイン成功！");
-          } else {
-            // バックエンドにユーザーが存在しない場合はログアウト
-            await supabase.auth.signOut();
+          if (error) {
+            alert(error.message);
             set({ user: null, isLoading: false });
-            alert("ユーザー情報が正しく設定されていません。管理者にお問い合わせください。");
+            return;
           }
+
+          // ログイン後にユーザー情報を取得してzustandに保存
+          const userId = data?.user?.id;
+          if (userId) {
+            const response = await fetch(`${backendUrl}/api/users/${userId}`);
+            if (!response.ok) {
+              throw new Error("Failed to fetch user details");
+            }
+            const userDetails = await response.json();
+            set({ user: { ...data.user, ...userDetails }, isLoading: false });
+          }
+        } catch (error) {
+          console.error("Login error:", error);
+          set({ user: null, isLoading: false });
         }
       },
     }),
     {
       name: 'user-storage',
+      partialize: (state) => ({ user: state.user }),
     }
   )
 );

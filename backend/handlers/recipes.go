@@ -48,13 +48,19 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-	log.Printf("Request Body: %s", string(body))
+	log.Printf("🔍 Request Body: %s", string(body))
 
 	// JSONデコードを試みる
 	if err := json.Unmarshal(body, &requestIngredients); err != nil {
 		log.Printf("JSON Unmarshal error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format", "details": err.Error()})
 		return
+	}
+
+	// リクエストの内容をログ出力
+	log.Printf("🔍 Request Ingredients:")
+	for i, ing := range requestIngredients {
+		log.Printf("  [%d] IngredientID: %d, QuantityRequired: %.2f", i, ing.IngredientID, ing.QuantityRequired)
 	}
 
 	// `RecipeIngredient` に変換
@@ -92,6 +98,8 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		return
 	}
 
+	log.Printf("🔍 Found %d potential recipes", len(recipes))
+
 	// 栄養情報の標準値を取得
 	var standard models.NutritionStandard
 	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
@@ -103,9 +111,17 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 	// 結果をフィルタリング
 	var result []models.Recipe
 	for _, recipe := range recipes {
-		// 栄養情報がない場合、スキップ
+		// 栄養情報がない場合はデフォルト値を設定
 		if recipe.Nutrition == (models.NutritionInfo{}) {
-			continue
+			log.Printf("ℹ️ Recipe %s: No nutrition info, using default values", recipe.Name)
+			recipe.Nutrition = models.NutritionInfo{
+				Calories:      0,
+				Carbohydrates: 0,
+				Fat:           0,
+				Protein:       0,
+				Sugar:         0,
+				Salt:          0,
+			}
 		}
 
 		// 栄養素の割合を計算
@@ -126,11 +142,15 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 			if reqQuantity, ok := quantityMap[recipeIng.IngredientID]; ok {
 				// 数量が一致しない場合
 				if reqQuantity < recipeIng.QuantityRequired {
+					log.Printf("⚠️ Recipe %s: Insufficient quantity for ingredient %d (required: %.2f, available: %.2f)",
+						recipe.Name, recipeIng.IngredientID, recipeIng.QuantityRequired, reqQuantity)
 					meetsRequirements = false
 					break
 				}
 			} else {
 				// レシピに必要な具材がリクエストに含まれていない場合
+				log.Printf("⚠️ Recipe %s: Missing required ingredient %d",
+					recipe.Name, recipeIng.IngredientID)
 				meetsRequirements = false
 				break
 			}
@@ -140,15 +160,29 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		if meetsRequirements {
 			recipe.NutritionPercentage = nutritionPercentage
 			result = append(result, recipe)
+			log.Printf("✅ Added recipe %s to results", recipe.Name)
 		}
+	}
+
+	// 結果をログ出力
+	log.Printf("🔍 Search Results:")
+	for i, recipe := range result {
+		log.Printf("  [%d] Recipe: %s", i, recipe.Name)
+		log.Printf("     - Genre: %s", recipe.Genre.Name)
+		log.Printf("     - Cooking Time: %d minutes", recipe.CookingTime)
+		log.Printf("     - Cost Estimate: %d yen", recipe.CostEstimate)
+		log.Printf("     - Nutrition: %+v", recipe.Nutrition)
+		log.Printf("     - Nutrition Percentage: %+v", recipe.NutritionPercentage)
 	}
 
 	// 結果を返す
 	if len(result) == 0 {
+		log.Printf("⚠️ No recipes found matching the criteria")
 		c.JSON(http.StatusOK, []models.Recipe{})
 		return
 	}
 
+	log.Printf("✅ Returning %d matching recipes", len(result))
 	c.JSON(http.StatusOK, result)
 }
 

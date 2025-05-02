@@ -1,54 +1,83 @@
 import { useEffect, useState } from "react";
 import { backendUrl, handleApiResponse } from "../utils/api";
 
-export const useUserLikeCount = (userId?: string) => {
-  const [likeCount, setLikeCount] = useState<number | null>(null);
+export const useUserLikeCount = (userId: string | undefined) => {
+  const [likeCount, setLikeCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
+    let isMounted = true;
 
     const fetchLikeCount = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await fetch(`${backendUrl}/api/users/${userId}/likes`);
-        
         const data = await handleApiResponse(res);
-        setLikeCount(data.like_count);
+        if (isMounted) {
+          setLikeCount(data.like_count);
+        }
       } catch (error) {
         console.error("Error fetching like count:", error);
-        setLikeCount(0);
+        if (isMounted) {
+          setLikeCount(0);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchLikeCount();
+
+    return () => {
+      isMounted = false;
+    };
   }, [userId]);
 
   return { likeCount, loading };
 };
 
-export const useUserRecipeAverageRating = (userId?: string) => {
-  const [averageRating, setAverageRating] = useState<number | null>(null);
+export const useUserRecipeAverageRating = (userId: string | undefined) => {
+  const [averageRating, setAverageRating] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
+    let isMounted = true;
 
     const fetchAverageRating = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await fetch(`${backendUrl}/api/users/${userId}/reviews`);
         const data = await handleApiResponse(res);
-        setAverageRating(data.average_rating);
+        if (isMounted) {
+          setAverageRating(data.average_rating);
+        }
       } catch (error) {
         console.error("Error fetching average rating:", error);
-        setAverageRating(0);
+        if (isMounted) {
+          setAverageRating(0);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchAverageRating();
+
+    return () => {
+      isMounted = false;
+    };
   }, [userId]);
 
   return { averageRating, loading };

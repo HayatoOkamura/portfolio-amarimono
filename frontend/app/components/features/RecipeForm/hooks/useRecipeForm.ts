@@ -106,7 +106,6 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
         ...formData,
         isDraft: false,
       };
-      console.log("recipeToSubmit🔥🔥", recipeToSubmit);
 
       const formDataToSubmit = createFormData(recipeToSubmit, user?.id, isAdmin, false);
 

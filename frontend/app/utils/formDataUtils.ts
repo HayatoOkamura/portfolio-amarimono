@@ -34,7 +34,6 @@ export const createFormData = (
   // FAQデータの追加
   if (recipe.faq && recipe.faq.length > 0) {
     formData.append("faq", JSON.stringify(recipe.faq));
-    console.log("Added FAQ data:", recipe.faq);
   }
 
   // 手順の処理
@@ -47,11 +46,6 @@ export const createFormData = (
 
     if (instruction.imageURL instanceof File) {
       formData.append(`instruction_image_${index}`, instruction.imageURL);
-      console.log(`Added instruction image file for step ${index + 1}:`, {
-        name: instruction.imageURL.name,
-        type: instruction.imageURL.type,
-        size: instruction.imageURL.size
-      });
     }
 
     return instructionData;
@@ -62,11 +56,6 @@ export const createFormData = (
   // メイン画像の処理
   if (recipe.image instanceof File) {
     formData.append("image", recipe.image);
-    console.log('Added main recipe image file:', {
-      name: recipe.image.name,
-      type: recipe.image.type,
-      size: recipe.image.size
-    });
   } else if (recipe.imageUrl) {
     formData.append("image_url", normalizeImageUrl(recipe.imageUrl) || "");
   }

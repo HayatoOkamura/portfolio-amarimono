@@ -11,16 +11,18 @@ export default function AuthCallback() {
   const { setUser, createUserAfterVerification } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(true);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
         setIsProcessing(true);
+
         // 1. セッションの取得
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
-          throw new Error("セッションの取得に失敗しました");
+          throw new Error(`セッションの取得に失敗しました: ${sessionError.message}`);
         }
 
         if (!session) {
@@ -31,7 +33,7 @@ export default function AuthCallback() {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
         if (userError) {
-          throw new Error("ユーザー情報の取得に失敗しました");
+          throw new Error(`ユーザー情報の取得に失敗しました: ${userError.message}`);
         }
 
         if (!user) {
@@ -46,10 +48,19 @@ export default function AuthCallback() {
         // 4. バックエンドにユーザーを作成し、プロフィール設定ページにリダイレクト
         await createUserAfterVerification(user);
 
+        // 5. プロフィール設定ページにリダイレクト
+        router.push("/user/edit?setup=true");
+
       } catch (err) {
         console.error("認証エラー:", err);
-        setError(err instanceof Error ? err.message : "認証に失敗しました");
-        router.push("/login");
+        const errorMessage = err instanceof Error ? err.message : "認証に失敗しました";
+        setError(errorMessage);
+        setDebugInfo(JSON.stringify(err, null, 2));
+        
+        // エラーが発生した場合はログインページにリダイレクト
+        setTimeout(() => {
+          router.push("/login");
+        }, 3000);
       } finally {
         setIsProcessing(false);
       }
@@ -63,6 +74,12 @@ export default function AuthCallback() {
       {error ? (
         <div className={styles.error_message}>
           <p>{error}</p>
+          {debugInfo && (
+            <details className={styles.debug_info}>
+              <summary>詳細情報</summary>
+              <pre>{debugInfo}</pre>
+            </details>
+          )}
           <p>ログインページにリダイレクトします...</p>
         </div>
       ) : (

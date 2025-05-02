@@ -6,6 +6,7 @@ import styles from "./edit.module.scss";
 import { useUserStore } from "@/app/stores/userStore";
 import { updateUserProfile } from "@/app/hooks/user";
 import { useRouter, useSearchParams } from "next/navigation";
+import { LuImagePlus } from "react-icons/lu";
 
 function EditProfileContent() {
   const { user, isLoading, fetchUser } = useUserStore();
@@ -28,7 +29,7 @@ function EditProfileContent() {
       setUsername(user.username || "");
       setAge(user.age || "");
       setGender(user.gender || "male");
-      setPreviewImage(user.profileImage || "/default-avatar.png");
+      setPreviewImage(user.profileImage || null);
     }
   }, [user]);
 
@@ -70,7 +71,10 @@ function EditProfileContent() {
     if (file) {
       setProfileImage(file);
       const reader = new FileReader();
-      reader.onloadend = () => setPreviewImage(reader.result as string);
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setPreviewImage(result);
+      };
       reader.readAsDataURL(file);
     }
   };
@@ -86,23 +90,38 @@ function EditProfileContent() {
   return (
     <div className={styles.edit_block}>
       <div className={styles.edit_block__inner}>
+        <h1>{isSetupMode ? "プロフィール設定" : "プロフィール編集"}</h1>
+        <p>{isSetupMode && "アカウントの基本情報を設定してください"}</p>
         <form onSubmit={handleUpdateProfile}>
           <div className={styles.edit_block__head}>
-            <h1>{isSetupMode ? "プロフィール設定" : "プロフィール編集"}</h1>
-            <p>{isSetupMode ? "アカウントの基本情報を設定してください" : "プロフィール情報を編集できます"}</p>
-            
             {/* プロフィール画像のアップロード */}
             <div
               className={styles.edit_block__img_wrap}
               onClick={handleImageClick}
             >
               <div className={styles.edit_block__img}>
-                <Image
-                  fill
-                  src={previewImage || "/default-avatar.png"}
-                  alt="Profile"
-                  unoptimized
-                />
+                {previewImage ? (
+                  <Image
+                    src={previewImage}
+                    alt="Profile"
+                    width={100}
+                    height={100}
+                  />
+                ) : (
+                  <div className={styles.edit_block__placeholder}>
+                    <div className={styles.edit_block__icon}>
+                      <LuImagePlus />
+                    </div>
+                    <div className={styles.edit_block__uploadText}>
+                      <label className={styles.edit_block__uploadLabel}>
+                        プロフィール画像をアップロード
+                      </label>
+                    </div>
+                    <p className={styles.edit_block__fileInfo}>
+                      PNG, JPG, GIF up to 10MB
+                    </p>
+                  </div>
+                )}
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -133,7 +152,9 @@ function EditProfileContent() {
                     type="number"
                     value={age}
                     onChange={(e) =>
-                      setAge(e.target.value === "" ? "" : Number(e.target.value))
+                      setAge(
+                        e.target.value === "" ? "" : Number(e.target.value)
+                      )
                     }
                   />
                 </div>
@@ -150,8 +171,16 @@ function EditProfileContent() {
                 </div>
               </div>
               {error && <div className={styles.error_message}>{error}</div>}
-              <button className={styles.edit_block__btn} type="submit" disabled={updating}>
-                {updating ? "更新中..." : isSetupMode ? "プロフィールを設定" : "更新"}
+              <button
+                className={styles.edit_block__btn}
+                type="submit"
+                disabled={updating}
+              >
+                {updating
+                  ? "更新中..."
+                  : isSetupMode
+                    ? "プロフィールを設定"
+                    : "更新"}
               </button>
             </div>
           </div>

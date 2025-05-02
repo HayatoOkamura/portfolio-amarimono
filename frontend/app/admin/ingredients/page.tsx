@@ -85,12 +85,6 @@ const AdminIngredients = () => {
         imageUrl,
       };
 
-      console.log("FormData contents:");
-      for (const [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-      }
-
-      console.log("updatedIngredient", updatedIngredient);
       updateIngredient({
         id: editingIngredient.id,
         data: updatedIngredient

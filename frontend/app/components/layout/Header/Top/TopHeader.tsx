@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useSearchRecipes, recipeKeys } from "@/app/hooks/recipes";
 import { useQueryClient } from "@tanstack/react-query";
 
-const Header = () => {
+const TopHeader = () => {
   const { user } = useUserStore();
   const { setQuery, query, setSearchType, setSearchExecuted } = useRecipeStore();
   const router = useRouter();
@@ -25,7 +25,7 @@ const Header = () => {
       setSearchType("name"); // 検索タイプを"name"に設定
       setSearchExecuted(true); // 検索が実行されたことを設定
       await queryClient.removeQueries({ queryKey: recipeKeys.list(query) }); // キャッシュをクリア
-    await refetch();
+      await refetch();
       router.push(`/recipes?query=${query}`);
     }
   };
@@ -53,11 +53,11 @@ const Header = () => {
               <div className={styles.user_block__icon}>
                 {user.profileImage ? (
                   <Image
-                    fill
                     src={user.profileImage}
                     alt="User Profile"
                     className={styles.user_block__icon_img}
-                    unoptimized
+                    width={100}
+                    height={100}
                   />
                 ) : (
                   <FaUserCircle />
@@ -83,4 +83,4 @@ const Header = () => {
   );
 };
 
-export default Header;
+export default TopHeader;

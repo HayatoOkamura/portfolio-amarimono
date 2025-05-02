@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRecipeForm } from "./hooks/useRecipeForm";
 import { ImageUploader } from "./components/ImageUploader";
 import { IngredientInput } from "./components/IngredientInput";
@@ -10,6 +10,7 @@ import { Genre } from "@/app/types/index";
 import CookingTimeSlider from "@/app/components/ui/RegistarSlider/CookingTime/CookingTime";
 import CostEstimateSlider from "@/app/components/ui/RegistarSlider/CostEstimate/CostEstimate";
 import styles from "./RegistrationForm.module.scss";
+import { ResponsiveWrapper } from "../../common/ResponsiveWrapper";
 
 export const RegistrationForm = ({
   isAdmin = false,
@@ -28,9 +29,24 @@ export const RegistrationForm = ({
   const { data: ingredientsData } = useIngredients();
   const { recipeGenres, fetchRecipeGenres } = useGenreStore();
 
+  const [isSp, setIsSp] = useState(false);
+
   useEffect(() => {
     fetchRecipeGenres();
   }, [fetchRecipeGenres]);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSp(window.innerWidth <= 769);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+
+    return () => {
+      window.removeEventListener('resize', checkScreenSize);
+    };
+  }, []);
 
   const handleFaqChange = (
     index: number,
@@ -55,6 +71,21 @@ export const RegistrationForm = ({
     updatedFaq.splice(index, 1);
     updateFormData({ faq: updatedFaq });
   };
+
+  const ingredientsBlock = (
+    <div className={styles.ingredients_block}>
+      <h3 className={styles.ingredients_block__title}>材料</h3>
+      {ingredientsData && (
+        <IngredientInput
+          ingredients={formData.ingredients}
+          availableIngredients={ingredientsData}
+          onUpdateIngredients={(ingredients) =>
+            updateFormData({ ingredients })
+          }
+        />
+      )}
+    </div>
+  );
 
   return (
     <div className={styles.container_block}>
@@ -83,16 +114,19 @@ export const RegistrationForm = ({
         <div className={styles.head_block}>
           <div className={styles.head_block__public}>
             {!isAdmin && (
-              <button
-                onClick={() => updateFormData({ isPublic: !formData.isPublic })}
-                className={`px-4 py-2 rounded w-full ${
-                  formData.isPublic
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-400 text-black"
-                }`}
-              >
-                {formData.isPublic ? "公開中" : "非公開"}
-              </button>
+              <label className={styles.publicCheckbox}>
+                <input
+                  type="checkbox"
+                  checked={formData.isPublic}
+                  onChange={() =>
+                    updateFormData({ isPublic: !formData.isPublic })
+                  }
+                  className={styles.publicCheckbox__input}
+                />
+                <span className={styles.publicCheckbox__label}>
+                  {formData.isPublic ? "公開中" : "非公開"}
+                </span>
+              </label>
             )}
           </div>
           <div className={styles.head_block__list}>
@@ -135,30 +169,30 @@ export const RegistrationForm = ({
               <p className={styles.detail_block__label}>レシピ名</p>
               <input
                 type="text"
-                placeholder="Recipe Name"
+                placeholder="野菜たっぷり！具だくさんカレーライス"
                 value={formData.name}
                 onChange={(e) => updateFormData({ name: e.target.value })}
-                className="border p-2 mb-2 w-full rounded text-gray-700"
+                className={styles.detail_block__input}
               />
             </div>
             <div className={styles.detail_block__item}>
               <p className={styles.detail_block__label}>キャッチフレーズ</p>
               <textarea
-                placeholder="Recipe Catchphrase"
+                placeholder="栄養満点！野菜の甘みが引き立つ、家族みんなが喜ぶ絶品カレー"
                 value={formData.catchphrase}
                 onChange={(e) =>
                   updateFormData({ catchphrase: e.target.value })
                 }
-                className="border p-2 mb-2 w-full rounded text-gray-700"
+                className={styles.detail_block__input}
               />
             </div>
             <div className={styles.detail_block__item}>
               <p className={styles.detail_block__label}>レシピ説明</p>
               <textarea
-                placeholder="Recipe Summary"
+                placeholder="にんじん、玉ねぎ、じゃがいもなどの定番野菜に加え、パプリカやズッキーニも入れた、彩り豊かなカレーです。野菜の旨味を活かすため、じっくりと炒めてから煮込むのがポイント。スパイスの香りと野菜の甘みが絶妙に調和した、一度食べたらやみつきになる味わいです。"
                 value={formData.summary}
                 onChange={(e) => updateFormData({ summary: e.target.value })}
-                className="border p-2 mb-2 w-full rounded text-gray-700"
+                className={`${styles.detail_block__input} ${styles["detail_block__input--summary"]}`}
               />
             </div>
             <div className={styles.detail_block__item}>
@@ -178,7 +212,7 @@ export const RegistrationForm = ({
                     });
                   }
                 }}
-                className="border p-2 mb-2 w-full rounded text-gray-700"
+                className={styles.detail_block__input}
               >
                 <option value="">ジャンルを選択してください</option>
                 {recipeGenres.length > 0 &&
@@ -288,19 +322,14 @@ export const RegistrationForm = ({
               </button>
             </div>
           </div>
-          <div className={styles.ingredients_block}>
-            {ingredientsData && (
-              <IngredientInput
-                ingredients={formData.ingredients}
-                availableIngredients={ingredientsData}
-                onUpdateIngredients={(ingredients) =>
-                  updateFormData({ ingredients })
-                }
-              />
-            )}
-          </div>
+          <ResponsiveWrapper breakpoint="tab" renderBelow={null}>
+            {ingredientsBlock}
+          </ResponsiveWrapper>
         </div>
       </div>
+      <ResponsiveWrapper breakpoint="tab">
+        {ingredientsBlock}
+      </ResponsiveWrapper>
     </div>
   );
 };

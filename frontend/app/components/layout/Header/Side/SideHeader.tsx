@@ -1,4 +1,3 @@
-/* eslint-disable */
 "use client";
 
 import React from "react";
@@ -15,7 +14,7 @@ import { IoLogOut } from "react-icons/io5";
 import { IoLogIn } from "react-icons/io5";
 import { useUserStore } from "@/app/stores/userStore";
 
-const Header = () => {
+const SideHeader = () => {
   const { user, signOut } = useUserStore();
   const pathname = usePathname(); // 現在のパスを取得
 
@@ -114,4 +113,4 @@ const Header = () => {
   );
 };
 
-export default Header;
+export default SideHeader;

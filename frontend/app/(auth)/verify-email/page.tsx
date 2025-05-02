@@ -1,41 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import styles from "./VerifyEmail.module.scss";
 
 export default function VerifyEmailPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState<string>("");
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState<boolean>(false);
+  const [cooldown, setCooldown] = useState<number>(0);
 
   useEffect(() => {
     const getEmail = async () => {
       try {
-        // 1. まずセッションからメールアドレスを取得
+        // 1. まずURLパラメータからメールアドレスを取得
+        const emailFromUrl = searchParams.get('email');
+        if (emailFromUrl) {
+          setEmail(emailFromUrl);
+          return;
+        }
+
+        // 2. URLパラメータにない場合はセッションから取得
         const { data: { session } } = await supabase.auth.getSession();
-        
         if (session?.user?.email) {
           setEmail(session.user.email);
           return;
         }
 
-        // 2. セッションにない場合はURLパラメータを確認
-        const urlParams = new URLSearchParams(window.location.search);
-        const emailFromUrl = urlParams.get('email');
-        
-        if (emailFromUrl) {
-          setEmail(emailFromUrl);
-        } else {
-          // 3. どちらも取得できない場合はログインページにリダイレクト
-          router.push("/login");
-        }
+        // 3. どちらも取得できない場合はログインページにリダイレクト
+        router.push("/login");
       } catch (error) {
-        console.error("Error getting email:", error);
+        console.error("メールアドレス取得エラー:", error);
         setError("メールアドレスの取得に失敗しました");
       }
     };
@@ -55,20 +55,32 @@ export default function VerifyEmailPage() {
           router.push("/user/edit?setup=true");
         }
       } catch (error) {
-        console.error("Verification check error:", error);
+        console.error("認証状態確認エラー:", error);
       }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [router]);
+  }, [router, searchParams]);
+
+  // クールダウンタイマーの処理
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setInterval(() => {
+        setCooldown((prev) => Math.max(0, prev - 1));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [cooldown]);
 
   const handleResendVerification = async () => {
     try {
-      console.log("Starting resend verification process...");
-      console.log("Current email state:", email);
+      if (cooldown > 0) {
+        setError(`再送信は${cooldown}秒後に可能です`);
+        return;
+      }
       
       if (!email) {
-        console.error("No email address available");
+        console.error("メールアドレスが取得できません");
         setError("メールアドレスが見つかりません");
         return;
       }
@@ -84,7 +96,7 @@ export default function VerifyEmailPage() {
         return;
       }
 
-      console.log("Calling supabase.auth.resend with:", {
+      console.log("Supabase認証メール再送信を実行:", {
         type: 'signup',
         email: email,
         options: {
@@ -100,26 +112,41 @@ export default function VerifyEmailPage() {
         },
       });
 
-      console.log("Supabase response:", { data, error });
+      console.log("Supabaseレスポンス:", { 
+        data, 
+        error,
+        email,
+        redirectUrl: `${window.location.origin}/callback`,
+        timestamp: new Date().toISOString()
+      });
 
       if (error) {
-        console.error("Supabase resend error:", error);
+        console.error("メール再送信エラー:", {
+          error,
+          message: error.message,
+          status: error.status,
+          name: error.name
+        });
         if (error.message.includes("rate limit")) {
           setError("送信制限に達しました。しばらく待ってから再度お試しください");
         } else if (error.message.includes("email")) {
           setError("メールアドレスが無効です");
         } else if (error.message.includes("already confirmed")) {
           setError("このメールアドレスは既に認証済みです");
+        } else if (error.message.includes("36 seconds")) {
+          setError("再送信は36秒後に可能です");
+          setCooldown(36);
         } else {
           setError(`確認メールの再送信に失敗しました: ${error.message}`);
         }
         return;
       }
 
-      console.log("Verification email resent successfully");
+      console.log("認証メールの再送信が成功しました");
       setSuccess("確認メールを再送信しました");
+      setCooldown(36); // 再送信成功後も36秒のクールダウンを設定
     } catch (error) {
-      console.error("Unexpected error in resend process:", error);
+      console.error("予期せぬエラーが発生しました:", error);
       setError("予期せぬエラーが発生しました");
     } finally {
       setIsResending(false);
@@ -145,9 +172,9 @@ export default function VerifyEmailPage() {
           <button
             className={styles.verify_block__button}
             onClick={handleResendVerification}
-            disabled={isResending}
+            disabled={isResending || cooldown > 0}
           >
-            {isResending ? "再送信中..." : "確認メールを再送信"}
+            {isResending ? "再送信中..." : cooldown > 0 ? `再送信可能まで${cooldown}秒` : "確認メールを再送信"}
           </button>
         </div>
       </div>

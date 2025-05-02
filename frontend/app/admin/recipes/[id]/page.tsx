@@ -24,7 +24,6 @@ const AdminRecipeDetail = () => {
         })
         .catch((error) => console.error("Error fetching recipe:", error));
     }
-    console.log("recipe", recipe);
   }, []);
 
   const handleDelete = async () => {

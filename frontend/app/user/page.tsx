@@ -18,114 +18,140 @@ import { Recipe } from "@/app/types/index";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 
-export default function UserPage() {
-  const { user } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!user) {
-      router.push("/login");
-    }
-  }, [user, router]);
-
-  if (!user) {
-    return null;
-  }
-
-  const { likeCount, loading: likesLoading } = useUserLikeCount(user.id);
-  const { averageRating, loading: ratingLoading } = useUserRecipeAverageRating(user.id);
-  const { data: recommendedRecipes, isLoading: recommendedLoading } = useRecommendedRecipes(user.id);
-
-  if (recommendedLoading || likesLoading || ratingLoading) {
-    return <p>Loading...</p>;
-  }
-
+// ユーザープロフィールコンポーネント
+const UserProfile = ({ user }: { user: any }) => {
+  const { likeCount } = useUserLikeCount(user.id);
+  const { averageRating } = useUserRecipeAverageRating(user.id);
+  const { data: recipes, isLoading: isRecipesLoading } = useRecommendedRecipes(user.id);
   const [recipeCount, setRecipeCount] = useState(0);
 
   useEffect(() => {
-    if (recommendedRecipes) {
-      console.log("Recommended recipes:", recommendedRecipes);
-      setRecipeCount(recommendedRecipes.length);
+    if (recipes) {
+      setRecipeCount(recipes.length);
     }
-  }, [recommendedRecipes]);
+  }, [recipes]);
 
   return (
-    <section className={styles.profile_block}>
+    <div className={styles.profile_block}>
       <div className={styles.profile_block__head}>
         <div className={styles.profile_block__image}>
-          {user && user.profileImage ? (
+          {user.profileImage ? (
             <Image
-              fill
               src={user.profileImage}
               alt="User Profile"
               className={styles.user_block__icon_img}
-              unoptimized
+              width={100}
+              height={100}
             />
           ) : (
             <FaUserCircle />
           )}
         </div>
         <div className={styles.profile_block__detail}>
-          <p className={styles.profile_block__name}>
-            {user && user.username || "ゲスト"}
-          </p>
-          <p className={styles.profile_block__email}>{user && user.email}</p>
+          <h1 className={styles.profile_block__name}>{user.username || "ゲスト"}</h1>
+          <p className={styles.profile_block__email}>{user.email}</p>
           <div className={styles.profile_block__list}>
             <div className={styles.item_block}>
               <div className={styles.item_block__icon}>
                 <ImSpoonKnife />
               </div>
-              <div className={styles.item_block__texts}>
-                <p className={styles.item_block__num}>{recipeCount}</p>
-                <p className={styles.item_block__text}>レシピ投稿数</p>
-              </div>
+              <div className={styles.item_block__num}>{recipeCount}</div>
+              <div className={styles.item_block__text}>レシピ投稿数</div>
             </div>
             <div className={styles.item_block}>
               <div className={styles.item_block__icon}>
                 <FaHeart />
               </div>
-              <div className={styles.item_block__texts}>
-                <p className={styles.item_block__num}>{likeCount}</p>
-                <p className={styles.item_block__text}>合計いいね数</p>
-              </div>
+              <div className={styles.item_block__num}>{likeCount}</div>
+              <div className={styles.item_block__text}>合計いいね数</div>
             </div>
             <div className={styles.item_block}>
               <div className={styles.item_block__icon}>
                 <FaStar />
               </div>
-              <div className={styles.item_block__texts}>
-                <p className={styles.item_block__num}>
-                  {averageRating?.toFixed(1) ?? "0.0"}
-                </p>
-                <p className={styles.item_block__text}>レビュー平均</p>
-              </div>
+              <div className={styles.item_block__num}>{averageRating?.toFixed(1) ?? "0.0"}</div>
+              <div className={styles.item_block__text}>レビュー平均</div>
             </div>
           </div>
-          <button className={styles.profile_block__btn}>
+          <div className={styles.profile_block__btn}>
             <Link href="/user/edit">プロフィールを編集</Link>
-          </button>
+          </div>
         </div>
       </div>
-
       <div className={styles.recommend_block}>
-        <h2>おすすめのレシピ</h2>
-        {recommendedLoading ? (
-          <p>おすすめレシピを読み込み中...</p>
-        ) : recommendedRecipes && recommendedRecipes.length === 0 ? (
-          <p>おすすめのレシピはありません</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recommendedRecipes?.map((recipe: Recipe) => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={recipe}
-                isFavoritePage={false}
-                path="/recipes/"
-              />
+        <h2>おすすめレシピ</h2>
+        {isRecipesLoading ? (
+          <div>Loading...</div>
+        ) : recipes && recipes.length > 0 ? (
+          <div className={styles.grid}>
+            {recipes.map((recipe: Recipe) => (
+              <div key={recipe.id} className={styles.card_block}>
+                <div className={styles.card_block__img}>
+                  <Image
+                    src={recipe.imageUrl || '/images/default-recipe.jpg'}
+                    alt={recipe.name}
+                    width={300}
+                    height={200}
+                  />
+                </div>
+                <h3 className={styles.card_block__name}>{recipe.name}</h3>
+                <p className={styles.card_block__genre}>{recipe.genre?.name || '未分類'}</p>
+              </div>
             ))}
           </div>
+        ) : (
+          <div>おすすめのレシピはありません</div>
         )}
       </div>
-    </section>
+    </div>
   );
+};
+
+// ログインモーダルコンポーネント
+const LoginModal = ({ onClose, onLogin }: { onClose: () => void; onLogin: () => void }) => {
+  return (
+    <div className={styles.login_modal}>
+      <div className={styles.login_modal__inner}>
+        <button
+          className={styles.login_modal__close}
+          onClick={onClose}
+        >
+          <span></span>
+          <span></span>
+        </button>
+        <h2 className={styles.login_modal__title}>ログインしてください</h2>
+        <button
+          className={styles.login_modal__login}
+          onClick={onLogin}
+        >
+          ログイン
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// メインコンポーネント
+export default function UserPage() {
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const router = useRouter();
+
+  // ローディング中の表示を改善
+  if (isAuthLoading) {
+    console.log('UserPage: Loading state');
+    return <div className={styles.loading}>Loading...</div>;
+  }
+
+  // ユーザーが存在しない場合の処理を改善
+  if (!user) {
+    console.log('UserPage: No user, showing login modal');
+    return (
+      <LoginModal
+        onClose={() => setShowLoginModal(false)}
+        onLogin={() => router.push('/login')}
+      />
+    );
+  }
+  return <UserProfile user={user} />;
 }

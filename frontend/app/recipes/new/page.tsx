@@ -108,11 +108,8 @@ const RecipeRegistration: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-8">
-      <h2 className="text-3xl font-bold mb-6 text-center">My Recipes</h2>
-
+    <div className={styles.container}>
       <RegistrationForm />
-
       <ul className="grid grid-cols-3 gap-3 mt-8">
         {Array.isArray(recipesData?.recipes) &&
           recipesData.recipes.map((recipe: Recipe) => (
@@ -130,7 +127,6 @@ const RecipeRegistration: React.FC = () => {
               {recipe.imageUrl && (
                 <div className="relative block aspect-video">
                   <Image
-                    fill
                     src={
                       recipe.imageUrl
                         ? `${imageBaseUrl}/${recipe.imageUrl}`
@@ -138,7 +134,8 @@ const RecipeRegistration: React.FC = () => {
                     }
                     alt={recipe.name}
                     className="w-32 h-32 object-cover rounded mb-2"
-                    unoptimized
+                    width={100}
+                    height={100}
                   />
                 </div>
               )}

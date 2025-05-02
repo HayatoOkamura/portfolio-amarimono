@@ -18,9 +18,7 @@ const IngredientSelector = () => {
   useEffect(() => {
     const loadGenres = async () => {
       setIsGenresLoading(true);
-      console.log("Loading genres...");
       await fetchIngredientGenres();
-      console.log("Current ingredientGenres:", ingredientGenres);
       setIsGenresLoading(false);
     };
     loadGenres();
@@ -32,7 +30,6 @@ const IngredientSelector = () => {
       if (isIngredientsLoading || isGenresLoading) return;
 
       const element = document.getElementById("target");
-      console.log("element", element);
       
       if (element) {
         const topOffset = element.getBoundingClientRect().top;
@@ -50,8 +47,6 @@ const IngredientSelector = () => {
     { id: 0, name: "すべて" },
     ...ingredientGenres,
   ];
-
-  console.log("Available genres:", genres);
 
   const filteredIngredients =
     selectedGenre === "すべて"

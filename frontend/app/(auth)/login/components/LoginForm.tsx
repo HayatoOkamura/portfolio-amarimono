@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { useAuth, AuthError } from "@/app/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import styles from "./LoginForm.module.scss";
 
 export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean; onToggleMode: () => void }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState("");
@@ -19,26 +22,45 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
 
     try {
       if (isLogin) {
-        // ログイン処理が完全に完了するまで待機
-        await login({ email, password });
-        // エラーが発生しなければ成功とみなす
+        // ログイン処理
+        const error = await login({ email, password });
+        if (error) {
+          throw error;
+        }
+
+        // セッションとユーザー情報を確認
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          throw { type: 'LOGIN_FAILED', message: "セッションの取得に失敗しました" } as AuthError;
+        }
+
+        if (!session?.user) {
+          throw { type: 'LOGIN_FAILED', message: "ログインに失敗しました" } as AuthError;
+        }
+
+        // ユーザー情報を取得
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
+          throw { type: 'LOGIN_FAILED', message: "ユーザー情報の取得に失敗しました" } as AuthError;
+        }
+
+        // すべての確認が完了したら成功メッセージを表示
         setIsSuccess(true);
+        setTimeout(() => {
+          router.push("/");
+        }, 2000);
       } else {
         const error = await register({ email, password });
         if (error) {
           throw error;
         }
-        // エラーがなければ成功とみなす
         setIsSuccess(true);
       }
     } catch (error) {
-      console.log("Form error caught:", error);
-      setIsSuccess(false); // エラーが発生した場合は成功状態をリセット
+      setIsSuccess(false);
       
-      // エラーがAuthError型かどうかをチェック
       if ((error as AuthError)?.type) {
         const authError = error as AuthError;
-        console.log("Processing AuthError:", authError);
         
         switch (authError.type) {
           case 'EMAIL_IN_USE':
@@ -53,6 +75,10 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
           case 'RATE_LIMIT':
             setFormError(authError.message);
             break;
+          case 'EMAIL_NOT_CONFIRMED':
+            setFormError(authError.message);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            break;
           case 'UNKNOWN':
             setFormError(authError.message);
             break;
@@ -60,7 +86,6 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
             setFormError('予期せぬエラーが発生しました');
         }
       } else {
-        console.log("Unknown error type:", error);
         setFormError('予期せぬエラーが発生しました');
       }
     }
