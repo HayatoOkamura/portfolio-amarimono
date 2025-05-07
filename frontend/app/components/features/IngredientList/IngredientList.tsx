@@ -18,7 +18,10 @@ const IngredientList = ({
     <ul className={styles.ing_block}>
       {ingredients.map((ing) => (
         <li key={ing.id} className={styles.ing_block__item}>
-          <p className={styles.ing_block__genre}>{ing.genre.name}</p>
+          <div className={styles.ing_block__info}>
+            <h3 className={styles.ing_block__name}>{ing.name}</h3>
+            <p className={styles.ing_block__genre}>{ing.genre.name}</p>
+          </div>
           <div className={styles.ing_block__image}>
             <Image
               src={
@@ -31,15 +34,11 @@ const IngredientList = ({
               height={100}
             />
           </div>
-          <div className={styles.ing_block__info}>
-            <p className={styles.ing_block__name}>{ing.name}</p>
-            <p className={styles.ing_block__english_name}>{ing.englishName}</p>
-            <div className={styles.ing_block__nutrition}>
-              <p>カロリー: {ing.nutrition?.calories || 0}kcal</p>
-              <p>タンパク質: {ing.nutrition?.protein || 0}g</p>
-              <p>脂質: {ing.nutrition?.fat || 0}g</p>
-              <p>炭水化物: {ing.nutrition?.carbohydrates || 0}g</p>
-            </div>
+          <div className={styles.ing_block__nutrition}>
+            <p>カロリー: {ing.nutrition?.calories || 0}kcal</p>
+            <p>タンパク質: {ing.nutrition?.protein || 0}g</p>
+            <p>脂質: {ing.nutrition?.fat || 0}g</p>
+            <p>炭水化物: {ing.nutrition?.carbohydrates || 0}g</p>
           </div>
           <div className={styles.ing_block__actions}>
             <button

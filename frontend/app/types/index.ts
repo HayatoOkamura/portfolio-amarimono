@@ -24,7 +24,6 @@ export interface Unit {
 export interface Ingredient {
   id: number;
   name: string;
-  englishName: string;
   genre: Genre;
   imageUrl: string | null;
   quantity: number;
@@ -123,7 +122,6 @@ export interface NewIngredient {
 export interface EditIngredient {
   id: number;
   name: string;
-  englishName: string;
   genre: {
     id: number;
     name: string;

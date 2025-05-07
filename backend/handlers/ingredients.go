@@ -90,6 +90,17 @@ func (h *IngredientHandler) AddIngredient(c *gin.Context) {
 		return
 	}
 
+	// 栄養素データを取得
+	nutrition := c.PostForm("nutrition")
+	var nutritionInfo models.NutritionInfo
+	if nutrition != "" {
+		if err := json.Unmarshal([]byte(nutrition), &nutritionInfo); err != nil {
+			log.Printf("Error parsing nutrition data: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nutrition format"})
+			return
+		}
+	}
+
 	// ファイルを受け取る
 	file, err := c.FormFile("image")
 	if err != nil {
@@ -178,9 +189,6 @@ func (h *IngredientHandler) UpdateIngredient(c *gin.Context) {
 		return
 	}
 
-	// 英語名を取得
-	englishName := c.PostForm("english_name")
-
 	// 栄養素データを取得
 	nutritionJSON := c.PostForm("nutrition")
 	var nutrition models.NutritionInfo
@@ -235,7 +243,6 @@ func (h *IngredientHandler) UpdateIngredient(c *gin.Context) {
 
 	// 具材情報を更新
 	ingredient.Name = name
-	ingredient.EnglishName = englishName
 	ingredient.GenreID = genre.ID
 	ingredient.UnitID = unit.ID
 	if nutritionJSON != "" {

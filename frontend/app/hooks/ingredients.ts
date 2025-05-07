@@ -26,7 +26,6 @@ const mapIngredient = (ingredient: any): Ingredient => {
   const mapped = {
     id: ingredientData.id || 0,
     name: ingredientData.name || "",
-    englishName: ingredientData.english_name || "",
     genre: {
       id: ingredientData.genre?.id || ingredientData.genre_id || 0,
       name: ingredientData.genre?.name || ""
@@ -60,20 +59,6 @@ const fetchIngredientsService = async (): Promise<Ingredient[]> => {
   
   const mappedIngredients = mapIngredients(response.data);
   return mappedIngredients;
-};
-
-const translateIngredientNameService = async (name: string): Promise<string> => {
-  try {
-    const response = await api.get(`/admin/ingredients/translate?name=${encodeURIComponent(name)}`);
-    return response.data.englishName;
-  } catch (error: any) {
-    console.error("Error in translateIngredientNameService:", error);
-    if (error.response) {
-      console.error("Error response data:", error.response.data);
-      console.error("Error response status:", error.response.status);
-    }
-    throw error;
-  }
 };
 
 const addIngredientService = async (formData: FormData): Promise<Ingredient> => {
@@ -111,7 +96,6 @@ const updateIngredientService = async ({
   try {
     const formData = new FormData();
     if (data.name) formData.append("name", data.name);
-    if (data.englishName) formData.append("english_name", data.englishName);
     if (data.genre) formData.append("genre", JSON.stringify({ id: data.genre.id }));
     if (data.unit) formData.append("unit", JSON.stringify({ 
       id: data.unit.id,
@@ -224,15 +208,6 @@ export const useUpdateIngredientQuantity = () => {
       }
       updateQuantity(ingredient.id, ingredient.quantity);
       return ingredient;
-    },
-  });
-};
-
-export const useTranslateIngredientName = () => {
-  return useMutation({
-    mutationFn: async (name: string) => {
-      const response = await api.get(`/admin/ingredients/translate?name=${encodeURIComponent(name)}`);
-      return response.data.englishName;
     },
   });
 };

@@ -61,9 +61,6 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 		return
 	}
 
-	// 英語名を受け取る
-	englishName := c.PostForm("english_name")
-
 	// 栄養素データを受け取る
 	nutritionJSON := c.PostForm("nutrition")
 	var nutrition models.NutritionInfo
@@ -130,11 +127,10 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 
 	// 具材を先に作成してIDを取得
 	ingredient := models.Ingredient{
-		Name:        name,
-		EnglishName: englishName,
-		GenreID:     genreIDInt,
-		UnitID:      unitIDInt,
-		Nutrition:   nutrition,
+		Name:      name,
+		GenreID:   genreIDInt,
+		UnitID:    unitIDInt,
+		Nutrition: nutrition,
 	}
 
 	// 具材名の重複をチェック
@@ -209,9 +205,6 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 		return
 	}
 
-	// 英語名を取得
-	englishName := c.PostForm("english_name")
-
 	// 栄養素データを取得
 	nutritionJSON := c.PostForm("nutrition")
 	var nutrition models.NutritionInfo
@@ -266,7 +259,6 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 
 	// 具材情報を更新
 	ingredient.Name = name
-	ingredient.EnglishName = englishName
 	ingredient.GenreID = genre.ID
 	ingredient.UnitID = unit.ID
 	if nutritionJSON != "" {

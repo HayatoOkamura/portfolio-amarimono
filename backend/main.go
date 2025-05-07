@@ -89,6 +89,9 @@ func main() {
 	// 画像アップロード用のエンドポイント
 	r.POST("/api/upload", uploadHandler.UploadImage)
 
+	// 栄養素データ取得API
+	r.GET("/api/ingredients/nutrients", handlers.GetNutrientData)
+
 	// サーバーを起動
 	port := os.Getenv("PORT")
 	if port == "" {
