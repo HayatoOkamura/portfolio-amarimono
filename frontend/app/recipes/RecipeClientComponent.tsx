@@ -661,6 +661,11 @@ const RecipeClientComponent = () => {
                         </li>
                       </ul>
                     )}
+                    <div className={styles.nutrition_block__disclaimer}>
+                      <p>※ 栄養成分値は参考値です。</p>
+                      <p>※ データソース: USDA Food Database</p>
+                      <p>※ 実際の調理方法や具材の量によって栄養成分値は変動する可能性があります。</p>
+                    </div>
                     {/* 材料リスト */}
                     <div className={styles.ingredients_block}>
                       <h3 className={styles.ingredients_block__title}>材料</h3>

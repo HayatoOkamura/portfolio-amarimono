@@ -1,12 +1,10 @@
 package handlers
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 
 	"portfolio-amarimono/handlers/utils"
@@ -180,6 +178,20 @@ func (h *IngredientHandler) UpdateIngredient(c *gin.Context) {
 		return
 	}
 
+	// 英語名を取得
+	englishName := c.PostForm("english_name")
+
+	// 栄養素データを取得
+	nutritionJSON := c.PostForm("nutrition")
+	var nutrition models.NutritionInfo
+	if nutritionJSON != "" {
+		if err := json.Unmarshal([]byte(nutritionJSON), &nutrition); err != nil {
+			log.Printf("Error parsing nutrition data: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nutrition format"})
+			return
+		}
+	}
+
 	// genre を JSON 文字列として取得し、パース
 	genreJSON := c.PostForm("genre")
 	var genre struct {
@@ -205,7 +217,7 @@ func (h *IngredientHandler) UpdateIngredient(c *gin.Context) {
 	log.Println("file💩", file)
 	if err == nil { // 画像が選択された場合のみ処理
 		// SaveImage関数を使用して画像を保存
-		imagePath, err := utils.SaveImage(c, file, "ingredients", "")
+		imagePath, err := utils.SaveImage(c, file, "ingredients", fmt.Sprintf("%d", ingredient.ID))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
 			return
@@ -223,8 +235,12 @@ func (h *IngredientHandler) UpdateIngredient(c *gin.Context) {
 
 	// 具材情報を更新
 	ingredient.Name = name
+	ingredient.EnglishName = englishName
 	ingredient.GenreID = genre.ID
 	ingredient.UnitID = unit.ID
+	if nutritionJSON != "" {
+		ingredient.Nutrition = nutrition
+	}
 
 	log.Println("ingredient💩", ingredient)
 
@@ -267,63 +283,4 @@ func (h *IngredientHandler) DeleteIngredient(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Ingredient deleted successfully"})
-}
-
-// TranslateIngredientName 具材名を英語に翻訳
-func (h *IngredientHandler) TranslateIngredientName(c *gin.Context) {
-	name := c.Query("name")
-	if name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Name is required"})
-		return
-	}
-
-	// Google Cloud Translation APIのエンドポイント
-	url := fmt.Sprintf("https://translation.googleapis.com/language/translate/v2?key=%s", os.Getenv("GOOGLE_CLOUD_TRANSLATION_API_KEY"))
-
-	// リクエストボディの作成
-	requestBody := map[string]interface{}{
-		"q":      name,
-		"source": "ja",
-		"target": "en",
-		"format": "text",
-	}
-
-	jsonData, err := json.Marshal(requestBody)
-	if err != nil {
-		log.Printf("Error marshaling request body: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request"})
-		return
-	}
-
-	// APIリクエストの送信
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		log.Printf("Error making API request: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to translate"})
-		return
-	}
-	defer resp.Body.Close()
-
-	// レスポンスの読み取り
-	var result struct {
-		Data struct {
-			Translations []struct {
-				TranslatedText string `json:"translatedText"`
-			} `json:"translations"`
-		} `json:"data"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		log.Printf("Error decoding response: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse translation response"})
-		return
-	}
-
-	if len(result.Data.Translations) == 0 {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "No translation received"})
-		return
-	}
-
-	// 翻訳結果を返す
-	c.JSON(http.StatusOK, gin.H{"englishName": result.Data.Translations[0].TranslatedText})
 }

@@ -285,6 +285,24 @@
           font-weight: 400;
         }
       }
+
+      &__disclaimer {
+        grid-column: 1 / -1;
+        margin-top: 15px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        color: #666;
+        line-height: 1.5;
+
+        p {
+          margin: 0;
+          &:not(:last-child) {
+            margin-bottom: 5px;
+          }
+        }
+      }
     }
 
     .ingredient_block {

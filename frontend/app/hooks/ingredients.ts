@@ -111,11 +111,13 @@ const updateIngredientService = async ({
   try {
     const formData = new FormData();
     if (data.name) formData.append("name", data.name);
+    if (data.englishName) formData.append("english_name", data.englishName);
     if (data.genre) formData.append("genre", JSON.stringify({ id: data.genre.id }));
     if (data.unit) formData.append("unit", JSON.stringify({ 
       id: data.unit.id,
       step: data.unit.step 
     }));
+    if (data.nutrition) formData.append("nutrition", JSON.stringify(data.nutrition));
     
     // 画像の処理
     if (data.imageUrl instanceof File) {
@@ -133,7 +135,7 @@ const updateIngredientService = async ({
         "Content-Type": "multipart/form-data",
       },
     });
-    return response.data;
+    return mapIngredient(response.data);
   } catch (error) {
     console.error('Error updating ingredient:', error);
     if (axios.isAxiosError(error)) {

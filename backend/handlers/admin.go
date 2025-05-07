@@ -61,6 +61,20 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 		return
 	}
 
+	// 英語名を受け取る
+	englishName := c.PostForm("english_name")
+
+	// 栄養素データを受け取る
+	nutritionJSON := c.PostForm("nutrition")
+	var nutrition models.NutritionInfo
+	if nutritionJSON != "" {
+		if err := json.Unmarshal([]byte(nutritionJSON), &nutrition); err != nil {
+			log.Printf("Error parsing nutrition data: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nutrition format"})
+			return
+		}
+	}
+
 	// ジャンルIDを受け取る
 	genreID := c.PostForm("genre_id")
 	if genreID == "" {
@@ -116,9 +130,11 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 
 	// 具材を先に作成してIDを取得
 	ingredient := models.Ingredient{
-		Name:    name,
-		GenreID: genreIDInt,
-		UnitID:  unitIDInt,
+		Name:        name,
+		EnglishName: englishName,
+		GenreID:     genreIDInt,
+		UnitID:      unitIDInt,
+		Nutrition:   nutrition,
 	}
 
 	// 具材名の重複をチェック
@@ -193,6 +209,20 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 		return
 	}
 
+	// 英語名を取得
+	englishName := c.PostForm("english_name")
+
+	// 栄養素データを取得
+	nutritionJSON := c.PostForm("nutrition")
+	var nutrition models.NutritionInfo
+	if nutritionJSON != "" {
+		if err := json.Unmarshal([]byte(nutritionJSON), &nutrition); err != nil {
+			log.Printf("Error parsing nutrition data: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nutrition format"})
+			return
+		}
+	}
+
 	// genre を JSON 文字列として取得し、パース
 	genreJSON := c.PostForm("genre")
 	var genre struct {
@@ -218,7 +248,7 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 	log.Println("file💩", file)
 	if err == nil { // 画像が選択された場合のみ処理
 		// SaveImage関数を使用して画像を保存
-		imagePath, err := utils.SaveImage(c, file, "ingredients", "")
+		imagePath, err := utils.SaveImage(c, file, "ingredients", id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
 			return
@@ -236,8 +266,12 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 
 	// 具材情報を更新
 	ingredient.Name = name
+	ingredient.EnglishName = englishName
 	ingredient.GenreID = genre.ID
 	ingredient.UnitID = unit.ID
+	if nutritionJSON != "" {
+		ingredient.Nutrition = nutrition
+	}
 
 	log.Println("ingredient💩", ingredient)
 
@@ -246,6 +280,14 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update ingredient"})
 		return
 	}
+
+	// ジャンル情報を取得してレスポンスに含める
+	var ingredientGenre models.IngredientGenre
+	if err := h.DB.Where("id = ?", genre.ID).First(&ingredientGenre).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch genre"})
+		return
+	}
+	ingredient.Genre = ingredientGenre
 
 	c.JSON(http.StatusOK, ingredient)
 }
