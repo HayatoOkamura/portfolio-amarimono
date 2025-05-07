@@ -118,6 +118,7 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
     ingredients: (recipe.ingredients || []).map((ingredient) => ({
       id: ingredient.ingredient_id,
       name: ingredient.ingredient.name,
+      englishName: ingredient.ingredient.name,
       quantity: ingredient.quantity_required,
       unit: {
         id: ingredient.ingredient.unit?.id || 0,
@@ -127,6 +128,14 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
       },
       genre: { id: 0, name: "すべて" },
       imageUrl: null,
+      nutrition: {
+        calories: 0,
+        carbohydrates: 0,
+        fat: 0,
+        protein: 0,
+        sugar: 0,
+        salt: 0
+      }
     })),
     genre: genre,
     imageUrl: recipe.image_url || undefined,
@@ -176,6 +185,7 @@ export const mapRecipes = (data: ApiRecipe[]): Recipe[] => {
     ingredients: (recipe.ingredients || []).map((ingredient) => ({
       id: ingredient.ingredient_id,
       name: ingredient.ingredient.name,
+      englishName: ingredient.ingredient.name,
       quantity: ingredient.quantity_required,
       unit: {
         id: ingredient.ingredient.unit?.id || 0,
@@ -187,7 +197,15 @@ export const mapRecipes = (data: ApiRecipe[]): Recipe[] => {
         id: 0,
         name: ''
       },
-      imageUrl: null
+      imageUrl: null,
+      nutrition: {
+        calories: 0,
+        carbohydrates: 0,
+        fat: 0,
+        protein: 0,
+        sugar: 0,
+        salt: 0
+      }
     })),
     cookingTime: recipe.cooking_time,
     reviews: (recipe.reviews || []).map((review) => ({
@@ -465,43 +483,50 @@ export const useRecipes = () => {
   });
 };
 
-export const useFetchRecipesAPI = (ingredients: { id: number; quantity: number }[]) => {
+export const useFetchRecipesAPI = (
+  ingredients: { id: number; quantity: number }[],
+  options?: {
+    enabled?: boolean;
+    staleTime?: number;
+    refetchOnMount?: boolean;
+    refetchOnWindowFocus?: boolean;
+    refetchOnReconnect?: boolean;
+  }
+) => {
   return useQuery({
     queryKey: recipeKeys.list(JSON.stringify(ingredients)),
     queryFn: async () => {
       const validIngredients = ingredients.filter(ing => ing.quantity > 0);
-
-      if (validIngredients.length === 0) {
-        return [];
-      }
-
+      if (validIngredients.length === 0) return [];
       try {
         const response = await fetchRecipesAPI(validIngredients);
-
         return response;
       } catch (error) {
         console.error('Error fetching recipes:', error);
         return [];
       }
     },
-    enabled: ingredients.length > 0,
-    staleTime: 5 * 60 * 1000, // 5分間キャッシュを保持
-    gcTime: 30 * 60 * 1000, // 30分間キャッシュを保持
-    refetchOnMount: false, // マウント時の再取得を無効化
-    refetchOnWindowFocus: false, // ウィンドウフォーカス時の再取得を無効化
+    ...options
   });
 };
 
-export const useSearchRecipes = (query: string) => {
+export const useSearchRecipes = (
+  query: string,
+  options?: {
+    enabled?: boolean;
+    staleTime?: number;
+    refetchOnMount?: boolean;
+    refetchOnWindowFocus?: boolean;
+    refetchOnReconnect?: boolean;
+  }
+) => {
   return useQuery({
     queryKey: recipeKeys.list(query),
     queryFn: () => {
-      if (!query) {
-        return Promise.resolve([]);
-      }
+      if (!query) return Promise.resolve([]);
       return fetchSearchRecipes(query);
     },
-    enabled: false, // デフォルトで検索を無効化
+    ...options
   });
 };
 

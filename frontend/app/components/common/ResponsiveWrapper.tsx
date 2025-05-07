@@ -17,8 +17,8 @@ export const ResponsiveWrapper: React.FC<ResponsiveWrapperProps> = ({
   const isBelowBreakpoint = useScreenSize(breakpoint);
 
   if (isBelowBreakpoint) {
-    return <>{renderBelow || children}</>;
+    return <>{renderBelow !== undefined ? renderBelow : children}</>;
   }
 
-  return <>{renderAbove || children}</>;
-}; 
+  return <>{renderAbove !== undefined ? renderAbove : children}</>;
+};

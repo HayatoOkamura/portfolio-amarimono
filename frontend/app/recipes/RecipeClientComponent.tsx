@@ -5,6 +5,7 @@ import styles from "./RecipeClientComponent.module.scss";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 // Store
 import useIngredientStore from "../stores/ingredientStore";
 import useRecipeStore, { SortOption } from "@/app/stores/recipeStore";
@@ -62,33 +63,84 @@ const RecipeClientComponent = () => {
   const [borderSize, setBorderSize] = useState({ width: 0, height: 0 });
   const [containerElement, setContainerElement] = useState<HTMLDivElement | null>(null);
 
-  // API呼び出し
+  const router = useRouter();
+
+  // レシピデータの取得
   const { data: fetchedRecipes = [], isLoading: isFetchingRecipes } = useFetchRecipesAPI(
     ingredients.map((ingredient) => ({
       id: ingredient.id,
       quantity: ingredient.quantity,
-    }))
+    })),
+    {
+      enabled: searchType === "ingredients" && searchExecuted,
+      staleTime: process.env.NODE_ENV === 'development' ? 10000 : 86400000,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false
+    }
   );
-  const { data: searchResults = [], isLoading: isSearching } = useSearchRecipes(query);
+
+  // 検索結果の取得
+  const { data: searchResults = [], isLoading: isSearching } = useSearchRecipes(query, {
+    enabled: searchType === "name" && searchExecuted,
+    staleTime: process.env.NODE_ENV === 'development' ? 10000 : 86400000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false
+  });
 
   /**
    * レシピクリック時のハンドラー
-   * - アニメーション効果の開始
-   * - 次のレシピの設定
    */
   const handleRecipeClick = (recipe: Recipe) => {
     if (recipe.id === persistedSelectedRecipe?.id) return;
+    
+    console.log('Recipe Click Start:', {
+      currentRecipe: persistedSelectedRecipe,
+      nextRecipe: recipe,
+      isFadingOut,
+      rotate
+    });
+    
+    // アニメーション開始
     setNextRecipe(recipe);
     setRotate(90);
     setIsFadingOut(true);
+    
+    // ボーダー位置の更新
+    const element = document.querySelector(
+      `[data-recipe-id="${recipe.id}"]`
+    ) as HTMLDivElement | null;
+
+    if (element) {
+      const container = containerRef.current;
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+        
+        setBorderPosition({
+          top: elementRect.top - containerRect.top,
+          left: elementRect.left - containerRect.left,
+        });
+        setBorderSize({
+          width: elementRect.width,
+          height: elementRect.height,
+        });
+      }
+    }
   };
 
   /**
    * 回転アニメーション完了時のハンドラー
-   * - 選択されたレシピの更新
-   * - アニメーション状態のリセット
    */
   const handleRotateComplete = () => {
+    console.log('Rotation Complete:', {
+      currentRecipe: persistedSelectedRecipe,
+      nextRecipe,
+      isFadingOut,
+      rotate
+    });
+    
     if (nextRecipe) {
       setSelectedRecipe(nextRecipe);
       setNextRecipe(null);
@@ -96,6 +148,16 @@ const RecipeClientComponent = () => {
       setIsFadingOut(false);
     }
   };
+
+  // アニメーション状態の監視
+  useEffect(() => {
+    console.log('Animation State Changed:', {
+      currentRecipe: persistedSelectedRecipe,
+      nextRecipe,
+      isFadingOut,
+      rotate
+    });
+  }, [persistedSelectedRecipe, nextRecipe, isFadingOut, rotate]);
 
   // ジャンルによるフィルタリングとソート
   const filteredRecipes = selectedGenre === "すべて"
@@ -114,119 +176,152 @@ const RecipeClientComponent = () => {
     return ingredient ? ingredient.name : "Unknown Ingredient";
   };
 
-  // レシピ選択時のボーダー位置更新
-  useEffect(() => {
-    if (nextRecipe && containerRef.current) {
-      const selectedElement = containerRef.current.querySelector(
-        `[data-recipe-id="${nextRecipe.id}"]`
-      ) as HTMLDivElement;
-
-      if (nextRecipe) {
-        const { offsetTop, offsetLeft, offsetWidth, offsetHeight } = selectedElement;
-        setBorderPosition({ top: offsetTop, left: offsetLeft });
-        setBorderSize({ width: offsetWidth, height: offsetHeight });
-      }
-    }
-  }, [nextRecipe]);
-
-  // 初期レシピ選択時のボーダー位置設定
+  // 初期表示時のレシピ選択とボーダー位置の設定
   useEffect(() => {
     if (persistedRecipes.length > 0) {
-      requestAnimationFrame(() => {
+      // 選択されたレシピがない場合は最初のレシピを選択
+      if (!persistedSelectedRecipe) {
+        setSelectedRecipe(persistedRecipes[0]);
+      }
+
+      // ボーダー位置の設定
+      const updateBorderPosition = () => {
+        const targetRecipe = persistedSelectedRecipe || persistedRecipes[0];
         const element = document.querySelector(
-          `[data-recipe-id="${persistedRecipes[0].id}"]`
+          `[data-recipe-id="${targetRecipe.id}"]`
         ) as HTMLDivElement | null;
 
         if (element) {
-          setBorderPosition({
-            top: element.offsetTop,
-            left: element.offsetLeft,
-          });
-          setBorderSize({
-            width: element.offsetWidth,
-            height: element.offsetHeight,
-          });
+          const container = containerRef.current;
+          if (container) {
+            const containerRect = container.getBoundingClientRect();
+            const elementRect = element.getBoundingClientRect();
+            
+            setBorderPosition({
+              top: elementRect.top - containerRect.top,
+              left: elementRect.left - containerRect.left,
+            });
+            setBorderSize({
+              width: elementRect.width,
+              height: elementRect.height,
+            });
+          }
         }
-      });
+      };
+
+      // レンダリング完了後に設定を試みる
+      const timer = setTimeout(() => {
+        updateBorderPosition();
+        // 念のため、少し遅延させて再試行
+        const retryTimer = setTimeout(updateBorderPosition, 100);
+        return () => clearTimeout(retryTimer);
+      }, 100);
+
+      return () => clearTimeout(timer);
     }
-  }, [persistedRecipes]);
+  }, [persistedRecipes, persistedSelectedRecipe, setSelectedRecipe]);
 
-  // コンテナ要素変更時のボーダー位置更新
+  // 具材変更時の処理
   useEffect(() => {
-    if (containerElement) {
-      const { offsetTop, offsetLeft, offsetWidth, offsetHeight } = containerElement;
-      setBorderPosition({ top: offsetTop, left: offsetLeft });
-      setBorderSize({ width: offsetWidth, height: offsetHeight });
-    }
-  }, [containerElement]);
-
-  // レシピジャンルの取得
-  useEffect(() => {
-    fetchRecipeGenres();
-  }, [fetchRecipeGenres]);
-
-  /**
-   * レシピデータの更新処理
-   * - 材料検索時のレシピ更新
-   * - 名前検索時のレシピ更新
-   */
-  useEffect(() => {
-    if (searchType === "ingredients" && fetchedRecipes) {
-
+    if (searchType === "ingredients" && fetchedRecipes && fetchedRecipes.length > 0) {
       const sortedRecipes = [...fetchedRecipes].sort((a, b) => {
         const ratingA = calculateAverageRating(a.reviews);
         const ratingB = calculateAverageRating(b.reviews);
         return ratingB - ratingA;
       });
 
-      setRecipes(sortedRecipes);
-      if (sortedRecipes.length > 0 && !persistedSelectedRecipe) {
+      if (JSON.stringify(sortedRecipes) !== JSON.stringify(persistedRecipes)) {
+        // レシピリストを更新
+        setRecipes(sortedRecipes);
+        // 選択状態をリセット
+        setSelectedRecipe(null);
+        // 新しいレシピを選択
         setSelectedRecipe(sortedRecipes[0]);
-      }
-    } else if (searchType === "name" && searchResults && searchExecuted) {
-      const sortedRecipes = [...searchResults].sort((a, b) => {
-        const ratingA = calculateAverageRating(a.reviews);
-        const ratingB = calculateAverageRating(b.reviews);
-        return ratingB - ratingA;
-      });
+        
+        // レンダリング完了後にボーダー位置を設定
+        const updateBorderPosition = () => {
+          const element = document.querySelector(
+            `[data-recipe-id="${sortedRecipes[0].id}"]`
+          ) as HTMLDivElement | null;
 
-      setRecipes(sortedRecipes);
-      if (sortedRecipes.length > 0 && !persistedSelectedRecipe) {
-        setSelectedRecipe(sortedRecipes[0]);
+          if (element) {
+            const container = containerRef.current;
+            if (container) {
+              const containerRect = container.getBoundingClientRect();
+              const elementRect = element.getBoundingClientRect();
+              
+              setBorderPosition({
+                top: elementRect.top - containerRect.top,
+                left: elementRect.left - containerRect.left,
+              });
+              setBorderSize({
+                width: elementRect.width,
+                height: elementRect.height,
+              });
+            }
+          }
+        };
+
+        // 複数回のタイマーを設定して確実に要素のサイズを取得
+        const timer1 = setTimeout(updateBorderPosition, 100);
+        const timer2 = setTimeout(updateBorderPosition, 300);
+        const timer3 = setTimeout(updateBorderPosition, 500);
+
+        return () => {
+          clearTimeout(timer1);
+          clearTimeout(timer2);
+          clearTimeout(timer3);
+        };
       }
     }
-  }, [
-    searchType,
-    fetchedRecipes,
-    searchResults,
-    searchExecuted,
-    persistedRecipes,
-    persistedSelectedRecipe,
-  ]);
+  }, [searchType, fetchedRecipes, persistedRecipes, setRecipes, setSelectedRecipe]);
 
-  // ローディング状態の更新
+  // ページ遷移時のクリーンアップ
   useEffect(() => {
-    if (isFetchingRecipes || isSearching) {
-      setLoading(true);
-    } else {
-      setLoading(false);
-    }
-  }, [isFetchingRecipes, isSearching]);
+    return () => {
+      // ページ遷移時に選択状態をリセット
+      setSelectedRecipe(null);
+      // アニメーション関連の状態をリセット
+      setNextRecipe(null);
+      setRotate(0);
+      setIsFadingOut(false);
+    };
+  }, [setSelectedRecipe]);
 
-  if (loading) {
-    return <Loading />;
-  }
+  // レシピジャンルの取得
+  useEffect(() => {
+    fetchRecipeGenres();
+  }, [fetchRecipeGenres]);
+
+  // ローディング状態の判定
+  const isLoading = (searchType === "ingredients" && isFetchingRecipes) || 
+                   (searchType === "name" && isSearching);
 
   const averageRating = persistedSelectedRecipe?.reviews
     ? calculateAverageRating(persistedSelectedRecipe.reviews)
     : 0;
 
+  if (isLoading) {
+    return (
+      <div className={styles.loading_container}>
+        <Loading />
+        <p className={styles.loading_text}>レシピを検索中...</p>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.recipes_block}>
       {persistedRecipes.length === 0 ? (
-        <p className="text-center text-lg font-semibold text-gray-700 mt-8">
-          作れるレシピがありません。
-        </p>
+        <div className={styles.no_recipes_container}>
+          <p className={styles.no_recipes_message}>レシピが見つかりませんでした。</p>
+          <button
+            className={styles.back_button}
+            onClick={() => router.push("/")}
+          >
+            TOPページに戻る
+          </button>
+        </div>
       ) : (
         <div className={styles.recipes_block__inner}>
           {/* レシピ一覧セクション */}
@@ -250,12 +345,13 @@ const RecipeClientComponent = () => {
                     <div className={styles.current_recipe__img_inner}>
                       <Image
                         src={
-                          `${imageBaseUrl}/${persistedSelectedRecipe.imageUrl}` ||
+                          `${imageBaseUrl}/${persistedSelectedRecipe?.imageUrl}` ||
                           "/pic_recipe_default.webp"
                         }
-                        alt={persistedSelectedRecipe.name}
+                        alt={persistedSelectedRecipe?.name || "Recipe Image"}
                         width={300}
                         height={300}
+                        priority
                       />
                     </div>
                   </div>
@@ -274,8 +370,9 @@ const RecipeClientComponent = () => {
                           persistedSelectedRecipe?.name ||
                           "Recipe Image"
                         }
-                        width={100}
-                        height={100}
+                        width={300}
+                        height={300}
+                        priority
                       />
                     </div>
                   </div>
@@ -335,20 +432,26 @@ const RecipeClientComponent = () => {
                 }}
                 transition={{ type: "spring", stiffness: 150, damping: 20 }}
               />
-              {sortedRecipes.map((recipe) => (
-                <div
-                  key={recipe.id}
-                  data-recipe-id={recipe.id}
-                  className={styles.recipe_list__item}
-                  onClick={() => handleRecipeClick(recipe)}
-                >
-                  <RecipeCard
-                    recipe={recipe}
-                    isFavoritePage={false}
-                    path="/recipes/"
-                  />
-                </div>
-              ))}
+              {sortedRecipes.map((recipe) => {
+                return (
+                  <div
+                    key={recipe.id}
+                    data-recipe-id={recipe.id}
+                    className={styles.recipe_list__item}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRecipeClick(recipe);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <RecipeCard
+                      recipe={recipe}
+                      isFavoritePage={false}
+                      path="/recipes/"
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
           {/* レシピ詳細セクション */}

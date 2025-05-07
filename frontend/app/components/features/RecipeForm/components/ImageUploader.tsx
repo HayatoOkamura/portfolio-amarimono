@@ -8,9 +8,17 @@ interface ImageUploaderProps {
   imageUrl?: string;
   image?: File;
   onImageChange: (image: File) => void;
+  isPublic?: boolean;
+  onVisibilityChange?: (isPublic: boolean) => void;
 }
 
-export const ImageUploader = ({ imageUrl, image, onImageChange }: ImageUploaderProps) => {
+export const ImageUploader = ({ 
+  imageUrl, 
+  image, 
+  onImageChange,
+  isPublic = true,
+  onVisibilityChange 
+}: ImageUploaderProps) => {
   const { handleImageChange, getImageUrl } = useImageUpload();
   const currentImageUrl = getImageUrl(imageUrl, image);
   
@@ -28,6 +36,10 @@ export const ImageUploader = ({ imageUrl, image, onImageChange }: ImageUploaderP
     if (result) {
       onImageChange(result.image);
     }
+  };
+
+  const handleVisibilityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onVisibilityChange?.(e.target.checked);
   };
 
   return (
@@ -82,6 +94,17 @@ export const ImageUploader = ({ imageUrl, image, onImageChange }: ImageUploaderP
             </div>
           </div>
         )}
+      </div>
+      <div className={styles.imageUploader__visibility}>
+        <label className={styles.imageUploader__visibilityLabel}>
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={handleVisibilityChange}
+            className={styles.imageUploader__visibilityCheckbox}
+          />
+          レシピを公開する
+        </label>
       </div>
     </div>
   );

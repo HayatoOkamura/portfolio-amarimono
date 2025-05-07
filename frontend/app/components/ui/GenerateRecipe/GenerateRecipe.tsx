@@ -33,15 +33,33 @@ const GenerateRecipe = () => {
         .filter((ingredient: Ingredient) => ingredient.quantity > 0)
         .map(({ id, quantity }: Ingredient) => ({ id, quantity }));
 
+      console.log('Selected ingredients:', filteredIngredients);
+
       if (filteredIngredients.length === 0) {
         alert("具材が選択されていません。");
         return;
       }
+
       setSearchType("ingredients");
-      router.push("/recipes");
+      setSearchExecuted(true);
+
+      // レシピデータの取得を待機
+      const response = await fetchRecipesAPI(filteredIngredients);
+      console.log('API Response:', response);
+
+      if (response) {
+        setGeneratedRecipes(response);
+        router.push("/recipes");
+      } else {
+        // レシピが見つからない場合は空の配列を設定して遷移
+        setGeneratedRecipes([]);
+        router.push("/recipes");
+      }
     } catch (err: any) {
+      console.error('Error in handleRecipe:', err);
       setGeneratedRecipes([]);
       setError(err.message);
+      router.push("/recipes");
     } finally {
       setLoading(false);
     }

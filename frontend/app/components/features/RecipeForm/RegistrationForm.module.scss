@@ -5,7 +5,7 @@
   gap: 30px;
   padding-bottom: 100px;
 
-  @include mq('sp') {
+  @include mq("tab") {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
   }
@@ -154,5 +154,21 @@
       font-weight: 600;
       margin-bottom: 15px;
     }
+  }
+}
+
+.nutrition_calculate_button {
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #2563eb;
   }
 }

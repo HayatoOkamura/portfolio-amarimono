@@ -31,7 +31,16 @@ const IngredientList = ({
               height={100}
             />
           </div>
-          <p className={styles.ing_block__name}>{ing.name}</p>
+          <div className={styles.ing_block__info}>
+            <p className={styles.ing_block__name}>{ing.name}</p>
+            <p className={styles.ing_block__english_name}>{ing.englishName}</p>
+            <div className={styles.ing_block__nutrition}>
+              <p>カロリー: {ing.nutrition?.calories || 0}kcal</p>
+              <p>タンパク質: {ing.nutrition?.protein || 0}g</p>
+              <p>脂質: {ing.nutrition?.fat || 0}g</p>
+              <p>炭水化物: {ing.nutrition?.carbohydrates || 0}g</p>
+            </div>
+          </div>
           <div className={styles.ing_block__actions}>
             <button
               className={`${styles.button} ${styles["button--edit"]}`}

@@ -79,9 +79,13 @@ export const RegistrationForm = ({
         <IngredientInput
           ingredients={formData.ingredients}
           availableIngredients={ingredientsData}
-          onUpdateIngredients={(ingredients) =>
-            updateFormData({ ingredients })
-          }
+          onUpdateIngredients={(ingredients) => updateFormData({
+            ingredients: ingredients.map(ing => ({
+              ...ing,
+              englishName: ingredientsData?.find(i => i.id === ing.id)?.englishName || '',
+              name: ingredientsData?.find(i => i.id === ing.id)?.name || ''
+            }))
+          })}
         />
       )}
     </div>
@@ -246,7 +250,7 @@ export const RegistrationForm = ({
               </div>
             </div>
             <div className={styles.detail_block__item}>
-              <h3>Nutrition</h3>
+              <h3>栄養素</h3>
               <table className="w-full border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-gray-100">
@@ -260,21 +264,27 @@ export const RegistrationForm = ({
                       <td className="border p-2">{key}</td>
                       <td className="border p-2">
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
+                          pattern="[0-9]*\.?[0-9]*"
                           placeholder={key}
                           value={
                             formData.nutrition[
                               key as keyof typeof formData.nutrition
                             ]
                           }
-                          onChange={(e) =>
-                            updateFormData({
-                              nutrition: {
-                                ...formData.nutrition,
-                                [key]: Number(e.target.value),
-                              },
-                            })
-                          }
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // 数値と小数点のみを許可
+                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                              updateFormData({
+                                nutrition: {
+                                  ...formData.nutrition,
+                                  [key]: value === '' ? 0 : Number(value),
+                                },
+                              });
+                            }
+                          }}
                           className="w-full p-2 border rounded"
                         />
                       </td>

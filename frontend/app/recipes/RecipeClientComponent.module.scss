@@ -341,3 +341,51 @@
     }
   }
 }
+
+.loading_container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 20px;
+}
+
+.loading_text {
+  font-size: 1.2rem;
+  color: var(--text-color);
+  text-align: center;
+}
+
+.no_recipes_container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 20px;
+  padding: 20px;
+}
+
+.no_recipes_message {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--text-color);
+  text-align: center;
+}
+
+.back_button {
+  padding: 12px 24px;
+  background-color: var(--primary-accent-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--primary-accent-color-dark);
+  }
+}

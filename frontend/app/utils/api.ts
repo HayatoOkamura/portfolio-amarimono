@@ -1,18 +1,27 @@
 import axios from "axios";
 
 // 開発環境と本番環境で異なるURLを使用
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+export const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
 export const imageBaseUrl = process.env.NODE_ENV === 'production'
     ? process.env.NEXT_PUBLIC_IMAGE_BASE_URL
     : process.env.NEXT_PUBLIC_LOCAL_IMAGE_URL;
 
-// APIクライアントの設定
+// axiosインスタンスの作成
 export const api = axios.create({
   baseURL: backendUrl,
   headers: {
     "Content-Type": "application/json",
   },
 });
+
+// レスポンスインターセプターの設定
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error);
+    return Promise.reject(error);
+  }
+);
 
 // レスポンスハンドラ
 export const handleApiResponse = async (response: Response) => {
@@ -22,5 +31,3 @@ export const handleApiResponse = async (response: Response) => {
   }
   return response.json();
 };
-
-export { backendUrl };

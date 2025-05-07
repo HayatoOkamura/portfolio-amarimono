@@ -67,7 +67,7 @@ const useRecipeStore = create<RecipeStore>()(
       setSelectedRecipe: (recipe) => set({ selectedRecipe: recipe }),
       setSearchType: (type) => set({ searchType: type }),
       setQuery: (query) => set({ query }),
-      setRecipes: (recipes) => set((state) => ({ ...state, recipes })),
+      setRecipes: (recipes) => set({ recipes }),
       setGeneratedRecipes: (recipes) => set({ generatedRecipes: recipes }),
       setSortBy: (sortBy) => set({ sortBy }),
       clearRecipes: () => set({ recipes: [] }),
@@ -104,9 +104,11 @@ const useRecipeStore = create<RecipeStore>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         recipes: state.recipes,
-        selectedRecipe: state.selectedRecipe,
-        searchType: state.searchType,
-        query: state.query,
+        searchType: null,
+        query: "",
+        searchExecuted: false,
+        selectedRecipe: null,
+        generatedRecipes: [],
       }),
     }
   )

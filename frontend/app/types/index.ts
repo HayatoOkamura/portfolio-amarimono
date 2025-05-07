@@ -24,10 +24,12 @@ export interface Unit {
 export interface Ingredient {
   id: number;
   name: string;
+  englishName: string;
   genre: Genre;
   imageUrl: string | null;
   quantity: number;
   unit: Unit;
+  nutrition: Nutrition;
 }
 
 export interface Instruction {
@@ -121,6 +123,7 @@ export interface NewIngredient {
 export interface EditIngredient {
   id: number;
   name: string;
+  englishName: string;
   genre: {
     id: number;
     name: string;
@@ -132,6 +135,14 @@ export interface EditIngredient {
   };
   imageUrl: string | File | null;
   quantity: number;
+  nutrition: {
+    calories: number;
+    carbohydrates: number;
+    fat: number;
+    protein: number;
+    sugar: number;
+    salt: number;
+  };
 }
 
 export interface EditRecipe {

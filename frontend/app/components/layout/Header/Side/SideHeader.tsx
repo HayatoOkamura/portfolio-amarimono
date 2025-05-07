@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import styles from "./SideHeader.module.scss";
 import Image from "next/image";
@@ -10,13 +8,10 @@ import { ImSpoonKnife } from "react-icons/im";
 import { FaListUl } from "react-icons/fa";
 import { BsPencilSquare } from "react-icons/bs";
 import { FaHeart } from "react-icons/fa";
-import { IoLogOut } from "react-icons/io5";
-import { IoLogIn } from "react-icons/io5";
-import { useUserStore } from "@/app/stores/userStore";
+import ClientAuthMenu from "./ClientAuthMenu";
 
 const SideHeader = () => {
-  const { user, signOut } = useUserStore();
-  const pathname = usePathname(); // 現在のパスを取得
+  const pathname = usePathname();
 
   // 現在のパスがリンク先と一致すれば is-active を付与
   const getActiveClass = (paths: string[]) =>
@@ -87,26 +82,7 @@ const SideHeader = () => {
               <p className={styles.header_block__text}>Favorite</p>
             </Link>
           </div>
-          {user ? (
-            <div
-              className={`${styles.header_block__icon} ${styles["header_block__icon--foot"]}`}
-              onClick={signOut}
-            >
-              <a>
-                <IoLogOut />
-                <p className={styles.header_block__text}>Logout</p>
-              </a>
-            </div>
-          ) : (
-            <div
-              className={`${styles.header_block__icon} ${styles["header_block__icon--foot"]}`}
-            >
-              <Link href="/login/">
-                <IoLogIn />
-                <p className={styles.header_block__text}>Login</p>
-              </Link>
-            </div>
-          )}
+          <ClientAuthMenu />
         </div>
       </div>
     </header>

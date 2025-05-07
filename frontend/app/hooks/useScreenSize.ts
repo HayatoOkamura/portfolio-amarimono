@@ -13,7 +13,18 @@ export const useScreenSize = (breakpoint: Breakpoint) => {
 
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsBelowBreakpoint(window.innerWidth < breakpoints[breakpoint]);
+      const width = window.innerWidth;
+      switch (breakpoint) {
+        case 'sp':
+          setIsBelowBreakpoint(width <= breakpoints.sp);
+          break;
+        case 'tab':
+          setIsBelowBreakpoint(width <= breakpoints.tab);
+          break;
+        case 'pc':
+          setIsBelowBreakpoint(width <= breakpoints.pc);
+          break;
+      }
     };
 
     checkScreenSize();
@@ -25,4 +36,4 @@ export const useScreenSize = (breakpoint: Breakpoint) => {
   }, [breakpoint]);
 
   return isBelowBreakpoint;
-}; 
+};

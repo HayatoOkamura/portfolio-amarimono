@@ -7,9 +7,21 @@ import { useIngredients } from "@/app/hooks/ingredients";
 import IngredientCard from "../../ui/Cards/IngredientCard/IngredientCard";
 import CategoryCard from "../../ui/Cards/CategoryCard/CategoryCard";
 import Loading from "../../ui/Loading/Loading";
+import { Ingredient } from "@/app/types/index";
 
-const IngredientSelector = () => {
-  const { data: ingredients = [], isLoading: isIngredientsLoading } = useIngredients();
+interface IngredientSelectorProps {
+  initialIngredients: Ingredient[];
+}
+
+const IngredientSelector = ({ initialIngredients }: IngredientSelectorProps) => {
+  const { data: ingredients = initialIngredients, isLoading: isIngredientsLoading } = useIngredients({
+    initialData: initialIngredients,
+    staleTime: process.env.NODE_ENV === 'development' ? 10000 : 86400000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false
+  });
+
   const { ingredientGenres, fetchIngredientGenres } = useGenreStore();
   const [selectedGenre, setSelectedGenre] = useState<string>("すべて");
   const [height, setHeight] = useState("auto");
@@ -26,7 +38,6 @@ const IngredientSelector = () => {
 
   useEffect(() => {
     const updateHeight = () => {
-      // ローディング中は高さの計算を行わない
       if (isIngredientsLoading || isGenresLoading) return;
 
       const element = document.getElementById("target");
@@ -38,10 +49,10 @@ const IngredientSelector = () => {
     };
 
     window.addEventListener("resize", updateHeight);
-    updateHeight(); // 初回設定
+    updateHeight();
 
     return () => window.removeEventListener("resize", updateHeight);
-  }, [isIngredientsLoading, isGenresLoading]); // 依存配列にローディング状態を追加
+  }, [isIngredientsLoading, isGenresLoading]);
 
   const genres = [
     { id: 0, name: "すべて" },
@@ -53,7 +64,6 @@ const IngredientSelector = () => {
       ? ingredients
       : ingredients.filter((ing) => ing.genre.name === selectedGenre);
 
-  // 具材とカテゴリの両方が読み込まれるまでLoadingを表示
   if (isIngredientsLoading || isGenresLoading) {
     return (
       <div className={styles.container_block}>
@@ -64,7 +74,6 @@ const IngredientSelector = () => {
 
   return (
     <div className={styles.container_block}>
-      {/* カテゴリカード */}
       <section className={styles.category_block}>
         <h2 className={styles.category_block__title}>具材カテゴリー</h2>
         <div className={styles.category_block__contents}>
@@ -77,7 +86,6 @@ const IngredientSelector = () => {
           ))}
         </div>
       </section>
-      {/* 具材一覧 */}
       <section className={styles.ingredient_block}>
         <h2 className={styles.ingredient_block__title}>具材一覧</h2>
         <div

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ingredient, Genre, Unit, NewIngredient, EditIngredient } from "../types/index";
 import { api } from "../utils/api";
 import useIngredientStore from "../stores/ingredientStore";
+import axios from "axios";
 
 // Query keys
 const ingredientKeys = {
@@ -25,6 +26,7 @@ const mapIngredient = (ingredient: any): Ingredient => {
   const mapped = {
     id: ingredientData.id || 0,
     name: ingredientData.name || "",
+    englishName: ingredientData.english_name || "",
     genre: {
       id: ingredientData.genre?.id || ingredientData.genre_id || 0,
       name: ingredientData.genre?.name || ""
@@ -32,6 +34,14 @@ const mapIngredient = (ingredient: any): Ingredient => {
     unit: ingredientData.unit || { id: 0, name: "", step: 1 },
     imageUrl: ingredientData.image_url || "/pic_recipe_default.webp",
     quantity: ingredientData.quantity || 0,
+    nutrition: ingredientData.nutrition || {
+      calories: 0,
+      carbohydrates: 0,
+      fat: 0,
+      protein: 0,
+      sugar: 0,
+      salt: 0
+    }
   };
   return mapped;
 };
@@ -50,6 +60,20 @@ const fetchIngredientsService = async (): Promise<Ingredient[]> => {
   
   const mappedIngredients = mapIngredients(response.data);
   return mappedIngredients;
+};
+
+const translateIngredientNameService = async (name: string): Promise<string> => {
+  try {
+    const response = await api.get(`/admin/ingredients/translate?name=${encodeURIComponent(name)}`);
+    return response.data.englishName;
+  } catch (error: any) {
+    console.error("Error in translateIngredientNameService:", error);
+    if (error.response) {
+      console.error("Error response data:", error.response.data);
+      console.error("Error response status:", error.response.status);
+    }
+    throw error;
+  }
 };
 
 const addIngredientService = async (formData: FormData): Promise<Ingredient> => {
@@ -84,34 +108,57 @@ const updateIngredientService = async ({
   id: number;
   data: EditIngredient;
 }): Promise<Ingredient> => {
-  const formData = new FormData();
-  if (data.name) formData.append("name", data.name);
-  if (data.genre) formData.append("genre", JSON.stringify({ id: data.genre.id }));
-  if (data.unit) formData.append("unit", JSON.stringify({ 
-    id: data.unit.id,
-    step: data.unit.step 
-  }));
-  
-  // 画像の処理
-  if (data.imageUrl instanceof File) {
-    formData.append("image", data.imageUrl);
-  } else if (typeof data.imageUrl === "string") {
-    formData.append("image_url", data.imageUrl);
-  }
+  try {
+    const formData = new FormData();
+    if (data.name) formData.append("name", data.name);
+    if (data.genre) formData.append("genre", JSON.stringify({ id: data.genre.id }));
+    if (data.unit) formData.append("unit", JSON.stringify({ 
+      id: data.unit.id,
+      step: data.unit.step 
+    }));
+    
+    // 画像の処理
+    if (data.imageUrl instanceof File) {
+      formData.append("image", data.imageUrl);
+    } else if (typeof data.imageUrl === "string") {
+      formData.append("image_url", data.imageUrl);
+    }
 
-  const response = await api.patch(`/admin/ingredients/${id}`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-  return response.data;
+    console.log('Updating ingredient with ID:', id);
+    console.log('Request URL:', `/admin/ingredients/${id}`);
+    console.log('FormData contents:', Object.fromEntries(formData.entries()));
+
+    const response = await api.patch(`/admin/ingredients/${id}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating ingredient:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Request URL:', error.config?.url);
+      console.error('Request method:', error.config?.method);
+      console.error('Request headers:', error.config?.headers);
+      console.error('Response status:', error.response?.status);
+      console.error('Response data:', error.response?.data);
+    }
+    throw error;
+  }
 };
 
 // Query hooks
-export const useIngredients = () => {
+export const useIngredients = (options?: {
+  initialData?: Ingredient[];
+  staleTime?: number;
+  refetchOnMount?: boolean;
+  refetchOnWindowFocus?: boolean;
+  refetchOnReconnect?: boolean;
+}) => {
   return useQuery({
     queryKey: ingredientKeys.lists(),
     queryFn: fetchIngredientsService,
+    ...options
   });
 };
 
@@ -177,5 +224,26 @@ export const useUpdateIngredientQuantity = () => {
       return ingredient;
     },
   });
+};
+
+export const useTranslateIngredientName = () => {
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const response = await api.get(`/admin/ingredients/translate?name=${encodeURIComponent(name)}`);
+      return response.data.englishName;
+    },
+  });
+};
+
+// サーバーサイド用のデータフェッチ関数
+export const fetchIngredientsServer = async (): Promise<Ingredient[]> => {
+  // Docker環境ではbackendサービスに直接接続
+  const baseURL = process.env.NODE_ENV === 'development' 
+    ? 'http://backend:8080'  // Docker環境用
+    : process.env.NEXT_PUBLIC_BACKEND_URL || 'https://amarimono-backend.onrender.com';
+
+  const response = await axios.create({ baseURL }).get("/admin/ingredients");
+  const mappedIngredients = mapIngredients(response.data);
+  return mappedIngredients;
 };
 
