@@ -16,10 +16,10 @@ interface IngredientSelectorProps {
 const IngredientSelector = ({ initialIngredients }: IngredientSelectorProps) => {
   const { data: ingredients = initialIngredients, isLoading: isIngredientsLoading } = useIngredients({
     initialData: initialIngredients,
-    staleTime: process.env.NODE_ENV === 'development' ? 10000 : 86400000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false
+    staleTime: process.env.NODE_ENV === 'development' ? 10000 : 86400000, // 開発環境:10秒、本番環境:24時間
+    refetchOnMount: false, // マウント時の自動再フェッチを無効化
+    refetchOnWindowFocus: false, // ウィンドウフォーカス時の自動再フェッチを無効化
+    refetchOnReconnect: false // 再接続時の自動再フェッチを無効化
   });
 
   const { ingredientGenres, fetchIngredientGenres } = useGenreStore();
@@ -38,10 +38,11 @@ const IngredientSelector = ({ initialIngredients }: IngredientSelectorProps) => 
 
   useEffect(() => {
     const updateHeight = () => {
+      // ローディング中は高さの計算を行わない
       if (isIngredientsLoading || isGenresLoading) return;
 
       const element = document.getElementById("target");
-      
+
       if (element) {
         const topOffset = element.getBoundingClientRect().top;
         setHeight(`${window.innerHeight - topOffset}px`);
@@ -49,21 +50,19 @@ const IngredientSelector = ({ initialIngredients }: IngredientSelectorProps) => 
     };
 
     window.addEventListener("resize", updateHeight);
-    updateHeight();
+    updateHeight(); // 初回設定
 
     return () => window.removeEventListener("resize", updateHeight);
-  }, [isIngredientsLoading, isGenresLoading]);
+  }, [isIngredientsLoading, isGenresLoading]); // 依存配列にローディング状態を追加
 
-  const genres = [
-    { id: 0, name: "すべて" },
-    ...ingredientGenres,
-  ];
+  const genres = [{ id: 0, name: "すべて" }, ...ingredientGenres];
 
   const filteredIngredients =
     selectedGenre === "すべて"
       ? ingredients
       : ingredients.filter((ing) => ing.genre.name === selectedGenre);
 
+  // 具材とカテゴリの両方が読み込まれるまでLoadingを表示
   if (isIngredientsLoading || isGenresLoading) {
     return (
       <div className={styles.container_block}>
@@ -74,6 +73,7 @@ const IngredientSelector = ({ initialIngredients }: IngredientSelectorProps) => 
 
   return (
     <div className={styles.container_block}>
+      {/* カテゴリカード */}
       <section className={styles.category_block}>
         <h2 className={styles.category_block__title}>具材カテゴリー</h2>
         <div className={styles.category_block__contents}>
@@ -86,6 +86,7 @@ const IngredientSelector = ({ initialIngredients }: IngredientSelectorProps) => 
           ))}
         </div>
       </section>
+      {/* 具材一覧 */}
       <section className={styles.ingredient_block}>
         <h2 className={styles.ingredient_block__title}>具材一覧</h2>
         <div
@@ -99,7 +100,10 @@ const IngredientSelector = ({ initialIngredients }: IngredientSelectorProps) => 
                 key={ingredient.id}
                 ingredient={{
                   ...ingredient,
-                  imageUrl: typeof ingredient.imageUrl === 'string' ? ingredient.imageUrl : null
+                  imageUrl:
+                    typeof ingredient.imageUrl === "string"
+                      ? ingredient.imageUrl
+                      : null,
                 }}
               />
             ))}

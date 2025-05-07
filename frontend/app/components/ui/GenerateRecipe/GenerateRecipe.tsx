@@ -14,7 +14,7 @@ import { useIngredients } from "@/app/hooks/ingredients";
 const GenerateRecipe = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { setGeneratedRecipes, setSearchType } = useRecipeStore();
+  const { setGeneratedRecipes, setSearchType, setSearchExecuted } = useRecipeStore();
   const { ingredients, setIngredients } = useIngredientStore();
   const { data: fetchedIngredients } = useIngredients();
   const router = useRouter();
@@ -33,8 +33,6 @@ const GenerateRecipe = () => {
         .filter((ingredient: Ingredient) => ingredient.quantity > 0)
         .map(({ id, quantity }: Ingredient) => ({ id, quantity }));
 
-      console.log('Selected ingredients:', filteredIngredients);
-
       if (filteredIngredients.length === 0) {
         alert("具材が選択されていません。");
         return;
@@ -43,23 +41,10 @@ const GenerateRecipe = () => {
       setSearchType("ingredients");
       setSearchExecuted(true);
 
-      // レシピデータの取得を待機
-      const response = await fetchRecipesAPI(filteredIngredients);
-      console.log('API Response:', response);
-
-      if (response) {
-        setGeneratedRecipes(response);
-        router.push("/recipes");
-      } else {
-        // レシピが見つからない場合は空の配列を設定して遷移
-        setGeneratedRecipes([]);
-        router.push("/recipes");
-      }
+      router.push("/recipes");
     } catch (err: any) {
-      console.error('Error in handleRecipe:', err);
       setGeneratedRecipes([]);
       setError(err.message);
-      router.push("/recipes");
     } finally {
       setLoading(false);
     }

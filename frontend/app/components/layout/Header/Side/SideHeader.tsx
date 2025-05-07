@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import styles from "./SideHeader.module.scss";
 import Image from "next/image";
@@ -8,10 +10,14 @@ import { ImSpoonKnife } from "react-icons/im";
 import { FaListUl } from "react-icons/fa";
 import { BsPencilSquare } from "react-icons/bs";
 import { FaHeart } from "react-icons/fa";
+import { IoLogOut } from "react-icons/io5";
+import { IoLogIn } from "react-icons/io5";
+import { useUserStore } from "@/app/stores/userStore";
 import ClientAuthMenu from "./ClientAuthMenu";
 
 const SideHeader = () => {
-  const pathname = usePathname();
+  const { user, signOut } = useUserStore();
+  const pathname = usePathname(); // 現在のパスを取得
 
   // 現在のパスがリンク先と一致すれば is-active を付与
   const getActiveClass = (paths: string[]) =>

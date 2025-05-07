@@ -6,7 +6,6 @@ interface IngredientInputProps {
   availableIngredients: {
     id: number;
     name: string;
-    englishName: string;
     unit: {
       id: number;
       name: string;
@@ -17,8 +16,6 @@ interface IngredientInputProps {
     id: number;
     quantity: number;
     unitId: number;
-    englishName: string;
-    name: string;
   }>) => void;
 }
 
@@ -54,8 +51,6 @@ export const IngredientInput = ({
                           id: ingredient.id,
                           quantity: step,
                           unitId: ingredient.unit.id,
-                          englishName: ingredient.englishName,
-                          name: ingredient.name,
                         },
                       ];
 

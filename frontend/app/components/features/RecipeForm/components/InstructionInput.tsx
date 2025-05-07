@@ -22,7 +22,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { FaCirclePlus } from "react-icons/fa6";
 import { FaGripLines, FaTrash } from "react-icons/fa";
 import { LuImagePlus } from "react-icons/lu";
-
+import Image from "next/image";
 interface SortableItemProps {
   id: string;
   children: React.ReactNode;
@@ -152,7 +152,7 @@ export const InstructionInput = ({
                   <div className={styles.instruction_block__image_container}>
                     {instruction.imageURL ? (
                       <>
-                        <img
+                        <Image
                           src={
                             instruction.imageURL instanceof File
                               ? URL.createObjectURL(instruction.imageURL)
@@ -165,6 +165,8 @@ export const InstructionInput = ({
                           }
                           alt={`Step ${instruction.step}`}
                           className={styles.instruction_block__image}
+                          width={100}
+                          height={100}
                         />
                         <div
                           className={styles.instruction_block__image_overlay}

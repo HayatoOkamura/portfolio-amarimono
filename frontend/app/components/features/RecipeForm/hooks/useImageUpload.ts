@@ -24,7 +24,7 @@ export const useImageUpload = () => {
       if (process.env.NODE_ENV === 'production') {
         return `${imageBaseUrl}/${imageUrl}`;
       }
-      return imageUrl;
+      return `${imageBaseUrl}/${imageUrl}`;
     }
     return undefined;
   }, []);

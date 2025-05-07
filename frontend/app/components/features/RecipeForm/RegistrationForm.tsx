@@ -41,10 +41,10 @@ export const RegistrationForm = ({
     };
 
     checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
+    window.addEventListener("resize", checkScreenSize);
 
     return () => {
-      window.removeEventListener('resize', checkScreenSize);
+      window.removeEventListener("resize", checkScreenSize);
     };
   }, []);
 
@@ -148,8 +148,8 @@ export const RegistrationForm = ({
                 {isLoading
                   ? "保存中..."
                   : saveStatus === "saved"
-                  ? "保存完了"
-                  : "保存"}
+                    ? "保存完了"
+                    : "保存"}
               </button>
             </div>
             <div
@@ -232,21 +232,25 @@ export const RegistrationForm = ({
             >
               <div className={styles.detail_block__sub_item}>
                 <p className={styles.detail_block__label}>調理時間</p>
-                <CookingTimeSlider
-                  cookingTime={formData.cookingTime}
-                  setCookingTime={(time) =>
-                    updateFormData({ cookingTime: time })
-                  }
-                />
+                <div className={styles.detail_block__slider}>
+                  <CookingTimeSlider
+                    cookingTime={formData.cookingTime}
+                    setCookingTime={(time) =>
+                      updateFormData({ cookingTime: time })
+                    }
+                  />
+                </div>
               </div>
               <div className={styles.detail_block__sub_item}>
                 <p className={styles.detail_block__label}>コスト</p>
-                <CostEstimateSlider
-                  costEstimate={formData.costEstimate}
-                  setCostEstimate={(estimate) => {
-                    updateFormData({ costEstimate: estimate });
-                  }}
-                />
+                <div className={styles.detail_block__slider}>
+                  <CostEstimateSlider
+                    costEstimate={formData.costEstimate}
+                    setCostEstimate={(estimate) => {
+                      updateFormData({ costEstimate: estimate });
+                    }}
+                  />
+                </div>
               </div>
             </div>
             <div className={styles.detail_block__item}>
@@ -332,13 +336,13 @@ export const RegistrationForm = ({
               </button>
             </div>
           </div>
-          <ResponsiveWrapper breakpoint="tab" renderBelow={null}>
+          <ResponsiveWrapper breakpoint="sp" renderBelow={null}>
             {ingredientsBlock}
           </ResponsiveWrapper>
         </div>
       </div>
-      <ResponsiveWrapper breakpoint="tab">
-        {ingredientsBlock}
+      <ResponsiveWrapper breakpoint="sp" renderBelow={ingredientsBlock}>
+        {null}
       </ResponsiveWrapper>
     </div>
   );

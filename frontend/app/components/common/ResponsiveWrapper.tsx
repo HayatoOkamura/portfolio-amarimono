@@ -21,4 +21,4 @@ export const ResponsiveWrapper: React.FC<ResponsiveWrapperProps> = ({
   }
 
   return <>{renderAbove !== undefined ? renderAbove : children}</>;
-};
+}; 

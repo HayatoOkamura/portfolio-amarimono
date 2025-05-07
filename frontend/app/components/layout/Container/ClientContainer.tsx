@@ -23,7 +23,7 @@ const ClientContainer: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   return (
     <div className={styles.container_block}>
-      <ResponsiveWrapper breakpoint="tab">
+      <ResponsiveWrapper breakpoint="tab" renderBelow={null}>
         <SideHeader />
       </ResponsiveWrapper>
       <div className={styles.container_block__inner}>

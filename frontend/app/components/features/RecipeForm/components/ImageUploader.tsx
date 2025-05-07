@@ -1,24 +1,16 @@
 import { useImageUpload } from "../hooks/useImageUpload";
 import { LuImagePlus } from "react-icons/lu";
 import styles from "./ImageUploader.module.scss";
-
+import Image from "next/image";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface ImageUploaderProps {
   imageUrl?: string;
   image?: File;
   onImageChange: (image: File) => void;
-  isPublic?: boolean;
-  onVisibilityChange?: (isPublic: boolean) => void;
 }
 
-export const ImageUploader = ({ 
-  imageUrl, 
-  image, 
-  onImageChange,
-  isPublic = true,
-  onVisibilityChange 
-}: ImageUploaderProps) => {
+export const ImageUploader = ({ imageUrl, image, onImageChange }: ImageUploaderProps) => {
   const { handleImageChange, getImageUrl } = useImageUpload();
   const currentImageUrl = getImageUrl(imageUrl, image);
   
@@ -38,19 +30,17 @@ export const ImageUploader = ({
     }
   };
 
-  const handleVisibilityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onVisibilityChange?.(e.target.checked);
-  };
-
   return (
     <div className={styles.imageUploader}>
       <div className={styles.imageUploader__container}>
         {currentImageUrl ? (
           <div className={styles.imageUploader__imageContainer}>
-            <img
+            <Image
               src={currentImageUrl}
               alt="Current recipe"
               className={styles.imageUploader__image}
+              width={500}
+              height={500}
               onError={(e) => {
                 console.error("Image load error:", {
                   src: e.currentTarget.src,
@@ -94,17 +84,6 @@ export const ImageUploader = ({
             </div>
           </div>
         )}
-      </div>
-      <div className={styles.imageUploader__visibility}>
-        <label className={styles.imageUploader__visibilityLabel}>
-          <input
-            type="checkbox"
-            checked={isPublic}
-            onChange={handleVisibilityChange}
-            className={styles.imageUploader__visibilityCheckbox}
-          />
-          レシピを公開する
-        </label>
       </div>
     </div>
   );

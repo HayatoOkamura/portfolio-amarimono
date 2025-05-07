@@ -1,167 +1,165 @@
 .form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.label {
-  font-weight: 500;
-  color: #333;
-}
-
-.input {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-
-.select {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
-  background-color: white;
-}
-
-.fileInput {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-
-.actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.submitButton {
-  padding: 0.5rem 1rem;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-
-  &:hover {
-    background-color: #45a049;
-  }
-}
-
-.cancelButton {
-  padding: 0.5rem 1rem;
-  background-color: #f44336;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-
-  &:hover {
-    background-color: #da190b;
-  }
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .error {
-  color: #f44336;
-  margin: 0.5rem 0;
+  color: #ef4444;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: #fee2e2;
+  border-radius: 0.25rem;
 }
 
-.success {
-  color: #4CAF50;
-  margin: 0.5rem 0;
+.field {
+  margin-bottom: 1.5rem;
 }
 
-.nameInput {
+.label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.inputGroup {
   display: flex;
   gap: 0.5rem;
   align-items: center;
 }
 
-.translateButton {
+.input,
+.select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  font-size: 1rem;
+  color: #1f2937;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+}
+
+.translateButton,
+.nutritionButton {
   padding: 0.5rem 1rem;
-  background-color: #2196F3;
-  color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 0.25rem;
+  font-weight: 500;
   cursor: pointer;
-  font-size: 0.9rem;
+  transition: background-color 0.2s;
   white-space: nowrap;
 
-  &:hover {
-    background-color: #1976D2;
-  }
-
   &:disabled {
-    background-color: #ccc;
+    opacity: 0.5;
     cursor: not-allowed;
+  }
+}
+
+.translateButton {
+  background-color: #3b82f6;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: #2563eb;
   }
 }
 
 .nutritionButton {
-  padding: 0.5rem 1rem;
-  background-color: #FF9800;
+  background-color: #10b981;
   color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  white-space: nowrap;
 
-  &:hover {
-    background-color: #F57C00;
-  }
-
-  &:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
+  &:hover:not(:disabled) {
+    background-color: #059669;
   }
 }
 
-.nutritionSection {
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #f9f9f9;
-
-  h3 {
-    margin: 0 0 1rem 0;
-    color: #333;
-  }
+.fileInput {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  font-size: 1rem;
+  color: #1f2937;
 }
 
 .nutritionGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
+  margin-top: 0.5rem;
 }
 
 .nutritionItem {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
 
   label {
-    font-size: 0.9rem;
-    color: #666;
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    font-size: 1rem;
+    color: #1f2937;
+
+    &:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
   }
 }
 
-.nutritionInput {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
-  width: 100%;
+.actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
 }
+
+.cancelButton,
+.submitButton {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.cancelButton {
+  background-color: #e5e7eb;
+  color: #4b5563;
+
+  &:hover:not(:disabled) {
+    background-color: #d1d5db;
+  }
+}
+
+.submitButton {
+  background-color: #3b82f6;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: #2563eb;
+  }
+} 
