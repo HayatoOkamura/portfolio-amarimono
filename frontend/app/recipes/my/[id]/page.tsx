@@ -250,19 +250,6 @@ const EditMyRecipe = () => {
                 type="salt"
               />
             </li>
-            <li className={styles.nutrition_block__item}>
-              <p className={styles.nutrition_block__title}>
-                糖分{recipe.nutrition && recipe.nutrition.sugar}
-              </p>
-              <ResponsivePieChart
-                value={
-                  recipe.nutritionPercentage
-                    ? recipe.nutritionPercentage.sugar
-                    : 0
-                }
-                type="sugar"
-              />
-            </li>
           </ul>
           <h3 className={styles.info_block__ingredient}>材料【1人分】</h3>
           <ul className={styles.ingredient_block}>

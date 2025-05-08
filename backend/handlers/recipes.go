@@ -119,7 +119,6 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 				Carbohydrates: 0,
 				Fat:           0,
 				Protein:       0,
-				Sugar:         0,
 				Salt:          0,
 			}
 		}
@@ -131,7 +130,6 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 			"fat":           (float64(recipe.Nutrition.Fat) / standard.Fat) * 100,
 			"protein":       (float64(recipe.Nutrition.Protein) / standard.Protein) * 100,
 			"salt":          (float64(recipe.Nutrition.Salt) / standard.Salt) * 100,
-			"sugar":         (float64(recipe.Nutrition.Sugar) / standard.Sugar) * 100,
 		}
 
 		meetsRequirements := true
@@ -226,7 +224,6 @@ func (h *RecipeHandler) SearchRecipesByName(c *gin.Context) {
 				"fat":           (float64(recipes[i].Nutrition.Fat) / standard.Fat) * 100,
 				"protein":       (float64(recipes[i].Nutrition.Protein) / standard.Protein) * 100,
 				"salt":          (float64(recipes[i].Nutrition.Salt) / standard.Salt) * 100,
-				"sugar":         (float64(recipes[i].Nutrition.Sugar) / standard.Sugar) * 100,
 			}
 			recipes[i].NutritionPercentage = nutritionPercentage
 		}
@@ -263,7 +260,6 @@ func (h *RecipeHandler) GetRecipeByID(c *gin.Context) {
 			Carbohydrates: 0,
 			Fat:           0,
 			Protein:       0,
-			Sugar:         0,
 			Salt:          0,
 		}
 	}
@@ -282,7 +278,6 @@ func (h *RecipeHandler) GetRecipeByID(c *gin.Context) {
 		"fat":           (float64(recipe.Nutrition.Fat) / standard.Fat) * 100,
 		"protein":       (float64(recipe.Nutrition.Protein) / standard.Protein) * 100,
 		"salt":          (float64(recipe.Nutrition.Salt) / standard.Salt) * 100,
-		"sugar":         (float64(recipe.Nutrition.Sugar) / standard.Sugar) * 100,
 	}
 
 	// Recipe structのNutritionPercentageフィールドに設定
@@ -316,4 +311,25 @@ func (h *RecipeHandler) GetUserRecipes(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"recipes": recipes})
+}
+
+// calculateRecipeNutrition は具材からレシピの栄養素を計算する
+func calculateRecipeNutrition(ingredients []models.RecipeIngredient) models.NutritionInfo {
+	var nutrition models.NutritionInfo
+
+	for _, ing := range ingredients {
+		// 具材の栄養素を取得
+		ingredientNutrition := ing.Ingredient.Nutrition
+		
+		// 量に応じて栄養素を按分計算
+		ratio := ing.QuantityRequired / 100.0 // 100gあたりの栄養素として計算
+		
+		nutrition.Calories += ingredientNutrition.Calories * ratio
+		nutrition.Protein += ingredientNutrition.Protein * ratio
+		nutrition.Fat += ingredientNutrition.Fat * ratio
+		nutrition.Carbohydrates += ingredientNutrition.Carbohydrates * ratio
+		nutrition.Salt += ingredientNutrition.Salt * ratio
+	}
+
+	return nutrition
 }

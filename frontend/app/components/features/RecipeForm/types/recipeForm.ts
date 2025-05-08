@@ -23,7 +23,6 @@ export interface RecipeFormData {
     id: number;
     quantity: number;
     unitId: number;
-    englishName: string;
     name: string;
   }>;
   instructions: Array<{

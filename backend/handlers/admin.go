@@ -917,7 +917,6 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 			Carbohydrates: nutrition["carbohydrates"].(float64),
 			Fat:           nutrition["fat"].(float64),
 			Protein:       nutrition["protein"].(float64),
-			Sugar:         nutrition["sugar"].(float64),
 			Salt:          nutrition["salt"].(float64),
 		}
 	}

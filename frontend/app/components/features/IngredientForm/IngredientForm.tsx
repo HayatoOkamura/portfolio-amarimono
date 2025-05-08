@@ -21,7 +21,6 @@ interface IngredientFormProps {
       fat: number;
       carbohydrates: number;
       salt: number;
-      sugar?: number;
     };
     quantity?: number;
   };

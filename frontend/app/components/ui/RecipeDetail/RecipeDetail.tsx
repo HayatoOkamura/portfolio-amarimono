@@ -293,23 +293,6 @@ const RecipeDetail = ({
                   type="salt"
                 />
               </li>
-              <li className={styles.nutrition_block__item}>
-                <div className={styles.nutrition_block__texts}>
-                  <p className={styles.nutrition_block__title}>糖分</p>
-                  <p className={styles.nutrition_block__num}>
-                    {recipe.nutrition && recipe.nutrition.sugar}
-                    <span>g</span>
-                  </p>
-                </div>
-                <ResponsivePieChart
-                  value={
-                    recipe.nutritionPercentage
-                      ? recipe.nutritionPercentage.sugar
-                      : 0
-                  }
-                  type="sugar"
-                />
-              </li>
             </ul>
             <div className={styles.nutrition_block__disclaimer}>
               <p>※ 栄養成分値は参考値です。</p>

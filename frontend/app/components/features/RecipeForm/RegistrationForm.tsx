@@ -11,6 +11,7 @@ import CookingTimeSlider from "@/app/components/ui/RegistarSlider/CookingTime/Co
 import CostEstimateSlider from "@/app/components/ui/RegistarSlider/CostEstimate/CostEstimate";
 import styles from "./RegistrationForm.module.scss";
 import { ResponsiveWrapper } from "../../common/ResponsiveWrapper";
+import { calculateNutrition } from "@/app/utils/nutritionCalculator";
 
 export const RegistrationForm = ({
   isAdmin = false,
@@ -82,7 +83,6 @@ export const RegistrationForm = ({
           onUpdateIngredients={(ingredients) => updateFormData({
             ingredients: ingredients.map(ing => ({
               ...ing,
-              englishName: ingredientsData?.find(i => i.id === ing.id)?.englishName || '',
               name: ingredientsData?.find(i => i.id === ing.id)?.name || ''
             }))
           })}
@@ -255,6 +255,43 @@ export const RegistrationForm = ({
             </div>
             <div className={styles.detail_block__item}>
               <h3>栄養素</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!formData.ingredients || formData.ingredients.length === 0) {
+                    alert("具材を選択してください");
+                    return;
+                  }
+
+                  const ingredientsWithNutrition = formData.ingredients.map(ing => {
+                    const ingredient = ingredientsData?.find(i => i.id === ing.id);
+                    return {
+                      id: ing.id,
+                      name: ingredient?.name || '',
+                      quantity: ing.quantity,
+                      unit: ingredient?.unit || { id: 0, name: 'g', description: '', step: 1 },
+                      nutrition: ingredient?.nutrition || {
+                        calories: 0,
+                        protein: 0,
+                        fat: 0,
+                        carbohydrates: 0,
+                        salt: 0
+                      }
+                    };
+                  });
+
+                  const nutrition = calculateNutrition(ingredientsWithNutrition);
+                  updateFormData({
+                    nutrition: {
+                      ...formData.nutrition,
+                      ...nutrition,
+                    },
+                  });
+                }}
+                className={styles.calculateButton}
+              >
+                具材から栄養素を計算
+              </button>
               <table className="w-full border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-gray-100">

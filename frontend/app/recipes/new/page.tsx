@@ -152,7 +152,6 @@ const RecipeRegistration: React.FC = () => {
                 <p>Carbohydrates: {recipe.nutrition?.carbohydrates} g</p>
                 <p>Fat: {recipe.nutrition?.fat} g</p>
                 <p>Protein: {recipe.nutrition?.protein} g</p>
-                <p>Sugar: {recipe.nutrition?.sugar} g</p>
                 <p>Salt: {recipe.nutrition?.salt} g</p>
               </div>
 

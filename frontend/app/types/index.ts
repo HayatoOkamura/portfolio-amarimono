@@ -43,7 +43,6 @@ export interface Nutrition {
   carbohydrates: number;
   fat: number;
   protein: number;
-  sugar: number;
   salt: number;
 }
 
