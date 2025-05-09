@@ -33,7 +33,7 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
     imageUrl: undefined,
     isPublic: true,
     isDraft: false,
-    faq: initialRecipe?.faq || [],
+    faq: initialRecipe?.faq || [{ question: "", answer: "" }],
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +46,8 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
         ingredients: initialRecipe.ingredients?.map(ing => ({
           id: ing.id,
           quantity: ing.quantity,
-          unitId: ing.unitId
+          unitId: ing.unitId,
+          name: ing.name || ''
         })) || [],
         faq: initialRecipe.faq || [],
         instructions: initialRecipe.instructions || [{ step: 1, description: "", imageURL: undefined }],
@@ -92,7 +93,7 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
       imageUrl: undefined,
       isPublic: true,
       isDraft: false,
-      faq: [],
+      faq: [{ question: "", answer: "" }],
     });
   }, []);
 
@@ -122,7 +123,9 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
         });
       }
 
-      resetFormData();
+      if (!initialRecipe?.id) {
+        resetFormData();
+      }
       alert(VALIDATION_MESSAGES.SUCCESS);
 
       if (isAdmin) {

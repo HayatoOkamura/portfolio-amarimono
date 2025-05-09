@@ -51,6 +51,7 @@ func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, like
 		admin.POST("/recipes", adminHandler.AddRecipe)                            // レシピ追加
 		admin.PUT("/recipes/:id", adminHandler.UpdateRecipe)                      // レシピ更新
 		admin.DELETE("/recipes/:id", adminHandler.DeleteRecipe)                   // レシピ削除
+		admin.PUT("/recipes/:id/toggle-publish", adminHandler.ToggleRecipePublish) // レシピの公開/非公開を切り替え
 		admin.GET("/units", adminHandler.ListUnits)                               // 単位一覧
 		admin.POST("/draft-recipes", adminHandler.SaveDraftRecipe)                // 下書きレシピの保存
 		admin.GET("/draft-recipes/:userId", adminHandler.GetDraftRecipes)         // 下書きレシピの取得

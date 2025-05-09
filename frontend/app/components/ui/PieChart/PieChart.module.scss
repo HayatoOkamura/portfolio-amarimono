@@ -1,27 +1,26 @@
 .svg {
+  width: 100%;
+  height: 100%;
   transform: rotate(-90deg);
+  position: relative;
+  
   circle {
-    stroke-width: 10;
-    fill: #fff;
-    position: relative;
-    stroke: #e5e8ed;
-    stroke-dasharray: 440;
-    stroke-dashoffset: 0;
-    stroke-linecap: round;
     &.base {
+      fill: none;
+      stroke: #e5e8ed;
+      stroke-width: 10;
+      stroke-linecap: round;
     }
     
     &.line {
-      stroke: #03a9f4; /* 円グラフの色（例：青） */
-      transition: stroke-dashoffset 1s ease-in-out;
-      animation: circleAnim 1s forwards;
-      fill: transparent;
-      
+      fill: none;
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.5s ease-in-out;
+      transform-origin: center;
     }
   }
-
 }
-
 
 
 @keyframes circleAnim {

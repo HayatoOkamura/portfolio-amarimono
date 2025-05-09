@@ -283,6 +283,9 @@ func (h *RecipeHandler) GetRecipeByID(c *gin.Context) {
 	// Recipe structのNutritionPercentageフィールドに設定
 	recipe.NutritionPercentage = nutritionPercentage
 
+	// デバッグログを追加
+	log.Printf("Nutrition Percentage: %+v", nutritionPercentage)
+
 	// JSONレスポンスを返す
 	c.JSON(http.StatusOK, gin.H{
 		"recipe": recipe,
@@ -310,6 +313,40 @@ func (h *RecipeHandler) GetUserRecipes(c *gin.Context) {
 		return
 	}
 
+	// 栄養情報の標準値を取得
+	var standard models.NutritionStandard
+	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
+		log.Printf("Failed to fetch nutrition standard: %v", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
+		return
+	}
+
+	// 各レシピの栄養素の割合を計算
+	for i := range recipes {
+		// 栄養情報がない場合はデフォルト値を設定
+		if recipes[i].Nutrition == (models.NutritionInfo{}) {
+			recipes[i].Nutrition = models.NutritionInfo{
+				Calories:      0,
+				Carbohydrates: 0,
+				Fat:           0,
+				Protein:       0,
+				Salt:          0,
+			}
+		}
+
+		// 栄養素の割合を計算
+		nutritionPercentage := map[string]float64{
+			"calories":      (float64(recipes[i].Nutrition.Calories) / standard.Calories) * 100,
+			"carbohydrates": (float64(recipes[i].Nutrition.Carbohydrates) / standard.Carbohydrates) * 100,
+			"fat":           (float64(recipes[i].Nutrition.Fat) / standard.Fat) * 100,
+			"protein":       (float64(recipes[i].Nutrition.Protein) / standard.Protein) * 100,
+			"salt":          (float64(recipes[i].Nutrition.Salt) / standard.Salt) * 100,
+		}
+
+		// Recipe structのNutritionPercentageフィールドに設定
+		recipes[i].NutritionPercentage = nutritionPercentage
+	}
+
 	c.JSON(http.StatusOK, gin.H{"recipes": recipes})
 }
 
@@ -320,10 +357,10 @@ func calculateRecipeNutrition(ingredients []models.RecipeIngredient) models.Nutr
 	for _, ing := range ingredients {
 		// 具材の栄養素を取得
 		ingredientNutrition := ing.Ingredient.Nutrition
-		
+
 		// 量に応じて栄養素を按分計算
 		ratio := ing.QuantityRequired / 100.0 // 100gあたりの栄養素として計算
-		
+
 		nutrition.Calories += ingredientNutrition.Calories * ratio
 		nutrition.Protein += ingredientNutrition.Protein * ratio
 		nutrition.Fat += ingredientNutrition.Fat * ratio

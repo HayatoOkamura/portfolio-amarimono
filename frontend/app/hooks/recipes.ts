@@ -268,6 +268,7 @@ export const fetchSearchRecipes = async (query: string): Promise<Recipe[]> => {
 // レシピIDで詳細を取得
 export const fetchRecipeByIdService = async (id: string) => {
   try {
+    console.log("fetchRecipeByIdService", id);
     const response = await api.get(`/admin/recipes/${id}`);
     
     if (!response.data) {
@@ -476,6 +477,14 @@ const fetchUserFavorites = async (userId: string) => {
 };
 
 // Query hooks
+export const useRecipe = (id: string) => {
+  return useQuery({
+    queryKey: recipeKeys.detail(id),
+    queryFn: () => fetchRecipeByIdService(id),
+    enabled: !!id && id !== "recipes",
+  });
+};
+
 export const useRecipes = () => {
   return useQuery({
     queryKey: recipeKeys.lists(),

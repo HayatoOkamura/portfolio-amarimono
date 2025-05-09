@@ -406,6 +406,37 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 		recipe.Ingredients = ingredients
 	}
 
+	// 栄養情報の処理
+	nutritionJSON := c.PostForm("nutrition")
+	if nutritionJSON != "" {
+		var nutrition models.NutritionInfo
+		if err := json.Unmarshal([]byte(nutritionJSON), &nutrition); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "栄養情報の形式が不正です"})
+			return
+		}
+		recipe.Nutrition = nutrition
+	}
+
+	// 栄養情報の標準値を取得
+	var standard models.NutritionStandard
+	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
+		log.Printf("Failed to fetch nutrition standard: %v", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
+		return
+	}
+
+	// 栄養素の割合を計算
+	nutritionPercentage := map[string]float64{
+		"calories":      (float64(recipe.Nutrition.Calories) / standard.Calories) * 100,
+		"carbohydrates": (float64(recipe.Nutrition.Carbohydrates) / standard.Carbohydrates) * 100,
+		"fat":           (float64(recipe.Nutrition.Fat) / standard.Fat) * 100,
+		"protein":       (float64(recipe.Nutrition.Protein) / standard.Protein) * 100,
+		"salt":          (float64(recipe.Nutrition.Salt) / standard.Salt) * 100,
+	}
+
+	// Recipe structのNutritionPercentageフィールドに設定
+	recipe.NutritionPercentage = nutritionPercentage
+
 	// レシピを保存
 	if err := h.DB.Create(&recipe).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "レシピの保存に失敗しました"})
@@ -637,6 +668,26 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 		recipe.Nutrition = nutrition
 	}
 
+	// 栄養情報の標準値を取得
+	var standard models.NutritionStandard
+	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
+		log.Printf("Failed to fetch nutrition standard: %v", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
+		return
+	}
+
+	// 栄養素の割合を計算
+	nutritionPercentage := map[string]float64{
+		"calories":      (float64(recipe.Nutrition.Calories) / standard.Calories) * 100,
+		"carbohydrates": (float64(recipe.Nutrition.Carbohydrates) / standard.Carbohydrates) * 100,
+		"fat":           (float64(recipe.Nutrition.Fat) / standard.Fat) * 100,
+		"protein":       (float64(recipe.Nutrition.Protein) / standard.Protein) * 100,
+		"salt":          (float64(recipe.Nutrition.Salt) / standard.Salt) * 100,
+	}
+
+	// Recipe structのNutritionPercentageフィールドに設定
+	recipe.NutritionPercentage = nutritionPercentage
+
 	// トランザクション開始
 	tx := h.DB.Begin()
 	defer func() {
@@ -756,6 +807,25 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated recipe"})
 		return
 	}
+
+	// 栄養情報の標準値を取得（既存のstandard変数を使用）
+	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
+		log.Printf("Failed to fetch nutrition standard: %v", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
+		return
+	}
+
+	// 栄養素の割合を計算
+	updatedNutritionPercentage := map[string]float64{
+		"calories":      (float64(updatedRecipe.Nutrition.Calories) / standard.Calories) * 100,
+		"carbohydrates": (float64(updatedRecipe.Nutrition.Carbohydrates) / standard.Carbohydrates) * 100,
+		"fat":           (float64(updatedRecipe.Nutrition.Fat) / standard.Fat) * 100,
+		"protein":       (float64(updatedRecipe.Nutrition.Protein) / standard.Protein) * 100,
+		"salt":          (float64(updatedRecipe.Nutrition.Salt) / standard.Salt) * 100,
+	}
+
+	// 更新後のレシピにNutritionPercentageを設定
+	updatedRecipe.NutritionPercentage = updatedNutritionPercentage
 
 	// 更新後のレシピのisDraft値を確認
 	log.Printf("📝 Final recipe isDraft value: %v", updatedRecipe.IsDraft)
@@ -912,6 +982,7 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 
 	// nutritionデータの設定
 	if nutrition, ok := draftRecipe.RecipeData["nutrition"].(map[string]interface{}); ok {
+		log.Printf("👑Received nutrition data: %+v", nutrition)
 		recipe.Nutrition = models.NutritionInfo{
 			Calories:      nutrition["calories"].(float64),
 			Carbohydrates: nutrition["carbohydrates"].(float64),
@@ -919,6 +990,7 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 			Protein:       nutrition["protein"].(float64),
 			Salt:          nutrition["salt"].(float64),
 		}
+		log.Printf("👑Converted nutrition data: %+v", recipe.Nutrition)
 	}
 
 	// レシピIDが存在する場合は更新、存在しない場合は新規作成
@@ -1115,6 +1187,38 @@ func (h *AdminHandler) GetRecipe(c *gin.Context) {
 		return
 	}
 
+	// デバッグログ：レシピの栄養情報
+	log.Printf("Recipe nutrition: %+v", recipe.Nutrition)
+
+	// 栄養情報の標準値を取得
+	var standard models.NutritionStandard
+	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
+		log.Printf("Failed to fetch nutrition standard: %v", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
+		return
+	}
+
+	// デバッグログ：標準値
+	log.Printf("Nutrition standard: %+v", standard)
+
+	// 栄養素の割合を計算
+	nutritionPercentage := map[string]float64{
+		"calories":      (float64(recipe.Nutrition.Calories) / standard.Calories) * 100,
+		"carbohydrates": (float64(recipe.Nutrition.Carbohydrates) / standard.Carbohydrates) * 100,
+		"fat":           (float64(recipe.Nutrition.Fat) / standard.Fat) * 100,
+		"protein":       (float64(recipe.Nutrition.Protein) / standard.Protein) * 100,
+		"salt":          (float64(recipe.Nutrition.Salt) / standard.Salt) * 100,
+	}
+
+	// デバッグログ：計算された栄養素の割合
+	log.Printf("💩Calculated nutrition percentage: %+v", nutritionPercentage)
+
+	// Recipe structのNutritionPercentageフィールドに設定
+	recipe.NutritionPercentage = nutritionPercentage
+
+	// デバッグログ：最終的なレシピデータ
+	log.Printf("Final recipe data: %+v", recipe)
+
 	c.JSON(http.StatusOK, recipe)
 }
 
@@ -1122,49 +1226,6 @@ type TempIngredient struct {
 	IngredientID     int     `json:"ingredient_id"`
 	QuantityRequired float64 `json:"quantity_required"`
 	UnitID           int     `json:"unit_id"`
-}
-
-// CreateRecipe はレシピを作成する
-func (h *AdminHandler) CreateRecipe(c *gin.Context) {
-	var recipe models.Recipe
-	if err := c.ShouldBind(&recipe); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "無効なリクエストです"})
-		return
-	}
-
-	// メイン画像を保存
-	mainImage, _ := c.FormFile("image")
-	if mainImage != nil {
-		log.Printf("メイン画像の保存先ディレクトリ: recipes")
-		imageURL, err := utils.SaveImage(c, mainImage, "recipes", "")
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "メイン画像の保存に失敗しました"})
-			return
-		}
-		recipe.MainImage = imageURL
-	}
-
-	// 手順の画像を保存
-	for i := range recipe.Instructions {
-		imageFile, err := c.FormFile(fmt.Sprintf("instruction_image_%d", i))
-		if err == nil {
-			log.Printf("手順画像の保存先ディレクトリ: recipes/instructions")
-			imageURL, err := utils.SaveImage(c, imageFile, "recipes/instructions", "")
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "手順画像の保存に失敗しました"})
-				return
-			}
-			recipe.Instructions[i].ImageURL = imageURL
-		}
-	}
-
-	// レシピを保存
-	if err := h.DB.Create(&recipe).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "レシピの保存に失敗しました"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, recipe)
 }
 
 // UploadImage は画像をアップロードする
@@ -1265,4 +1326,39 @@ func (h *AdminHandler) TranslateIngredientName(c *gin.Context) {
 
 	// 翻訳結果を返す
 	c.JSON(http.StatusOK, gin.H{"englishName": result.Data.Translations[0].TranslatedText})
+}
+
+// ToggleRecipePublish レシピの公開/非公開状態を切り替える
+func (h *AdminHandler) ToggleRecipePublish(c *gin.Context) {
+	id := c.Param("id")
+
+	// UUIDのバリデーション
+	if _, err := uuid.Parse(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid recipe ID format"})
+		return
+	}
+
+	var recipe models.Recipe
+	if err := h.DB.Where("id = ?", id).First(&recipe).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Recipe not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipe"})
+		}
+		return
+	}
+
+	// 公開状態を切り替え
+	recipe.IsPublic = !recipe.IsPublic
+
+	// 更新を保存
+	if err := h.DB.Save(&recipe).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update recipe"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Recipe publish status updated successfully",
+		"recipe":  recipe,
+	})
 }

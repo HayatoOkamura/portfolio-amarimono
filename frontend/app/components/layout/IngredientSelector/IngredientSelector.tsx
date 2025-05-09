@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./IngredientSelector.module.scss";
 import useGenreStore from "@/app/stores/genreStore";
 import { useIngredients } from "@/app/hooks/ingredients";
-import IngredientCard from "../../ui/Cards/IngredientCard/IngredientCard";
+import IngredientCard from "../../ui/Cards/SearchIngredientCard/SearchIngredientCard";
 import CategoryCard from "../../ui/Cards/CategoryCard/CategoryCard";
 import Loading from "../../ui/Loading/Loading";
 import { Ingredient } from "@/app/types/index";

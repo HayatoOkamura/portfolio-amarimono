@@ -25,7 +25,7 @@ export const IngredientInput = ({
   onUpdateIngredients,
 }: IngredientInputProps) => {
   return (
-    <div className={styles.ingredientInput}>
+    <div className={styles.ingredient_input_block}>
       <ul className="mb-4">
         {availableIngredients.map((ingredient) => {
           const step = ingredient.unit?.step;

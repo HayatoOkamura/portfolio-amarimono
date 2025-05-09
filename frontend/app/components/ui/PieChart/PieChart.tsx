@@ -20,6 +20,7 @@ const getNutritionColor = (type: NutritionType): string => {
 
 const ResponsivePieChart = ({ value, type }: { value: number; type: NutritionType }) => {
   const [radius, setRadius] = useState(70);
+  const circumference = 2 * Math.PI * radius;
 
   useEffect(() => {
     const resizeHandler = () => {
@@ -33,28 +34,49 @@ const ResponsivePieChart = ({ value, type }: { value: number; type: NutritionTyp
     return () => window.removeEventListener("resize", resizeHandler);
   }, []);
 
-  // 100%を超える場合は0（完全な円）を表示
-  const strokeDashoffset = value > 100 
-    ? 0 
-    : `calc(440 - (440 * ${value}) / 100)`;
-  const strokeDasharray = 440;
+  // 100%を超える場合は100%として扱う
+  const normalizedValue = Math.min(value, 100);
+  const strokeDashoffset = circumference * (1 - normalizedValue / 100);
   const color = getNutritionColor(type);
 
+  // デバッグログ
+  console.log('PieChart Debug:', {
+    value,
+    type,
+    radius,
+    circumference,
+    normalizedValue,
+    strokeDashoffset,
+    color
+  });
+
   return (
-    <svg className={styles.svg} viewBox="0 0 150 150" style={{ width: "100%", height: "auto" }}>
-      <circle className={styles.base} cx="75" cy="75" r={radius}></circle>
-      <circle
-        className={styles.line}
-        cx="75"
-        cy="75"
-        r={radius}
-        style={{
-          strokeDashoffset,
-          strokeDasharray,
-          stroke: color,
-        }}
-      ></circle>
-    </svg>
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <svg className={styles.svg} viewBox="0 0 150 150" preserveAspectRatio="xMidYMid meet">
+        <circle 
+          className={styles.base} 
+          cx="75" 
+          cy="75" 
+          r={radius}
+          fill="none"
+          stroke="#e5e8ed"
+          strokeWidth="10"
+        />
+        <circle
+          className={styles.line}
+          cx="75"
+          cy="75"
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth="10"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          transform="rotate(-90 75 75)"
+        />
+      </svg>
+    </div>
   );
 };
 

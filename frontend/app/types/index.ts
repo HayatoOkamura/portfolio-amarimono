@@ -66,7 +66,13 @@ export interface Recipe {
   nutrition: Nutrition | null;
   faq: FAQ[];
   userId?: string;
-  nutritionPercentage?: Nutrition | null;
+  nutritionPercentage?: {
+    calories: number;
+    carbohydrates: number;
+    fat: number;
+    protein: number;
+    salt: number;
+  } | null;
   isPublic?: boolean;
   isDraft?: boolean;
 }

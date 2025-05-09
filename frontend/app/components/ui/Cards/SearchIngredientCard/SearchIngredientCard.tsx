@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import styles from "./IngredientCard.module.scss";
+import styles from "./SearchIngredientCard.module.scss";
 import { imageBaseUrl } from "@/app/utils/api";
 import { Unit } from "@/app/types/index";
 import Image from "next/image";
@@ -33,7 +33,18 @@ const IngredientCard: React.FC<IngredientCardProps> = ({
   const handleQuantityUpdate = (id: number, delta: number) => {
     const newQuantity = Math.max(0, currentQuantity + delta);
     if (newQuantity > 0 || currentQuantity > 0) {
-      updateQuantity({ ...ingredient, quantity: newQuantity, imageUrl: ingredient.imageUrl || null });
+      updateQuantity({ 
+        ...ingredient, 
+        quantity: newQuantity, 
+        imageUrl: ingredient.imageUrl || null,
+        nutrition: currentIngredient?.nutrition || {
+          calories: 0,
+          carbohydrates: 0,
+          fat: 0,
+          protein: 0,
+          salt: 0
+        }
+      });
     }
   };
 

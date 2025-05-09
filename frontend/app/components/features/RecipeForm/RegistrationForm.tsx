@@ -12,6 +12,10 @@ import CostEstimateSlider from "@/app/components/ui/RegistarSlider/CostEstimate/
 import styles from "./RegistrationForm.module.scss";
 import { ResponsiveWrapper } from "../../common/ResponsiveWrapper";
 import { calculateNutrition } from "@/app/utils/nutritionCalculator";
+import { IngredientSelectorModal } from './components/IngredientSelectorModal';
+import IngredientCard from '@/app/components/ui/Cards/SearchIngredientCard/SearchIngredientCard';
+import Image from 'next/image';
+import { imageBaseUrl } from '@/app/utils/api';
 
 export const RegistrationForm = ({
   isAdmin = false,
@@ -31,6 +35,14 @@ export const RegistrationForm = ({
   const { recipeGenres, fetchRecipeGenres } = useGenreStore();
 
   const [isSp, setIsSp] = useState(false);
+  const [isIngredientModalOpen, setIsIngredientModalOpen] = useState(false);
+
+  // デバッグ用のuseEffect
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Form Data Updated:', formData);
+    }
+  }, [formData]);
 
   useEffect(() => {
     fetchRecipeGenres();
@@ -75,19 +87,111 @@ export const RegistrationForm = ({
 
   const ingredientsBlock = (
     <div className={styles.ingredients_block}>
-      <h3 className={styles.ingredients_block__title}>材料</h3>
-      {ingredientsData && (
-        <IngredientInput
-          ingredients={formData.ingredients}
-          availableIngredients={ingredientsData}
-          onUpdateIngredients={(ingredients) => updateFormData({
-            ingredients: ingredients.map(ing => ({
-              ...ing,
-              name: ingredientsData?.find(i => i.id === ing.id)?.name || ''
-            }))
-          })}
-        />
-      )}
+      <div className={styles.ingredients_block__title}>材料</div>
+      <div className={styles.ingredients_block__list}>
+        {ingredientsData && (
+          <>
+            <button
+              type="button"
+              onClick={() => setIsIngredientModalOpen(true)}
+              className={styles.ingredients_block__button}
+            >
+              材料を選択
+            </button>
+            <IngredientSelectorModal
+              isOpen={isIngredientModalOpen}
+              onClose={() => setIsIngredientModalOpen(false)}
+              ingredients={ingredientsData}
+              selectedIngredients={formData.ingredients.map(ing => ({
+                id: ing.id,
+                amount: ing.quantity
+              }))}
+              onSelect={(ingredients) =>
+                updateFormData({
+                  ingredients: ingredients.map((ing) => ({
+                    id: ing.id,
+                    quantity: ing.amount,
+                    unitId: ingredientsData.find((i) => i.id === ing.id)?.unit.id || 0,
+                    name: ingredientsData.find((i) => i.id === ing.id)?.name || '',
+                  })),
+                })
+              }
+            />
+            <div className={styles.ingredients_block__selected}>
+              {formData.ingredients.map((ingredient) => {
+                const ingredientData = ingredientsData.find(
+                  (i) => i.id === ingredient.id
+                );
+                if (!ingredientData) return null;
+
+                const handleQuantityChange = (delta: number) => {
+                  const newQuantity = Math.max(0, ingredient.quantity + delta);
+                  if (newQuantity === 0) {
+                    // 数量が0になったら具材を削除
+                    const updatedIngredients = formData.ingredients.filter(
+                      (ing) => ing.id !== ingredient.id
+                    );
+                    updateFormData({ ingredients: updatedIngredients });
+                  } else {
+                    // 数量を更新
+                    const updatedIngredients = formData.ingredients.map((ing) =>
+                      ing.id === ingredient.id
+                        ? { ...ing, quantity: newQuantity }
+                        : ing
+                    );
+                    updateFormData({ ingredients: updatedIngredients });
+                  }
+                };
+
+                return (
+                  <div key={ingredient.id} className={styles.select_ingredient_block}>
+                    <div className={styles.select_ingredient_block__image}>
+                      <Image
+                        src={
+                          ingredientData.imageUrl
+                            ? `${imageBaseUrl}/${ingredientData.imageUrl}`
+                            : "/pic_recipe_default.webp"
+                        }
+                        alt={ingredientData.name}
+                        width={80}
+                        height={80}
+                      />
+                    </div>
+                    <div className={styles.select_ingredient_block__contents}>
+                      <div className={styles.select_ingredient_block__info}>
+                        <p className={styles.select_ingredient_block__genre}>
+                          {ingredientData.genre.name}
+                        </p>
+                        <p className={styles.select_ingredient_block__name}>
+                          {ingredientData.name}
+                        </p>
+                      </div>
+                      <div className={styles.select_ingredient_block__controls}>
+                        <button
+                          onClick={() => handleQuantityChange(ingredientData.unit.step)}
+                          className={`${styles.select_ingredient_block__button} ${styles['select_ingredient_block__button--plus']}`}
+                          aria-label={`${ingredientData.name}を増やす`}
+                        />
+                        <span className={styles.select_ingredient_block__quantity}>
+                          {Number.isInteger(ingredient.quantity)
+                            ? ingredient.quantity
+                            : Number(ingredient.quantity).toFixed(1)}
+                          {ingredientData.unit.name}
+                        </span>
+                        <button
+                          onClick={() => handleQuantityChange(-ingredientData.unit.step)}
+                          className={`${styles.select_ingredient_block__button} ${styles['select_ingredient_block__button--minus']}`}
+                          aria-label={`${ingredientData.name}を減らす`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 
@@ -169,14 +273,20 @@ export const RegistrationForm = ({
         </div>
         <div className={styles.contents_block}>
           <div className={styles.detail_block}>
-            <div className={styles.detail_block__item}>
-              <p className={styles.detail_block__label}>レシピ名</p>
+            <div
+              className={`${styles.detail_block__item} ${styles["detail_block__item--head"]}`}
+            >
+              <p
+                className={`${styles.detail_block__label} ${styles["detail_block__label--head"]}`}
+              >
+                レシピ名
+              </p>
               <input
                 type="text"
                 placeholder="野菜たっぷり！具だくさんカレーライス"
                 value={formData.name}
                 onChange={(e) => updateFormData({ name: e.target.value })}
-                className={styles.detail_block__input}
+                className={`${styles.detail_block__input} ${styles["detail_block__input--head"]}`}
               />
             </div>
             <div className={styles.detail_block__item}>
@@ -253,49 +363,14 @@ export const RegistrationForm = ({
                 </div>
               </div>
             </div>
-            <div className={styles.detail_block__item}>
-              <h3>栄養素</h3>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!formData.ingredients || formData.ingredients.length === 0) {
-                    alert("具材を選択してください");
-                    return;
-                  }
-
-                  const ingredientsWithNutrition = formData.ingredients.map(ing => {
-                    const ingredient = ingredientsData?.find(i => i.id === ing.id);
-                    return {
-                      id: ing.id,
-                      name: ingredient?.name || '',
-                      quantity: ing.quantity,
-                      unit: ingredient?.unit || { id: 0, name: 'g', description: '', step: 1 },
-                      nutrition: ingredient?.nutrition || {
-                        calories: 0,
-                        protein: 0,
-                        fat: 0,
-                        carbohydrates: 0,
-                        salt: 0
-                      }
-                    };
-                  });
-
-                  const nutrition = calculateNutrition(ingredientsWithNutrition);
-                  updateFormData({
-                    nutrition: {
-                      ...formData.nutrition,
-                      ...nutrition,
-                    },
-                  });
-                }}
-                className={styles.calculateButton}
-              >
-                具材から栄養素を計算
-              </button>
-              <table className="w-full border-collapse border border-gray-300">
+            <div
+              className={`${styles.detail_block__item} ${styles["detail_block__item--nutrition"]}`}
+            >
+              <p className={styles.detail_block__label}>栄養素</p>
+              <table className={styles.detail_block__table}>
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="border p-2">栄養素</th>
+                    <th className="border p-2"></th>
                     <th className="border p-2">値 (g, mg, kcal)</th>
                   </tr>
                 </thead>
@@ -317,11 +392,11 @@ export const RegistrationForm = ({
                           onChange={(e) => {
                             const value = e.target.value;
                             // 数値と小数点のみを許可
-                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                            if (value === "" || /^\d*\.?\d*$/.test(value)) {
                               updateFormData({
                                 nutrition: {
                                   ...formData.nutrition,
-                                  [key]: value === '' ? 0 : Number(value),
+                                  [key]: value === "" ? 0 : Number(value),
                                 },
                               });
                             }
@@ -333,11 +408,69 @@ export const RegistrationForm = ({
                   ))}
                 </tbody>
               </table>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (
+                    !formData.ingredients ||
+                    formData.ingredients.length === 0
+                  ) {
+                    alert("具材を選択してください");
+                    return;
+                  }
+
+                  const ingredientsWithNutrition = formData.ingredients.map(
+                    (ing) => {
+                      const ingredient = ingredientsData?.find(
+                        (i) => i.id === ing.id
+                      );
+                      console.log('Found ingredient:', ingredient);
+                      return {
+                        id: ing.id,
+                        name: ingredient?.name || "",
+                        quantity: ing.quantity,
+                        unit: ingredient?.unit || {
+                          id: 0,
+                          name: "g",
+                          description: "",
+                          step: 1,
+                        },
+                        nutrition: ingredient?.nutrition || {
+                          calories: 0,
+                          protein: 0,
+                          fat: 0,
+                          carbohydrates: 0,
+                          salt: 0,
+                        },
+                      };
+                    }
+                  );
+                  console.log('Ingredients with nutrition:', ingredientsWithNutrition);
+
+                  const nutrition = calculateNutrition(
+                    ingredientsWithNutrition
+                  );
+                  console.log('Calculated Nutrition:', nutrition);
+                  console.log('Current Form Data:', formData);
+                  updateFormData({
+                    nutrition: {
+                      ...formData.nutrition,
+                      ...nutrition,
+                    },
+                  });
+                  console.log('Updated Form Data:', formData);
+                }}
+                className={styles.detail_block__calculate}
+              >
+                具材から栄養素を計算
+              </button>
             </div>
-            <div className={styles.detail_block__item}>
-              <p>よくある質問</p>
+
+            <div className={`${styles.detail_block__item} ${styles["detail_block__item--faq"]}`}>
+              <p className={styles.detail_block__label}>よくある質問</p>
               {(formData.faq || []).map((faq, index) => (
-                <div key={index} className={styles.faq_item}>
+                <div key={index} className={styles.detail_block__faq}>
                   <input
                     type="text"
                     value={faq.question}
@@ -345,7 +478,7 @@ export const RegistrationForm = ({
                       handleFaqChange(index, "question", e.target.value)
                     }
                     placeholder="質問を入力"
-                    className={styles.faq_input}
+                    className={styles.detail_block__input}
                   />
                   <textarea
                     value={faq.answer}
@@ -353,7 +486,7 @@ export const RegistrationForm = ({
                       handleFaqChange(index, "answer", e.target.value)
                     }
                     placeholder="回答を入力"
-                    className={styles.faq_textarea}
+                    className={`${styles.detail_block__input} ${styles["detail_block__input--summary"]}`}
                   />
                   <button
                     type="button"

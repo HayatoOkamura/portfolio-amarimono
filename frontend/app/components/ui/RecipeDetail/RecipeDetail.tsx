@@ -7,6 +7,7 @@ import { IoMdTime } from "react-icons/io";
 import { RiMoneyCnyCircleLine } from "react-icons/ri";
 import { FaHeart } from "react-icons/fa";
 import { MdOutlineRateReview } from "react-icons/md";
+import { memo } from "react";
 
 import StarRating from "@/app/components/ui/StarRating/StarRating";
 import { calculateAverageRating } from "@/app/utils/calculateAverageRating";
@@ -35,7 +36,7 @@ interface RecipeDetailProps {
   setShowLoginModal: (show: boolean) => void;
 }
 
-const RecipeDetail = ({
+const RecipeDetail = memo(({
   recipe,
   isAdmin = false,
   onEdit,
@@ -58,6 +59,12 @@ const RecipeDetail = ({
   setShowLoginModal,
 }: RecipeDetailProps) => {
   const averageRating = calculateAverageRating(recipe.reviews || []);
+
+  // デバッグログを追加
+  console.log('Recipe Detail - Full Recipe:', recipe);
+  console.log('Recipe Detail - Nutrition:', recipe.nutrition);
+  console.log('Recipe Detail - Nutrition Percentage:', recipe.nutritionPercentage);
+  console.log('Recipe Detail - Raw Response:', JSON.stringify(recipe, null, 2));
 
   return (
     <div
@@ -208,6 +215,10 @@ const RecipeDetail = ({
             )}
             <p className={styles.info_block__summary}>{recipe.summary}</p>
             <ul className={styles.nutrition_block}>
+              {(() => {
+                console.log('Recipe Detail - Nutrition Percentage:', recipe.nutritionPercentage);
+                return null;
+              })()}
               <li className={styles.nutrition_block__item}>
                 <div className={styles.nutrition_block__texts}>
                   <p className={styles.nutrition_block__title}>カロリー</p>
@@ -396,6 +407,6 @@ const RecipeDetail = ({
       )}
     </div>
   );
-};
+});
 
 export default RecipeDetail;

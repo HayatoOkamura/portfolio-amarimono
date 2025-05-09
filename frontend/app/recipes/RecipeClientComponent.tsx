@@ -544,126 +544,114 @@ const RecipeClientComponent = () => {
                     </div>
                     {/* 栄養情報 */}
                     {persistedSelectedRecipe.nutrition && (
-                      <ul className={styles.nutrition_block}>
-                        <li className={styles.nutrition_block__item}>
-                          <p className={styles.nutrition_block__title}>
-                            カロリー
-                          </p>
-                          <div className={styles.nutrition_block__contents}>
-                            <p className={styles.nutrition_block__num}>
-                              {persistedSelectedRecipe.nutrition.calories}
-                              <span>kcal</span>
+                      <>
+                        {(() => {
+                          console.log('Nutrition Percentage:', persistedSelectedRecipe.nutritionPercentage);
+                          return null;
+                        })()}
+                        <ul className={styles.nutrition_block}>
+                          <li className={styles.nutrition_block__item}>
+                            <p className={styles.nutrition_block__title}>
+                              カロリー
                             </p>
-                            <ResponsivePieChart
-                              value={
-                                persistedSelectedRecipe.nutritionPercentage
-                                  ? persistedSelectedRecipe.nutritionPercentage
-                                      .calories
-                                  : 0
-                              }
-                              type="calories"
-                            />
-                          </div>
-                        </li>
-                        <li className={styles.nutrition_block__item}>
-                          <p className={styles.nutrition_block__title}>
-                            炭水化物
-                          </p>
-                          <div className={styles.nutrition_block__contents}>
-                            <p className={styles.nutrition_block__num}>
-                              {persistedSelectedRecipe.nutrition.carbohydrates}
-                              <span>g</span>
+                            <div className={styles.nutrition_block__contents}>
+                              <p className={styles.nutrition_block__num}>
+                                {persistedSelectedRecipe.nutrition.calories}
+                                <span>kcal</span>
+                              </p>
+                              <ResponsivePieChart
+                                value={
+                                  persistedSelectedRecipe.nutritionPercentage
+                                    ? persistedSelectedRecipe.nutritionPercentage
+                                        .calories
+                                    : 0
+                                }
+                                type="calories"
+                              />
+                            </div>
+                          </li>
+                          <li className={styles.nutrition_block__item}>
+                            <p className={styles.nutrition_block__title}>
+                              炭水化物
                             </p>
-                            <ResponsivePieChart
-                              value={
-                                persistedSelectedRecipe.nutritionPercentage
-                                  ? persistedSelectedRecipe.nutritionPercentage
-                                      .carbohydrates
-                                  : 0
-                              }
-                              type="carbohydrates"
-                            />
-                          </div>
-                        </li>
-                        <li className={styles.nutrition_block__item}>
-                          <p className={styles.nutrition_block__title}>脂質</p>
-                          <div className={styles.nutrition_block__contents}>
-                            <p className={styles.nutrition_block__num}>
-                              {persistedSelectedRecipe.nutrition.fat}
-                              <span>g</span>
+                            <div className={styles.nutrition_block__contents}>
+                              <p className={styles.nutrition_block__num}>
+                                {persistedSelectedRecipe.nutrition.carbohydrates}
+                                <span>g</span>
+                              </p>
+                              <ResponsivePieChart
+                                value={
+                                  persistedSelectedRecipe.nutritionPercentage
+                                    ? persistedSelectedRecipe.nutritionPercentage
+                                        .carbohydrates
+                                    : 0
+                                }
+                                type="carbohydrates"
+                              />
+                            </div>
+                          </li>
+                          <li className={styles.nutrition_block__item}>
+                            <p className={styles.nutrition_block__title}>脂質</p>
+                            <div className={styles.nutrition_block__contents}>
+                              <p className={styles.nutrition_block__num}>
+                                {persistedSelectedRecipe.nutrition.fat}
+                                <span>g</span>
+                              </p>
+                              <ResponsivePieChart
+                                value={
+                                  persistedSelectedRecipe.nutritionPercentage
+                                    ? persistedSelectedRecipe.nutritionPercentage
+                                        .fat
+                                    : 0
+                                }
+                                type="fat"
+                              />
+                            </div>
+                          </li>
+                          <li className={styles.nutrition_block__item}>
+                            <p className={styles.nutrition_block__title}>
+                              タンパク質
                             </p>
-                            <ResponsivePieChart
-                              value={
-                                persistedSelectedRecipe.nutritionPercentage
-                                  ? persistedSelectedRecipe.nutritionPercentage
-                                      .fat
-                                  : 0
-                              }
-                              type="fat"
-                            />
-                          </div>
-                        </li>
-                        <li className={styles.nutrition_block__item}>
-                          <p className={styles.nutrition_block__title}>
-                            タンパク質
-                          </p>
-                          <div className={styles.nutrition_block__contents}>
-                            <p className={styles.nutrition_block__num}>
-                              {persistedSelectedRecipe.nutrition.protein}
-                              <span>g</span>
-                            </p>
-                            <ResponsivePieChart
-                              value={
-                                persistedSelectedRecipe.nutritionPercentage
-                                  ? persistedSelectedRecipe.nutritionPercentage
-                                      .protein
-                                  : 0
-                              }
-                              type="protein"
-                            />
-                          </div>
-                        </li>
-                        <li className={styles.nutrition_block__item}>
-                          <p className={styles.nutrition_block__title}>塩分</p>
-                          <div className={styles.nutrition_block__contents}>
-                            <p className={styles.nutrition_block__num}>
-                              {persistedSelectedRecipe.nutrition.salt}
-                              <span>g</span>
-                            </p>
-                            <ResponsivePieChart
-                              value={
-                                persistedSelectedRecipe.nutritionPercentage
-                                  ? persistedSelectedRecipe.nutritionPercentage
-                                      .salt
-                                  : 0
-                              }
-                              type="salt"
-                            />
-                          </div>
-                        </li>
-                        <li className={styles.nutrition_block__item}>
-                          <p className={styles.nutrition_block__title}>糖分</p>
-                          <div className={styles.nutrition_block__contents}>
-                            <p className={styles.nutrition_block__num}>
-                              {persistedSelectedRecipe.nutrition.sugar}
-                              <span>g</span>
-                            </p>
-                            <ResponsivePieChart
-                              value={
-                                persistedSelectedRecipe.nutritionPercentage
-                                  ? persistedSelectedRecipe.nutritionPercentage
-                                      .sugar
-                                  : 0
-                              }
-                              type="sugar"
-                            />
-                          </div>
-                        </li>
-                      </ul>
+                            <div className={styles.nutrition_block__contents}>
+                              <p className={styles.nutrition_block__num}>
+                                {persistedSelectedRecipe.nutrition.protein}
+                                <span>g</span>
+                              </p>
+                              <ResponsivePieChart
+                                value={
+                                  persistedSelectedRecipe.nutritionPercentage
+                                    ? persistedSelectedRecipe.nutritionPercentage
+                                        .protein
+                                    : 0
+                                }
+                                type="protein"
+                              />
+                            </div>
+                          </li>
+                          <li className={styles.nutrition_block__item}>
+                            <p className={styles.nutrition_block__title}>塩分</p>
+                            <div className={styles.nutrition_block__contents}>
+                              <p className={styles.nutrition_block__num}>
+                                {persistedSelectedRecipe.nutrition.salt}
+                                <span>g</span>
+                              </p>
+                              <ResponsivePieChart
+                                value={
+                                  persistedSelectedRecipe.nutritionPercentage
+                                    ? persistedSelectedRecipe.nutritionPercentage
+                                        .salt
+                                    : 0
+                                }
+                                type="salt"
+                              />
+                            </div>
+                          </li>
+                        </ul>
+                      </>
                     )}
                     <div className={styles.nutrition_block__disclaimer}>
                       <p>※ 栄養成分値は参考値です。</p>
-                      <p>※ データソース: USDA Food Database</p>
+                      <p>※ 各具材の栄養成分値を基に計算しています。</p>
                       <p>※ 実際の調理方法や具材の量によって栄養成分値は変動する可能性があります。</p>
                     </div>
                     {/* 材料リスト */}

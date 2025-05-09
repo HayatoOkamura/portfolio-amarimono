@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import styles from "./CostEstimate.module.scss";
 
 type CostEstimateSliderProps = {
   costEstimate: number;
@@ -25,21 +26,21 @@ const CostEstimateSlider: React.FC<CostEstimateSliderProps> = ({
   ];
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className={styles.cost_estimate_block}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="border p-2 rounded w-full bg-gray-200"
+        className={styles.cost_estimate_block__button}
       >
         {costEstimate ? formatCost(costEstimate) : "予算を選択"}
       </button>
 
       {isOpen && (
-        <div className="absolute mt-2 w-full bg-white border rounded shadow-md max-h-60 overflow-y-auto z-10">
+        <div className={styles.cost_estimate_block__list}>
           {costOptions.map((cost) => (
             <div
               key={cost}
               onClick={() => handleSelectCost(cost)}
-              className="p-2 hover:bg-gray-100 cursor-pointer"
+              className={styles.cost_estimate_block__item}
             >
               {formatCost(cost)}
             </div>

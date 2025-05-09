@@ -1,30 +1,23 @@
 /* eslint-disable */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { backendUrl } from "@/app/utils/api";
 import { Recipe } from "@/app/types/index";
-import { fetchRecipeByIdService } from "@/app/hooks/recipes";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { useDeleteRecipe } from "@/app/hooks/recipes";
+import { useDeleteRecipe, useRecipe } from "@/app/hooks/recipes";
 import RecipeDetail from "@/app/components/ui/RecipeDetail/RecipeDetail";
+import { useQueryClient } from "@tanstack/react-query";
 
 const AdminRecipeDetail = () => {
   const router = useRouter();
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const params = useParams();
+  const queryClient = useQueryClient();
   const deleteRecipeMutation = useDeleteRecipe();
+  const id = params.id as string;
 
-  useEffect(() => {
-    const id = window.location.pathname.split("/").pop();
-    if (id && id !== "recipes") {
-      fetchRecipeByIdService(id)
-        .then((recipeData) => {
-          setRecipe(recipeData);
-        })
-        .catch((error) => console.error("Error fetching recipe:", error));
-    }
-  }, []);
+  const { data: recipe, isLoading, error } = useRecipe(id);
 
   const handleDelete = async () => {
     if (!recipe) return;
@@ -43,23 +36,42 @@ const AdminRecipeDetail = () => {
   const handleTogglePublish = async () => {
     if (!recipe) return;
     try {
-      const response = await fetch(`${backendUrl}/api/recipes/${recipe.id}/toggle-publish`, {
+      const response = await fetch(`${backendUrl}/admin/recipes/${recipe.id}/toggle-publish`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ isPublic: !recipe.isPublic }),
       });
       if (response.ok) {
-        setRecipe({ ...recipe, isPublic: !recipe.isPublic });
+        const data = await response.json();
+        // TanStack Queryのキャッシュを更新
+        queryClient.setQueryData(['recipes', 'detail', id], (oldData: Recipe | undefined) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            isPublic: !oldData.isPublic
+          };
+        });
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to toggle publish status");
       }
     } catch (error) {
       console.error("Error toggling publish status:", error);
+      alert("Failed to toggle publish status");
     }
   };
 
-  if (!recipe) {
+  if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading recipe: {error.message}</div>;
+  }
+
+  if (!recipe) {
+    return <div>Recipe not found</div>;
   }
 
   return (
