@@ -8,12 +8,15 @@ import IngredientCard from "../../ui/Cards/SearchIngredientCard/SearchIngredient
 import CategoryCard from "../../ui/Cards/CategoryCard/CategoryCard";
 import Loading from "../../ui/Loading/Loading";
 import { Ingredient } from "@/app/types/index";
+import { useRouter } from "next/navigation";
 
 interface IngredientSelectorProps {
   initialIngredients: Ingredient[];
+  onSearch: () => Promise<void>;
 }
 
-const IngredientSelector = ({ initialIngredients }: IngredientSelectorProps) => {
+const IngredientSelector = ({ initialIngredients, onSearch }: IngredientSelectorProps) => {
+  const router = useRouter();
   const { data: ingredients = initialIngredients, isLoading: isIngredientsLoading } = useIngredients({
     initialData: initialIngredients,
     staleTime: process.env.NODE_ENV === 'development' ? 10000 : 86400000, // 開発環境:10秒、本番環境:24時間
@@ -62,7 +65,6 @@ const IngredientSelector = ({ initialIngredients }: IngredientSelectorProps) => 
       ? ingredients
       : ingredients.filter((ing) => ing.genre.name === selectedGenre);
 
-  // 具材とカテゴリの両方が読み込まれるまでLoadingを表示
   if (isIngredientsLoading || isGenresLoading) {
     return (
       <div className={styles.container_block}>
@@ -110,6 +112,15 @@ const IngredientSelector = ({ initialIngredients }: IngredientSelectorProps) => 
           </div>
         </div>
       </section>
+      {/* 検索ボタン */}
+      <div className={styles.search_button_container}>
+        <button 
+          className={styles.search_button}
+          onClick={onSearch}
+        >
+          レシピを検索
+        </button>
+      </div>
     </div>
   );
 };

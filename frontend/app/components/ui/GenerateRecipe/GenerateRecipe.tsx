@@ -5,19 +5,21 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import styles from "./GenerateRecipe.module.scss";
 import { imageBaseUrl } from "@/app/utils/api";
-import { useRouter } from "next/navigation";
 import useRecipeStore from "@/app/stores/recipeStore";
 import useIngredientStore from "@/app/stores/ingredientStore";
 import { Ingredient } from "@/app/types/index";
 import { useIngredients } from "@/app/hooks/ingredients";
+import RecipeLoading from "../Loading/RecipeLoading";
 
-const GenerateRecipe = () => {
-  const [loading, setLoading] = useState(false);
+interface GenerateRecipeProps {
+  onSearch: () => Promise<void>;
+}
+
+const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
   const [error, setError] = useState("");
   const { setGeneratedRecipes, setSearchType, setSearchExecuted } = useRecipeStore();
   const { ingredients, setIngredients } = useIngredientStore();
   const { data: fetchedIngredients } = useIngredients();
-  const router = useRouter();
 
   useEffect(() => {
     if (fetchedIngredients) {
@@ -26,8 +28,6 @@ const GenerateRecipe = () => {
   }, [fetchedIngredients, setIngredients]);
 
   const handleRecipe = async () => {
-    setLoading(true);
-
     try {
       const filteredIngredients = ingredients
         .filter((ingredient: Ingredient) => ingredient.quantity > 0)
@@ -41,12 +41,10 @@ const GenerateRecipe = () => {
       setSearchType("ingredients");
       setSearchExecuted(true);
 
-      router.push("/recipes");
+      await onSearch();
     } catch (err: any) {
       setGeneratedRecipes([]);
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -94,7 +92,7 @@ const GenerateRecipe = () => {
         </div>
         <div className={styles.container_block__btn}>
           <button onClick={handleRecipe}>
-            {loading ? "レシピを検索中..." : "レシピを検索"}
+            レシピを検索
           </button>
         </div>
       </div>

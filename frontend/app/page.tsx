@@ -3,18 +3,20 @@ import IngredientSelector from "./components/layout/IngredientSelector/Ingredien
 import GenerateRecipe from "./components/ui/GenerateRecipe/GenerateRecipe";
 import styles from "./styles/HomePage.module.scss";
 import { fetchIngredientsServer } from "./hooks/ingredients";
+import HomePageClient from "./HomePageClient";
 
 // 環境変数からrevalidateの値を取得（デフォルトは10秒）
 const REVALIDATE_TIME = process.env.REVALIDATE_TIME ? parseInt(process.env.REVALIDATE_TIME, 10) : 10;
-export const revalidate: number = REVALIDATE_TIME;
+
+// サーバーコンポーネントとしてrevalidateを設定
+export const revalidate = REVALIDATE_TIME;
 
 export default async function HomePage() {
   const initialIngredients = await fetchIngredientsServer();
 
   return (
     <div className={styles.wrapper}>
-      <IngredientSelector initialIngredients={initialIngredients} />
-      <GenerateRecipe />
+      <HomePageClient initialIngredients={initialIngredients} />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import React from "react";
 import styles from "./SideHeader.module.scss";
 import Image from "next/image";
-import Link from "next/link";
+import { CustomLink } from '@/app/components/ui/Link/CustomLink';
 import { usePathname } from "next/navigation";
 import { FaUserCircle } from "react-icons/fa";
 import { ImSpoonKnife } from "react-icons/im";
@@ -27,7 +27,7 @@ const SideHeader = () => {
     <header className={styles.header_block}>
       <div className={styles.header_block__inner}>
         <div className={styles.header_block__logo}>
-          <Link href="/">
+          <CustomLink href="/">
             <Image
               src="/images/common/logo_main.svg"
               alt="あまりもの ロゴ"
@@ -35,7 +35,7 @@ const SideHeader = () => {
               height={100}
               priority
             />
-          </Link>
+          </CustomLink>
         </div>
         <div className={styles.header_block__contents}>
           <div
@@ -43,50 +43,50 @@ const SideHeader = () => {
               styles["header_block__icon--middle"]
             } ${getActiveClass(["/"])}`}
           >
-            <Link href="/">
+            <CustomLink href="/">
               <ImSpoonKnife />
               <p className={styles.header_block__text}>具材から探す</p>
-            </Link>
+            </CustomLink>
           </div>
           <div
             className={`${styles.header_block__icon} ${getActiveClass([
               "/user",
             ])}`}
           >
-            <Link href="/user/">
+            <CustomLink href="/user/">
               <FaUserCircle />
               <p className={styles.header_block__text}>マイページ</p>
-            </Link>
+            </CustomLink>
           </div>
           <div
             className={`${styles.header_block__icon} ${getActiveClass([
               "/recipes/new",
             ])}`}
           >
-            <Link href="/recipes/new/">
+            <CustomLink href="/recipes/new/">
               <BsPencilSquare />
               <p className={styles.header_block__text}>レシピ登録</p>
-            </Link>
+            </CustomLink>
           </div>
           <div
             className={`${styles.header_block__icon} ${getActiveClass([
               "/recipes/my",
             ])}`}
           >
-            <Link href="/recipes/my/">
+            <CustomLink href="/recipes/my/">
               <FaListUl />
               <p className={styles.header_block__text}>レシピ一覧</p>
-            </Link>
+            </CustomLink>
           </div>
           <div
             className={`${styles.header_block__icon} ${getActiveClass([
               "/favorite",
             ])}`}
           >
-            <Link href="/favorite/">
+            <CustomLink href="/favorite/">
               <FaHeart />
               <p className={styles.header_block__text}>Favorite</p>
-            </Link>
+            </CustomLink>
           </div>
           <ClientAuthMenu />
         </div>

@@ -7,6 +7,7 @@ import { fetchRecipeByIdService, handleLikeService, checkLikeStatusService } fro
 import { useUserStore } from "@/app/stores/userStore";
 import { useRouter } from "next/navigation";
 import RecipeDetail from "@/app/components/ui/RecipeDetail/RecipeDetail";
+import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
 
 const RecipeDetailPage = () => {
   const router = useRouter();
@@ -90,28 +91,28 @@ const RecipeDetailPage = () => {
     }
   };
 
-  if (!recipe) {
-    return <p>Loading...</p>;
-  }
-
   return (
-    <RecipeDetail
-      recipe={recipe}
-      isLiked={isLiked}
-      showLoginModal={showLoginModal}
-      showReviewModal={showReviewModal}
-      reviewValue={reviewValue}
-      reviewText={reviewText}
-      onLike={handleLike}
-      onReview={handleReview}
-      onReviewSubmit={handleReviewSubmit}
-      onReviewTextChange={setReviewText}
-      onReviewValueChange={setReviewValue}
-      onCloseReviewModal={() => setShowReviewModal(false)}
-      onCloseLoginModal={() => setShowLoginModal(false)}
-      onLogin={() => router.push("/login/")}
-      setShowLoginModal={setShowLoginModal}
-    />
+    <PageLoading isLoading={!recipe}>
+      {recipe && (
+        <RecipeDetail
+          recipe={recipe}
+          isLiked={isLiked}
+          showLoginModal={showLoginModal}
+          showReviewModal={showReviewModal}
+          reviewValue={reviewValue}
+          reviewText={reviewText}
+          onLike={handleLike}
+          onReview={handleReview}
+          onReviewSubmit={handleReviewSubmit}
+          onReviewTextChange={setReviewText}
+          onReviewValueChange={setReviewValue}
+          onCloseReviewModal={() => setShowReviewModal(false)}
+          onCloseLoginModal={() => setShowLoginModal(false)}
+          onLogin={() => router.push("/login/")}
+          setShowLoginModal={setShowLoginModal}
+        />
+      )}
+    </PageLoading>
   );
 };
 

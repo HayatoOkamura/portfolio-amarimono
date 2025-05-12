@@ -16,7 +16,6 @@ export interface RecipeFormData {
     carbohydrates: number;
     fat: number;
     protein: number;
-    sugar: number;
     salt: number;
   };
   ingredients: Array<{

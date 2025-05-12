@@ -11,7 +11,6 @@ export default function AuthCallback() {
   const { setUser, createUserAfterVerification } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(true);
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -20,6 +19,7 @@ export default function AuthCallback() {
 
         // 1. セッションの取得
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log("Session check:", { session, error: sessionError });
 
         if (sessionError) {
           throw new Error(`セッションの取得に失敗しました: ${sessionError.message}`);
@@ -31,6 +31,7 @@ export default function AuthCallback() {
 
         // 2. ユーザー情報の取得
         const { data: { user }, error: userError } = await supabase.auth.getUser();
+        console.log("User check:", { user, error: userError });
 
         if (userError) {
           throw new Error(`ユーザー情報の取得に失敗しました: ${userError.message}`);
@@ -45,22 +46,31 @@ export default function AuthCallback() {
           throw new Error("メール認証が完了していません");
         }
 
-        // 4. バックエンドにユーザーを作成し、プロフィール設定ページにリダイレクト
-        await createUserAfterVerification(user);
+        // 4. バックエンドにユーザーを作成
+        try {
+          const userCreationResult = await createUserAfterVerification(user);
+          console.log("User creation result:", userCreationResult);
+          
+          if (!userCreationResult) {
+            throw new Error("ユーザー情報の作成に失敗しました");
+          }
 
-        // 5. プロフィール設定ページにリダイレクト
-        router.push("/user/edit?setup=true");
+          // 成功した場合は即座にプロフィール設定ページにリダイレクト
+          router.push("/user/edit?setup=true");
+        } catch (creationError) {
+          console.error("ユーザー作成エラー:", creationError);
+          throw new Error(`ユーザー作成に失敗しました: ${creationError instanceof Error ? creationError.message : "不明なエラー"}`);
+        }
 
       } catch (err) {
         console.error("認証エラー:", err);
         const errorMessage = err instanceof Error ? err.message : "認証に失敗しました";
         setError(errorMessage);
-        setDebugInfo(JSON.stringify(err, null, 2));
         
         // エラーが発生した場合はログインページにリダイレクト
         setTimeout(() => {
           router.push("/login");
-        }, 3000);
+        }, 5000);
       } finally {
         setIsProcessing(false);
       }
@@ -73,19 +83,13 @@ export default function AuthCallback() {
     <div className={styles.callback_container}>
       {error ? (
         <div className={styles.error_message}>
+          <h2>エラーが発生しました</h2>
           <p>{error}</p>
-          {debugInfo && (
-            <details className={styles.debug_info}>
-              <summary>詳細情報</summary>
-              <pre>{debugInfo}</pre>
-            </details>
-          )}
-          <p>ログインページにリダイレクトします...</p>
+          <p>5秒後にログインページにリダイレクトします...</p>
         </div>
       ) : (
         <div className={styles.loading_message}>
           <div className={styles.spinner}></div>
-          <p>{isProcessing ? "認証中..." : "認証が完了しました。リダイレクト中..."}</p>
         </div>
       )}
     </div>

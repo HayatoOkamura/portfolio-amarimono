@@ -25,7 +25,7 @@ type Recipe struct {
 	UserID              *uuid.UUID         `json:"user_id" gorm:"type:uuid"`
 	IsPublic            bool               `json:"is_public" gorm:"default:true"`
 	IsDraft             bool               `json:"is_draft" gorm:"default:false"`
-	NutritionPercentage map[string]float64 `json:"nutritionPercentage,omitempty" gorm:"-"`
+	NutritionPercentage map[string]float64 `json:"nutrition_percentage,omitempty" gorm:"-"`
 	CreatedAt           time.Time          `json:"created_at"`
 	UpdatedAt           time.Time          `json:"updated_at"`
 }

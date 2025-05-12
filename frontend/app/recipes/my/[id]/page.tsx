@@ -12,6 +12,7 @@ import { handleLikeService } from "@/app/hooks/recipes";
 import { useUserStore } from "@/app/stores/userStore";
 import { calculateAverageRating } from "@/app/utils/calculateAverageRating";
 import StarRating from "@/app/components/ui/StarRating/StarRating";
+import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
 
 const EditMyRecipe = () => {
   const router = useRouter();
@@ -98,238 +99,238 @@ const EditMyRecipe = () => {
       alert("レビュー送信に失敗しました");
     }
   };
-
-  if (!recipe) {
-    return <p>Loading...</p>;
-  }
-
+  
   return (
-    <div className={styles.recipe_block}>
-      <div className={styles.recipe_block__inner}>
-        <div className={styles.description_block}>
-          <div className={styles.description_block__img}>
-            <Image
-              src={
-                `${imageBaseUrl}/${recipe.imageUrl}` ||
-                "/pic_recipe_default.webp"
-              }
-              alt={recipe.name}
-              width={100}
-              height={100}
-            />
-          </div>
-          <ol className={styles.description_block__list}>
-            {recipe.instructions.map((step, idx) => (
-              <li className={styles.description_block__item} key={idx}>
-                <div className={styles.description_block__sub_img}>
-                  <Image
-                    src={
-                      `${imageBaseUrl}/${step.imageUrl}` ||
-                      "/pic_recipe_default.webp"
-                    }
-                    alt={recipe.name}
-                    width={100}
-                    height={100}
+    <PageLoading isLoading={!recipe}>
+      {recipe && (
+        <div className={styles.recipe_block}>
+          <div className={styles.recipe_block__inner}>
+            <div className={styles.description_block}>
+              <div className={styles.description_block__img}>
+                <Image
+                  src={
+                    `${imageBaseUrl}/${recipe.imageUrl}` ||
+                    "/pic_recipe_default.webp"
+                  }
+                  alt={recipe.name}
+                  width={100}
+                  height={100}
+                />
+              </div>
+              <ol className={styles.description_block__list}>
+                {recipe.instructions.map((step, idx) => (
+                  <li className={styles.description_block__item} key={idx}>
+                    <div className={styles.description_block__sub_img}>
+                      <Image
+                        src={
+                          `${imageBaseUrl}/${step.imageUrl}` ||
+                          "/pic_recipe_default.webp"
+                        }
+                        alt={recipe.name}
+                        width={100}
+                        height={100}
+                      />
+                    </div>
+                    <div className={styles.description_block__contents}>
+                      <strong className={styles.description_block__label}>
+                        Step {step.stepNumber}:
+                      </strong>
+                      <p className={styles.description_block__text}>
+                        {step.description}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div className={styles.info_block}>
+              <p className={styles.info_block__catchphrase}>{recipe.catchphrase}</p>
+              <h1 className={styles.info_block__name}>{recipe.name}</h1>
+              <div className={styles.detail_block}>
+                <div className={styles.detail_block__item}>
+                  <StarRating
+                    reviews={recipe.reviews}
+                    className={styles.align_center}
                   />
-                </div>
-                <div className={styles.description_block__contents}>
-                  <strong className={styles.description_block__label}>
-                    Step {step.stepNumber}:
-                  </strong>
-                  <p className={styles.description_block__text}>
-                    {step.description}
+                  <p className={styles.detail_block__text}>
+                    {averageRating.toFixed(1)}{" "}
+                    <span>({recipe.reviews?.length ?? 0}件)</span>
                   </p>
                 </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-        <div className={styles.info_block}>
-          <p className={styles.info_block__catchphrase}>{recipe.catchphrase}</p>
-          <h1 className={styles.info_block__name}>{recipe.name}</h1>
-          <div className={styles.detail_block}>
-            <div className={styles.detail_block__item}>
-              <StarRating
-                reviews={recipe.reviews}
-                className={styles.align_center}
-              />
-              <p className={styles.detail_block__text}>
-                {averageRating.toFixed(1)}{" "}
-                <span>({recipe.reviews?.length ?? 0}件)</span>
-              </p>
-            </div>
-            <div className={styles.detail_block__item}>
-              <p className={styles.detail_block__title}>調理時間</p>
-              <p>{recipe.cookingTime}</p>
-            </div>
-            <div className={styles.detail_block__item}>
-              <p className={styles.detail_block__title}>費用目安</p>
-              <p>{recipe.costEstimate}</p>
-            </div>
-          </div>
-          <div className={styles.interaction_block}>
-            <button
-              onClick={handleLike}
-              className={styles.interaction_block__item}
-            >
-              {isLiked ? "お気に入り済み" : "お気に入り"}
-            </button>
-            <div className={styles.interaction_block__item}>
-              <button
-                onClick={() => setShowReviewModal(true)} // レビュー用モーダルを表示
-                className={styles.interaction_block__item}
-              >
-                レビューを投稿
-              </button>
-            </div>
-          </div>
-          <p className={styles.info_block__summary}>{recipe.summary}</p>
-          <ul className={styles.nutrition_block}>
-            <li className={styles.nutrition_block__item}>
-              <p className={styles.nutrition_block__title}>
-                カロリー{recipe.nutrition && recipe.nutrition.calories}
-              </p>
-              <ResponsivePieChart
-                value={
-                  recipe.nutritionPercentage
-                    ? recipe.nutritionPercentage.calories
-                    : 0
-                }
-                type="calories"
-              />
-            </li>
-            <li className={styles.nutrition_block__item}>
-              <p className={styles.nutrition_block__title}>
-                炭水化物{recipe.nutrition && recipe.nutrition.carbohydrates}
-              </p>
-              <ResponsivePieChart
-                value={
-                  recipe.nutritionPercentage
-                    ? recipe.nutritionPercentage.carbohydrates
-                    : 0
-                }
-                type="carbohydrates"
-              />
-            </li>
-            <li className={styles.nutrition_block__item}>
-              <p className={styles.nutrition_block__title}>
-                脂質{recipe.nutrition && recipe.nutrition.fat}
-              </p>
-              <ResponsivePieChart
-                value={
-                  recipe.nutritionPercentage
-                    ? recipe.nutritionPercentage.fat
-                    : 0
-                }
-                type="fat"
-              />
-            </li>
-            <li className={styles.nutrition_block__item}>
-              <p className={styles.nutrition_block__title}>
-                タンパク質{recipe.nutrition && recipe.nutrition.protein}
-              </p>
-              <ResponsivePieChart
-                value={
-                  recipe.nutritionPercentage
-                    ? recipe.nutritionPercentage.protein
-                    : 0
-                }
-                type="protein"
-              />
-            </li>
-            <li className={styles.nutrition_block__item}>
-              <p className={styles.nutrition_block__title}>
-                塩分{recipe.nutrition && recipe.nutrition.salt}
-              </p>
-              <ResponsivePieChart
-                value={
-                  recipe.nutritionPercentage
-                    ? recipe.nutritionPercentage.salt
-                    : 0
-                }
-                type="salt"
-              />
-            </li>
-          </ul>
-          <h3 className={styles.info_block__ingredient}>材料【1人分】</h3>
-          <ul className={styles.ingredient_block}>
-            {recipe.ingredients.map((ingredient, idx) => (
-              <li className={styles.ingredient_block__item} key={idx}>
-                <p className={styles.ingredient_block__name}>
-                  {ingredient.name}
-                </p>
-                <p className={styles.ingredient_block__quantity}>
-                  {ingredient.quantity} {ingredient.unit.name}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {showReviewModal && (
-        <div className={styles.review_modal}>
-          <div className={styles.review_modal__inner}>
-            <button
-              className={styles.review_modal__close}
-              onClick={() => setShowReviewModal(false)} // モーダルを閉じる
-            >
-              ✖
-            </button>
-            <h2>レビューを投稿</h2>
-            <div className={styles.review_modal__stars}>
-              {[...Array(5)].map((_, index) => (
-                <div
-                  key={index}
-                  onClick={() => setReviewValue(index + 1)}
-                  className={styles.review_modal__star}
-                >
-                  <span
-                    className={
-                      reviewValue > index ? styles["yellow"] : styles["gray"]
-                    }
-                  >
-                    ★
-                  </span>
+                <div className={styles.detail_block__item}>
+                  <p className={styles.detail_block__title}>調理時間</p>
+                  <p>{recipe.cookingTime}</p>
                 </div>
-              ))}
+                <div className={styles.detail_block__item}>
+                  <p className={styles.detail_block__title}>費用目安</p>
+                  <p>{recipe.costEstimate}</p>
+                </div>
+              </div>
+              <div className={styles.interaction_block}>
+                <button
+                  onClick={handleLike}
+                  className={styles.interaction_block__item}
+                >
+                  {isLiked ? "お気に入り済み" : "お気に入り"}
+                </button>
+                <div className={styles.interaction_block__item}>
+                  <button
+                    onClick={() => setShowReviewModal(true)} // レビュー用モーダルを表示
+                    className={styles.interaction_block__item}
+                  >
+                    レビューを投稿
+                  </button>
+                </div>
+              </div>
+              <p className={styles.info_block__summary}>{recipe.summary}</p>
+              <ul className={styles.nutrition_block}>
+                <li className={styles.nutrition_block__item}>
+                  <p className={styles.nutrition_block__title}>
+                    カロリー{recipe.nutrition && recipe.nutrition.calories}
+                  </p>
+                  <ResponsivePieChart
+                    value={
+                      recipe.nutritionPercentage
+                        ? recipe.nutritionPercentage.calories
+                        : 0
+                    }
+                    type="calories"
+                  />
+                </li>
+                <li className={styles.nutrition_block__item}>
+                  <p className={styles.nutrition_block__title}>
+                    炭水化物{recipe.nutrition && recipe.nutrition.carbohydrates}
+                  </p>
+                  <ResponsivePieChart
+                    value={
+                      recipe.nutritionPercentage
+                        ? recipe.nutritionPercentage.carbohydrates
+                        : 0
+                    }
+                    type="carbohydrates"
+                  />
+                </li>
+                <li className={styles.nutrition_block__item}>
+                  <p className={styles.nutrition_block__title}>
+                    脂質{recipe.nutrition && recipe.nutrition.fat}
+                  </p>
+                  <ResponsivePieChart
+                    value={
+                      recipe.nutritionPercentage
+                        ? recipe.nutritionPercentage.fat
+                        : 0
+                    }
+                    type="fat"
+                  />
+                </li>
+                <li className={styles.nutrition_block__item}>
+                  <p className={styles.nutrition_block__title}>
+                    タンパク質{recipe.nutrition && recipe.nutrition.protein}
+                  </p>
+                  <ResponsivePieChart
+                    value={
+                      recipe.nutritionPercentage
+                        ? recipe.nutritionPercentage.protein
+                        : 0
+                    }
+                    type="protein"
+                  />
+                </li>
+                <li className={styles.nutrition_block__item}>
+                  <p className={styles.nutrition_block__title}>
+                    塩分{recipe.nutrition && recipe.nutrition.salt}
+                  </p>
+                  <ResponsivePieChart
+                    value={
+                      recipe.nutritionPercentage
+                        ? recipe.nutritionPercentage.salt
+                        : 0
+                    }
+                    type="salt"
+                  />
+                </li>
+              </ul>
+              <h3 className={styles.info_block__ingredient}>材料【1人分】</h3>
+              <ul className={styles.ingredient_block}>
+                {recipe.ingredients.map((ingredient, idx) => (
+                  <li className={styles.ingredient_block__item} key={idx}>
+                    <p className={styles.ingredient_block__name}>
+                      {ingredient.name}
+                    </p>
+                    <p className={styles.ingredient_block__quantity}>
+                      {ingredient.quantity} {ingredient.unit.name}
+                    </p>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <textarea
-              className={styles.review_modal__textarea}
-              value={reviewText}
-              onChange={(e) => setReviewText(e.target.value)}
-              placeholder="レビューを入力してください"
-            />
-            <button
-              className={styles.review_modal__submit}
-              onClick={handleReviewSubmit}
-            >
-              送信
-            </button>
           </div>
-        </div>
-      )}
 
-      {showLoginModal && (
-        <div className={styles.login_modal}>
-          <div className={styles.login_modal__inner}>
-            <button
-              className={styles.login_modal__close}
-              onClick={() => setShowLoginModal(false)}
-            >
-              ✖
-            </button>
-            <p>ログインしてください</p>
-            <button
-              className={styles.login_modal__login}
-              onClick={() => router.push("/login/")}
-            >
-              ログイン
-            </button>
-          </div>
+          {showReviewModal && (
+            <div className={styles.review_modal}>
+              <div className={styles.review_modal__inner}>
+                <button
+                  className={styles.review_modal__close}
+                  onClick={() => setShowReviewModal(false)} // モーダルを閉じる
+                >
+                  ✖
+                </button>
+                <h2>レビューを投稿</h2>
+                <div className={styles.review_modal__stars}>
+                  {[...Array(5)].map((_, index) => (
+                    <div
+                      key={index}
+                      onClick={() => setReviewValue(index + 1)}
+                      className={styles.review_modal__star}
+                    >
+                      <span
+                        className={
+                          reviewValue > index ? styles["yellow"] : styles["gray"]
+                        }
+                      >
+                        ★
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <textarea
+                  className={styles.review_modal__textarea}
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  placeholder="レビューを入力してください"
+                />
+                <button
+                  className={styles.review_modal__submit}
+                  onClick={handleReviewSubmit}
+                >
+                  送信
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showLoginModal && (
+            <div className={styles.login_modal}>
+              <div className={styles.login_modal__inner}>
+                <button
+                  className={styles.login_modal__close}
+                  onClick={() => setShowLoginModal(false)}
+                >
+                  ✖
+                </button>
+                <p>ログインしてください</p>
+                <button
+                  className={styles.login_modal__login}
+                  onClick={() => router.push("/login/")}
+                >
+                  ログイン
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
-    </div>
+    </PageLoading>
   );
 };
 

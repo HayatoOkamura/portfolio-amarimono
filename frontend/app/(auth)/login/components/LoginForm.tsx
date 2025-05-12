@@ -129,7 +129,11 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
       )}
       {isSuccess && !formError && (
         <div className={styles.form_block__success}>
-          <p>ログインに成功しました。TOPページに移動します...</p>
+          <p>
+            {isLogin 
+              ? "ログインに成功しました。TOPページに移動します..."
+              : "新規登録が完了しました。確認メールを送信しました。メールをご確認ください。"}
+          </p>
         </div>
       )}
       <button type="submit" disabled={isProcessing} className={styles.form_block__submit_button}>

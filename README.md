@@ -560,3 +560,66 @@ rm -rf venv  # macOSの場合
 - 仮想環境を有効にしている間は、プロンプトに`(venv)`と表示されます
 - これは正常な動作で、現在仮想環境が有効であることを示しています
 - 仮想環境を終了したい場合は`deactivate`コマンドを使用してください
+
+## 🎨 UIコンポーネント
+
+### Loading Components
+
+アプリケーション全体で使用されるローディング状態を表示するためのコンポーネント群です。
+
+#### 1. Loading.tsx
+基本的なローディングアニメーションを表示するコンポーネント。
+- Lottieアニメーションを使用
+- シンプルなローディング表示に使用
+- ページ遷移時やデータ読み込み時に表示
+
+#### 2. RecipeLoading.tsx
+レシピ生成時の専用ローディングコンポーネント。
+- プログレスバー付きのローディング表示
+- レシピ生成の進捗状況を表示
+- 専用のLottieアニメーションを使用
+
+#### 3. PageLoading.tsx
+ページ全体のローディング状態を管理するラッパーコンポーネント。
+- 子コンポーネントのローディング状態を制御
+- 一貫性のあるローディング表示を提供
+- 再利用可能なローディングUI
+
+#### 使用方法
+
+```typescript
+// 基本的なローディング表示
+import Loading from '@/app/components/ui/Loading/Loading';
+<Loading />
+
+// レシピ生成時のローディング
+import RecipeLoading from '@/app/components/ui/Loading/RecipeLoading';
+<RecipeLoading />
+
+// ページ全体のローディング
+import { PageLoading } from '@/app/components/ui/Loading/PageLoading';
+const YourPage = () => {
+  const { isLoading } = useYourStore();
+  return (
+    <PageLoading isLoading={isLoading}>
+      {/* ページのコンテンツ */}
+    </PageLoading>
+  );
+};
+```
+
+#### 注意事項
+
+1. **ローディング状態の管理**
+   - ページ遷移時は`loading.tsx`（Next.jsの機能）が使用される
+   - データ取得時は`PageLoading`コンポーネントを使用
+   - レシピ生成時は`RecipeLoading`コンポーネントを使用
+
+2. **スタイリング**
+   - ローディング表示は中央揃え
+   - 画面全体の高さを確保（minHeight: 100vh）
+   - レスポンシブ対応済み
+
+3. **パフォーマンス**
+   - Lottieアニメーションは最適化済み
+   - 不要な再レンダリングを防ぐため、適切な場所で使用

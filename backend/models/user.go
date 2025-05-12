@@ -8,7 +8,7 @@ type User struct {
 	Email        string `json:"email"`
 	Username     string `json:"username"`
 	ProfileImage string `json:"profileImage"`
-	Age          string `json:"age"`
+	Age          int    `json:"age"`
 	Gender       string `json:"gender"`
 }
 

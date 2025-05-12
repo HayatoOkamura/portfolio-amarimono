@@ -17,6 +17,7 @@ import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";
 import { Recipe } from "@/app/types/index";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/api/supabase/supabaseClient";
+import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
 
 // ユーザープロフィールコンポーネント
 const UserProfile = ({ user }: { user: any }) => {
@@ -137,21 +138,16 @@ export default function UserPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const router = useRouter();
 
-  // ローディング中の表示を改善
-  if (isAuthLoading) {
-    console.log('UserPage: Loading state');
-    return <div className={styles.loading}>Loading...</div>;
-  }
-
-  // ユーザーが存在しない場合の処理を改善
-  if (!user) {
-    console.log('UserPage: No user, showing login modal');
-    return (
-      <LoginModal
-        onClose={() => setShowLoginModal(false)}
-        onLogin={() => router.push('/login')}
-      />
-    );
-  }
-  return <UserProfile user={user} />;
+  return (
+    <PageLoading isLoading={isAuthLoading}>
+      {!user ? (
+        <LoginModal
+          onClose={() => setShowLoginModal(false)}
+          onLogin={() => router.push('/login')}
+        />
+      ) : (
+        <UserProfile user={user} />
+      )}
+    </PageLoading>
+  );
 }

@@ -11,8 +11,6 @@ const ListMyRecipe = () => {
   const { user } = useAuth();
   const { data, isLoading } = useUserRecipes(user?.id);
 
-  if (!user || isLoading) return <p>Loading...</p>;
-
   const recipes = data?.recipes || [];
 
   return (

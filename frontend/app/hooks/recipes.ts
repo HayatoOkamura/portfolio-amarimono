@@ -91,6 +91,8 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
     throw new Error("Recipe data is null or undefined");
   }
 
+  console.log("mapRecipe💩", recipe);
+
   const defaultNutrition = {
     calories: 0,
     carbohydrates: 0,
@@ -238,6 +240,8 @@ export const fetchRecipesService = async (): Promise<Recipe[]> => {
 
 // 具材からレシピを検索
 export const fetchRecipesAPI = async (ingredients: { id: number; quantity: number }[]) => {
+
+  console.log("fetchRecipesAPI", ingredients);
   if (ingredients.length === 0) {
     throw new Error("具材が選択されていません");
   }
@@ -500,15 +504,31 @@ export const useFetchRecipesAPI = (
     refetchOnMount?: boolean;
     refetchOnWindowFocus?: boolean;
     refetchOnReconnect?: boolean;
+    onSuccess?: (data: Recipe[]) => void;
+    onSettled?: () => void;
   }
 ) => {
+  console.log('useFetchRecipesAPI called with:', { ingredients, options });
+  
   return useQuery({
     queryKey: recipeKeys.list(JSON.stringify(ingredients)),
     queryFn: async () => {
-      const validIngredients = ingredients.filter(ing => ing.quantity > 0);
-      if (validIngredients.length === 0) return [];
+      console.log('queryFn executing with ingredients:', ingredients);
+      const validIngredients = ingredients.filter(ing => {
+        console.log('Checking ingredient:', ing);
+        return ing && ing.id && ing.quantity > 0;
+      });
+      console.log('Valid ingredients:', validIngredients);
+      
+      if (validIngredients.length === 0) {
+        console.log('No valid ingredients found');
+        return [];
+      }
+      
       try {
+        console.log('Calling fetchRecipesAPI with:', validIngredients);
         const response = await fetchRecipesAPI(validIngredients);
+        console.log('fetchRecipesAPI response:', response);
         return response;
       } catch (error) {
         console.error('Error fetching recipes:', error);
@@ -527,6 +547,8 @@ export const useSearchRecipes = (
     refetchOnMount?: boolean;
     refetchOnWindowFocus?: boolean;
     refetchOnReconnect?: boolean;
+    onSuccess?: () => void;
+    onSettled?: () => void;
   }
 ) => {
   return useQuery({

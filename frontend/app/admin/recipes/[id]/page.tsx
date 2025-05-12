@@ -61,11 +61,7 @@ const AdminRecipeDetail = () => {
       alert("Failed to toggle publish status");
     }
   };
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
+  
   if (error) {
     return <div>Error loading recipe: {error.message}</div>;
   }

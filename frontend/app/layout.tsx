@@ -1,6 +1,7 @@
 import { Noto_Sans_JP, Roboto } from "next/font/google";
 import "@/app/styles/globals.scss";
 import QueryProvider from "./providers/QueryProvider";
+import LoadingProvider from "./providers/LoadingProvider";
 import type { Metadata } from "next";
 import Container from "@/app/components/layout/Container/Container";
 
@@ -41,7 +42,9 @@ export default function RootLayout({
       <head />
       <body>
         <QueryProvider>
-          <Container>{children}</Container>
+          <LoadingProvider>
+            <Container>{children}</Container>
+          </LoadingProvider>
         </QueryProvider>
       </body>
     </html>

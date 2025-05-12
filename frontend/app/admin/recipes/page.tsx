@@ -60,8 +60,6 @@ const AdminRecipes = () => {
 
   const sortedRecipes = useSortedRecipes(filteredRecipes);
 
-  if (isLoading) return <div>Loading...</div>;
-
   return (
     <div className={styles.recipes_block}>
       <div className={styles.head_block}>

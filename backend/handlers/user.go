@@ -39,37 +39,45 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	}
 
 	// 必要なデータをUser構造体にマッピング
+	age, err := strconv.Atoi(form.Value["age"][0])
+	if err != nil {
+		log.Printf("Invalid age format: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid age format"})
+		return
+	}
+
 	user := models.User{
 		ID:       form.Value["id"][0],       // ID
 		Email:    form.Value["email"][0],    // Email
 		Username: form.Value["username"][0], // ユーザー名
-		Age:      form.Value["age"][0],      // 年齢
+		Age:      age,                       // 年齢（整数に変換済み）
 		Gender:   form.Value["gender"][0],   // 性別
 	}
 
-	// 画像ファイルがある場合は処理
-	if files := form.File["profileImage"]; len(files) > 0 {
-		// ここで画像の保存処理（例: ファイルをローカルディスクに保存するなど）
-		profileImage := files[0]
-
-		// 保存先ディレクトリに保存
-		imageURL, err := utils.SaveImage(c, profileImage, "user", "")
-		if err != nil {
-			log.Printf("File upload error: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload profile image"})
+	// ユーザーが既に存在するか確認
+	var existingUser models.User
+	if err := h.DB.Where("id = ?", user.ID).First(&existingUser).Error; err == nil {
+		// ユーザーが存在する場合は更新
+		if err := h.DB.Model(&models.User{}).Where("id = ?", user.ID).Updates(user).Error; err != nil {
+			log.Printf("Failed to update user: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー情報の更新に失敗しました"})
 			return
 		}
-
-		// 保存した画像のパスをUser構造体に追加
-		user.ProfileImage = imageURL
+		c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
+		return
 	}
 
-	// ユーザーをデータベースに保存
+	// ユーザーが存在しない場合は新規作成
 	if err := models.CreateUser(h.DB, user); err != nil {
 		log.Printf("Failed to create user: %v", err)
-		// PostgreSQLのユニーク制約違反エラーをチェック
+		// 重複エラーの場合は更新を試みる
 		if err.Error() == "ERROR: duplicate key value violates unique constraint \"users_pkey\" (SQLSTATE 23505)" {
-			c.JSON(http.StatusConflict, gin.H{"error": "このメールアドレスは既に登録されています"})
+			if err := h.DB.Model(&models.User{}).Where("id = ?", user.ID).Updates(user).Error; err != nil {
+				log.Printf("Failed to update user: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー情報の更新に失敗しました"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー登録に失敗しました"})
@@ -140,7 +148,7 @@ func (h *UserHandler) GetUserRecipeAverageRating(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"average_rating": avgRating})
 }
 
-// UpdateUserProfile ユーザーのプロフィールを更新するハンドラー
+// UpdateUserProfile ユーザーのプロフィール情報を更新するハンドラー
 func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
 	userID := c.Param("id") // URLのパラメータから userID を取得
 	log.Println("⭐️⭐️⭐️ User ID:", userID)
@@ -177,8 +185,8 @@ func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
 	if files, exists := form.File["profileImage"]; exists && len(files) > 0 {
 		profileImage := files[0]
 
-		// 画像を保存し、パスを取得
-		imageURL, err := utils.SaveImage(c, profileImage, "user", "")
+		// 画像を保存し、パスを取得（ユーザーIDのディレクトリに保存）
+		imageURL, err := utils.SaveImage(c, profileImage, "users", userID)
 		if err != nil {
 			log.Printf("File upload error: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload profile image"})

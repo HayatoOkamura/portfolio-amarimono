@@ -20,8 +20,6 @@ const FavoritesPage = () => {
     setSelectedRecipe(recipe);
   };
 
-  if (isLoading) return <p>Loading...</p>;
-
   const favoriteRecipes = data || [];
 
 

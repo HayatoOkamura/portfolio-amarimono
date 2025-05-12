@@ -36,8 +36,6 @@ const RecipeRegistration: React.FC = () => {
     fetchRecipeGenres();
   }, [ingredientsData, setIngredients, fetchRecipeGenres]);
 
-  if (!user) return <p>Loading...</p>;
-
   const handleDeleteRecipe = async (id: string) => {
     if (confirm("Are you sure you want to delete this recipe?")) {
       try {

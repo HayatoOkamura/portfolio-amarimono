@@ -48,8 +48,8 @@ const createBackendUser = async (user: any) => {
   formData.append("id", user.id);
   formData.append("email", user.email || "");
   formData.append("username", user.email?.split("@")[0] || "");
-  formData.append("age", "");
-  formData.append("gender", "");
+  formData.append("age", "0");
+  formData.append("gender", "未設定");
 
   const response = await fetch(`${backendUrl}/api/users`, {
     method: "POST",
@@ -209,6 +209,7 @@ export function useAuth() {
         throw { type: 'REGISTRATION_FAILED', message: "メールアドレスの形式が正しくありません" } as AuthError;
       }
 
+      // 新規登録処理
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -219,7 +220,15 @@ export function useAuth() {
 
       if (error) {
         console.error("Registration error:", error);
-        if (error.message.includes("User already registered")) {
+        console.log("Error details:", {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        });
+
+        if (error.message.includes("already registered") || 
+            error.message.includes("already exists") || 
+            error.message.includes("already in use")) {
           throw { type: 'EMAIL_IN_USE', message: "このメールアドレスは既に登録されています" } as AuthError;
         } else if (error.message.includes("rate limit")) {
           throw { type: 'RATE_LIMIT', message: "送信制限に達しました。しばらく待ってから再度お試しください" } as AuthError;
@@ -232,6 +241,14 @@ export function useAuth() {
 
       if (!data.user) {
         throw { type: 'REGISTRATION_FAILED', message: "ユーザー登録に失敗しました" } as AuthError;
+      }
+
+      // identitiesを使用して既存ユーザーをチェック
+      const identities = data.user.identities;
+      console.log("User identities:", identities);
+
+      if (identities?.length === 0) {
+        throw { type: 'EMAIL_IN_USE', message: "このメールアドレスは既に登録されています" } as AuthError;
       }
 
       router.push(`/verify-email?email=${encodeURIComponent(email)}`);
@@ -258,45 +275,47 @@ export function useAuth() {
 
   const createUserAfterVerification = async (user: any) => {
     try {
-      // まずバックエンドユーザーが存在するか確認
-      try {
-        const response = await fetch(`${backendUrl}/api/users/${user.id}`);
-        if (response.ok) {
-          // ユーザーが既に存在する場合はその情報を取得
-          const userData = await response.json();
-          setUser(userData);
-          setStoreUser(userData);
-          return;
-        }
-      } catch (error) {
-        console.error("Error checking existing user:", error);
+      if (!user?.id) {
+        console.error("Invalid user data:", user);
+        throw new Error("ユーザーIDが存在しません");
       }
 
-      // バックエンドユーザーが存在しない場合は作成
-      const formData = new FormData();
-      formData.append("id", user.id);
-      formData.append("email", user.email || "");
-      formData.append("username", user.email?.split("@")[0] || "");
-      formData.append("age", "");
-      formData.append("gender", "");
+      // 既に作成済みかチェック
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single();
 
-      const createResponse = await fetch(`${backendUrl}/api/users`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!createResponse.ok) {
-        const errorData = await createResponse.json();
-        throw new Error(errorData.error || "バックエンドへのユーザー登録に失敗しました");
+      if (existingUser) {
+        console.log("User already exists in backend:", existingUser);
+        return existingUser;
       }
 
-      const userData = await createResponse.json();
-      setUser(userData);
-      setStoreUser(userData);
+      // バックエンドにユーザーを作成
+      const userData = await createBackendUser(user);
+      
+      if (!userData) {
+        throw new Error("ユーザー情報の作成に失敗しました");
+      }
+
+      // ユーザー情報を更新
+      const formattedUser: User = {
+        id: user.id,
+        email: user.email || '',
+        email_confirmed_at: user.email_confirmed_at,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        ...userData
+      };
+
+      setUser(formattedUser);
+      setStoreUser(formattedUser);
+
+      return userData;
     } catch (error) {
-      console.error("User creation after verification error:", error);
-      // エラーを投げずに、ユーザーにプロフィール設定を促す
-      router.push("/user/edit?setup=true&error=creation_failed");
+      console.error("ユーザー作成エラー:", error);
+      throw error;
     }
   };
 

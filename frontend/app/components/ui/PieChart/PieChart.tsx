@@ -4,16 +4,15 @@
 import { useState, useEffect } from "react";
 import styles from "./PieChart.module.scss";
 
-type NutritionType = "calories" | "carbohydrates" | "fat" | "protein" | "salt" | "sugar";
+type NutritionType = "calories" | "carbohydrates" | "fat" | "protein" | "salt" ;
 
 const getNutritionColor = (type: NutritionType): string => {
   const colors = {
-    calories: "#5B9BD5",      // 青
-    carbohydrates: "#70AD47", // 緑
-    fat: "#FFC000",          // 黄色
-    protein: "#A5A5A5",      // グレー
-    salt: "#7B68EE",         // 紫
-    sugar: "#ED7D31",        // オレンジ
+    calories: "#DA5944",      // 赤
+    carbohydrates: "#3762ED", // 青
+    fat: "#6846C1",          // 紫
+    protein: "#DBBE62",      // 黄
+    salt: "#49B552",         // 紫
   };
   return colors[type] || "#03a9f4"; // デフォルトは青
 };
@@ -24,17 +23,16 @@ const ResponsivePieChart = ({ value, type }: { value: number; type: NutritionTyp
 
   useEffect(() => {
     const resizeHandler = () => {
-      const newRadius = Math.min(window.innerWidth * 0.2, 70); // 画面幅に応じて最大半径を調整
+      const newRadius = Math.min(window.innerWidth * 0.2, 70);
       setRadius(newRadius);
     };
 
-    resizeHandler(); // 初回サイズ設定
-    window.addEventListener("resize", resizeHandler); // 画面リサイズ時にサイズを再計算
+    resizeHandler();
+    window.addEventListener("resize", resizeHandler);
     
     return () => window.removeEventListener("resize", resizeHandler);
   }, []);
 
-  // 100%を超える場合は100%として扱う
   const normalizedValue = Math.min(value, 100);
   const strokeDashoffset = circumference * (1 - normalizedValue / 100);
   const color = getNutritionColor(type);
@@ -51,8 +49,13 @@ const ResponsivePieChart = ({ value, type }: { value: number; type: NutritionTyp
   });
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <svg className={styles.svg} viewBox="0 0 150 150" preserveAspectRatio="xMidYMid meet">
+    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <svg 
+        className={styles.svg} 
+        viewBox="0 0 150 150" 
+        preserveAspectRatio="xMidYMid meet"
+        style={{ width: '100%', height: '100%', maxWidth: '150px', maxHeight: '150px' }}
+      >
         <circle 
           className={styles.base} 
           cx="75" 
@@ -71,9 +74,10 @@ const ResponsivePieChart = ({ value, type }: { value: number; type: NutritionTyp
           stroke={color}
           strokeWidth="10"
           strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          transform="rotate(-90 75 75)"
+          style={{
+            '--dash-offset': strokeDashoffset,
+            transform: 'rotate(-90deg)'
+          } as React.CSSProperties}
         />
       </svg>
     </div>
