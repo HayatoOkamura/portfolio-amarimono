@@ -11,12 +11,16 @@ interface RecipeCardProps {
   recipe: Recipe;
   isFavoritePage?: boolean;
   path: string;
+  className?: string;
+  size?: 'small' | 'medium' | 'large';
 }
 
 const RecipeCard: React.FC<RecipeCardProps> = ({
   recipe,
   isFavoritePage,
   path,
+  className,
+  size = 'medium',
 }) => {
   // ジャンル表示用の文字列を取得
   const getGenreText = () => {
@@ -38,7 +42,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   };
 
   return (
-    <div className={styles.card_block}>
+    <div className={`${styles.card_block} ${styles[`card_block--${size}`]} ${className || ''}`}>
       <div className={styles.card_block__img}>
         {recipe.isDraft && (
           <span className={styles.card_block__draft}>下書き</span>
@@ -57,22 +61,6 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
       <div className={styles.card_block__contents}>
         <h2 className={styles.card_block__name}>{recipe.name}</h2>
       </div>
-      {/* <p className={styles.card_block__genre}>
-        ジャンル: <strong>{getGenreText()}</strong>
-      </p>
-      <h3 className={styles.card_block__ingredients}>材料</h3>
-      <ul className={styles.card_block__ing_list}>
-        {recipe.ingredients.map((ingredient, idx) => (
-          <li key={idx} className={styles.card_block__ing_item}>
-            {ingredient.name} ({ingredient.quantity} {ingredient.unit?.name})
-          </li>
-        ))}
-      </ul>
-      {isFavoritePage && recipe.id && (
-        <Link href={`${path}${recipe.id}`}>
-          <button className={styles.details_button}>詳しく見る</button>
-        </Link>
-      )} */}
     </div>
   );
 };

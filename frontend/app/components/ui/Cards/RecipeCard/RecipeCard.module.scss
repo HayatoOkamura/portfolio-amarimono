@@ -1,17 +1,47 @@
 .card_block {
+  background: #fff;
   border-radius: 10px;
   text-align: center;
   height: 100%;
-  background: #fff;
   overflow: hidden;
+
+  &--small {
+    .card_block__name {
+      font-size: 1rem;
+    }
+  }
+
+  &--medium {
+    .card_block__name {
+      font-size: 1.5rem;
+    }
+  }
+
+  &--large {
+    .card_block__name {
+      font-size: 1.75rem;
+    }
+  }
+
+  &:hover {
+    .card_block__img {
+      img {
+        transform: scale(1.1);
+      }
+    }
+  }
+
   &__img {
     width: 100%;
     display: block;
     position: relative;
     aspect-ratio: 1 / 1;
+    overflow: hidden;
+
     img {
       object-fit: cover;
       width: 100%;
+      transition: transform 0.3s ease;
     }
   }
 
@@ -29,8 +59,7 @@
   }
 
   &__contents {
-   
-  padding: 5px 15px;
+    padding: 5px 15px;
   }
 
   &__name {
@@ -38,6 +67,13 @@
     font-weight: bold;
     color: #323232;
     text-align: left;
+  }
+
+  &__genre {
+    font-size: 0.875rem;
+    color: #666;
+    padding: 0 12px 12px;
+    margin: 0;
   }
 
   &__ingredients {

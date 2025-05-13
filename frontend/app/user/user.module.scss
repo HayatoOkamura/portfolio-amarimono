@@ -16,7 +16,8 @@
     border-radius: 100%;
     overflow: hidden;
 
-    img, svg {
+    img,
+    svg {
       width: 100%;
       color: var(--secondary-font-color);
     }
@@ -60,7 +61,7 @@
     font-weight: 600;
     margin: 12px 0 0 auto;
     text-align: center;
-     max-width: 200px;
+    max-width: 200px;
 
     a {
       padding: 12px 15px 13px;
@@ -101,62 +102,37 @@
   .recommend_block {
     margin-top: 40px;
     padding: 20px;
-    background: #fff;
     border-radius: 10px;
     position: relative;
     z-index: 1;
 
-    h2 {
+    &__title {
       font-size: 1.5rem;
       font-weight: 700;
       color: #333;
       margin-bottom: 20px;
     }
 
-    // .grid {
-    //   display: grid;
-    //   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    //   gap: 20px;
-    //   position: relative;
-    // }
+    &__inner {
+      overflow: auto;
+    }
+    
+    &__contents {
+      display: flex;
+      gap: 20px;
+      position: relative;
+      align-items: flex-start;
+      width: fit-content;
+    }
 
-    .card_block {
+    &__card {
+      width: 170px;
       background: #fff;
-      border-radius: 10px;
+      border-radius: 8px;
       overflow: hidden;
       transition: transform 0.2s ease-in-out;
+      aspect-ratio: 2 / 3;
       cursor: pointer;
-
-      &:hover {
-        transform: translateY(-5px);
-      }
-
-      &__img {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        overflow: hidden;
-
-        img {
-          object-fit: cover;
-          object-position: center;
-        }
-      }
-
-      &__name {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #333;
-        padding: 12px;
-        margin: 0;
-      }
-
-      &__genre {
-        font-size: 0.875rem;
-        color: #666;
-        padding: 0 12px 12px;
-        margin: 0;
-      }
     }
   }
 }

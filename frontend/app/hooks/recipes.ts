@@ -57,7 +57,6 @@ interface ApiRecipe {
     carbohydrates: number;
     fat: number;
     protein: number;
-    sugar: number;
     salt: number;
   } | null;
   nutrition_percentage: {
@@ -65,7 +64,6 @@ interface ApiRecipe {
     carbohydrates: number;
     fat: number;
     protein: number;
-    sugar: number;
     salt: number;
   } | null;
   faq: { question: string; answer: string }[];
@@ -98,7 +96,6 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
     carbohydrates: 0,
     fat: 0,
     protein: 0,
-    sugar: 0,
     salt: 0,
   };
 
@@ -135,7 +132,6 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
         carbohydrates: 0,
         fat: 0,
         protein: 0,
-        sugar: 0,
         salt: 0
       }
     })),
@@ -169,7 +165,6 @@ export const mapRecipes = (data: ApiRecipe[]): Recipe[] => {
     carbohydrates: 0,
     fat: 0,
     protein: 0,
-    sugar: 0,
     salt: 0,
   };
 
@@ -205,7 +200,6 @@ export const mapRecipes = (data: ApiRecipe[]): Recipe[] => {
         carbohydrates: 0,
         fat: 0,
         protein: 0,
-        sugar: 0,
         salt: 0
       }
     })),
@@ -432,19 +426,15 @@ export const handleLikeService = async (
 
 // ユーザーのレシピ一覧を取得
 const fetchUserRecipes = async (userId: string) => {
-  const res = await fetch(`${backendUrl}/api/user/recipes?userId=${userId}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch user recipes");
+  console.log("fetchUserRecipes called with userId:", userId);
+  try {
+    const response = await api.get(`/api/user/recipes?userId=${userId}`);
+    console.log("fetchUserRecipes API response:", response.data);
+    return mapRecipes(response.data.recipes);
+  } catch (error) {
+    console.error("Error in fetchUserRecipes:", error);
+    throw error;
   }
-
-  const data = await res.json();
-  return { recipes: mapRecipes(data.recipes) };
 };
 
 // おすすめレシピを取得
@@ -579,8 +569,9 @@ export const useUserRecipes = (userId: string | undefined) => {
   return useQuery({
     queryKey: recipeKeys.userRecipes(userId || ""),
     queryFn: async () => {
-      if (!userId) return { recipes: [] };
-      return fetchUserRecipes(userId);
+      if (!userId) return [];
+      const response = await fetchUserRecipes(userId);
+      return response;
     },
     enabled: !!userId,
   });

@@ -90,7 +90,6 @@ export interface NewRecipe {
     carbohydrates: number;
     fat: number;
     protein: number;
-    sugar: number;
     salt: number;
   };
   ingredients: {
@@ -143,7 +142,6 @@ export interface EditIngredient {
     carbohydrates: number;
     fat: number;
     protein: number;
-    sugar: number;
     salt: number;
   };
 }

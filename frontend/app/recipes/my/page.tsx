@@ -2,50 +2,52 @@
 "use client";
 
 import React from "react";
+import styles from "./myrecipe.module.scss";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useUserRecipes } from "@/app/hooks/recipes";
 import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";
 import { Recipe } from "@/app/types/index";
+import { useRouter } from 'next/navigation';
+import { PageLoading } from '@/app/components/ui/Loading/PageLoading';
 
 const ListMyRecipe = () => {
   const { user } = useAuth();
-  const { data, isLoading } = useUserRecipes(user?.id);
+  const { data, isLoading, error } = useUserRecipes(user?.id);
+  const router = useRouter();
 
-  const recipes = data?.recipes || [];
+  const recipes = Array.isArray(data) ? data : [];
+
+  const handleRecipeClick = (recipeId: string) => {
+    router.push(`/recipes/my/${recipeId}`);
+  };
 
   return (
-    <div>
-      <div className="p-6">
-        <h1 className="text-2xl font-bold">Your Recipes</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-          {recipes.length > 0 ? (
-            recipes.map((recipe: Recipe) => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={{
-                  ...recipe,
-                  ingredients: recipe.ingredients.map((ingredient) => ({
-                    ...ingredient,
-                    name: ingredient.name,
-                    quantity: ingredient.quantity,
-                    unit: {
-                      id: ingredient.unit.id,
-                      name: ingredient.unit.name,
-                      description: ingredient.unit.description || '',
-                      step: ingredient.unit.step || 1
-                    }
-                  })),
-                }}
-                isFavoritePage={true}
-                path="/recipes/my/"
-              />
-            ))
+    <PageLoading isLoading={isLoading}>
+      <div className={styles.my_recipe_block}>
+        <div className={styles.my_recipe_block__content}>
+          <h1 className={styles.my_recipe_block__title}>作成したレシピ</h1>
+          {error ? (
+            <div>Error: {error.message}</div>
           ) : (
-            <p>No recipes found.</p>
+            <div className={styles.my_recipe_block__grid}>
+              {recipes.length > 0 ? (
+                recipes.map((recipe: Recipe) => (
+                  <div key={recipe.id} onClick={() => handleRecipeClick(recipe.id)} className={styles.my_recipe_block__card}>
+                    <RecipeCard
+                      recipe={recipe}
+                      isFavoritePage={false}
+                      path="/recipes/"
+                    />
+                  </div>
+                ))
+              ) : (
+                <p>No recipes found.</p>
+              )}
+            </div>
           )}
         </div>
       </div>
-    </div>
+    </PageLoading>
   );
 };
 

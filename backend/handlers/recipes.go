@@ -300,18 +300,30 @@ func (h *RecipeHandler) GetUserRecipes(c *gin.Context) {
 		return
 	}
 
-	log.Println("👿👿👿👿", userIDStr)
+	log.Printf("Fetching recipes for user ID: %s", userIDStr)
+
+	// UUIDに変換
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		log.Printf("Invalid user ID format: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		return
+	}
+
 	var recipes []models.Recipe
 
 	// ユーザーのレシピだけを取得
 	if err := h.DB.
 		Preload("Genre").
 		Preload("Ingredients.Ingredient.Unit").
-		Where("user_id = ?", userIDStr).
+		Where("user_id = ?", userID).
 		Find(&recipes).Error; err != nil {
+		log.Printf("Failed to fetch recipes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
 		return
 	}
+
+	log.Printf("Found %d recipes for user", len(recipes))
 
 	// 栄養情報の標準値を取得
 	var standard models.NutritionStandard

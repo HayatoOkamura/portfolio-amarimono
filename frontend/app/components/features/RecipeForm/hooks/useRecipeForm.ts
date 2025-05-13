@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/app/stores/userStore";
+import { useAuth } from "@/app/hooks/useAuth";
 import { useAddRecipe, useUpdateRecipe } from "@/app/hooks/recipes";
 import { RecipeFormData, RecipeFormProps } from "../types/recipeForm";
 import { validateDraft, validateRecipe, VALIDATION_MESSAGES } from "../constants/validationMessages";
@@ -8,7 +8,7 @@ import { createFormData } from "@/app/utils/formDataUtils";
 
 export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProps) => {
   const router = useRouter();
-  const { user } = useUserStore();
+  const { user } = useAuth();
   const addRecipeMutation = useAddRecipe();
   const updateRecipeMutation = useUpdateRecipe();
 
@@ -24,7 +24,6 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
       carbohydrates: 0,
       fat: 0,
       protein: 0,
-      sugar: 0,
       salt: 0,
     },
     ingredients: [],
@@ -56,7 +55,6 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
           carbohydrates: 0,
           fat: 0,
           protein: 0,
-          sugar: 0,
           salt: 0,
         }
       };
@@ -84,7 +82,6 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
         carbohydrates: 0,
         fat: 0,
         protein: 0,
-        sugar: 0,
         salt: 0,
       },
       ingredients: [],
@@ -101,6 +98,10 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
     try {
       setIsLoading(true);
       
+      if (!user?.id) {
+        throw new Error("ユーザーIDが見つかりません。ログインしてください。");
+      }
+
       validateRecipe(formData);
 
       const recipeToSubmit = {
@@ -108,7 +109,7 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
         isDraft: false,
       };
 
-      const formDataToSubmit = createFormData(recipeToSubmit, user?.id, isAdmin, false);
+      const formDataToSubmit = createFormData(recipeToSubmit, user.id, isAdmin, false);
 
       if (initialRecipe?.id) {
         await updateRecipeMutation.mutateAsync({
@@ -118,7 +119,7 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
       } else {
         await addRecipeMutation.mutateAsync({
           formData: formDataToSubmit,
-          userId: user?.id,
+          userId: user.id,
           isPublic: formData.isPublic,
         });
       }
@@ -145,38 +146,35 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
       setSaveStatus("saving");
       validateDraft(formData);
 
-      if (user?.id) {
-        const draftRecipe = {
-          ...formData,
-          isDraft: true,
-        };
-
-        const formDataToSubmit = createFormData(draftRecipe, user.id, isAdmin, false);
-        formDataToSubmit.append("is_draft", "true");
-
-        if (initialRecipe?.id) {
-          await updateRecipeMutation.mutateAsync({
-            id: initialRecipe.id,
-            formData: formDataToSubmit,
-          });
-        } else {
-          await addRecipeMutation.mutateAsync({
-            formData: formDataToSubmit,
-            userId: user.id,
-            isPublic: false,
-            isDraft: true,
-          });
-        }
-
-        setSaveStatus("saved");
-        setTimeout(() => setSaveStatus("idle"), 2000);
-        alert(VALIDATION_MESSAGES.DRAFT_SAVED);
-      } else {
-        localStorage.setItem("draftRecipe", JSON.stringify(formData));
-        setSaveStatus("saved");
-        setTimeout(() => setSaveStatus("idle"), 2000);
-        alert(VALIDATION_MESSAGES.DRAFT_SAVED_LOCAL);
+      if (!user?.id) {
+        throw new Error("ユーザーIDが見つかりません。ログインしてください。");
       }
+
+      const draftRecipe = {
+        ...formData,
+        isDraft: true,
+      };
+
+      const formDataToSubmit = createFormData(draftRecipe, user.id, isAdmin, false);
+      formDataToSubmit.append("is_draft", "true");
+
+      if (initialRecipe?.id) {
+        await updateRecipeMutation.mutateAsync({
+          id: initialRecipe.id,
+          formData: formDataToSubmit,
+        });
+      } else {
+        await addRecipeMutation.mutateAsync({
+          formData: formDataToSubmit,
+          userId: user.id,
+          isPublic: false,
+          isDraft: true,
+        });
+      }
+
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+      alert(VALIDATION_MESSAGES.DRAFT_SAVED);
     } catch (error) {
       console.error("Failed to save draft:", error);
       alert(error instanceof Error ? error.message : VALIDATION_MESSAGES.DRAFT_SAVE_ERROR);

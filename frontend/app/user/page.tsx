@@ -8,6 +8,7 @@ import Link from "next/link";
 import { backendUrl } from "../utils/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useUserLikeCount, useUserRecipeAverageRating } from "@/app/hooks/user";
+import { imageBaseUrl } from "@/app/utils/api";
 import { useRecommendedRecipes } from "@/app/hooks/recipes";
 import { FaUserCircle } from "react-icons/fa";
 import { ImSpoonKnife } from "react-icons/im";
@@ -21,8 +22,8 @@ import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
 
 // ユーザープロフィールコンポーネント
 const UserProfile = ({ user }: { user: any }) => {
-  const { likeCount } = useUserLikeCount(user.id);
-  const { averageRating } = useUserRecipeAverageRating(user.id);
+  const { likeCount, loading: isLikeCountLoading } = useUserLikeCount(user.id);
+  const { averageRating, loading: isRatingLoading } = useUserRecipeAverageRating(user.id);
   const { data: recipes, isLoading: isRecipesLoading } = useRecommendedRecipes(user.id);
   const [recipeCount, setRecipeCount] = useState(0);
 
@@ -32,79 +33,79 @@ const UserProfile = ({ user }: { user: any }) => {
     }
   }, [recipes]);
 
+  const isLoading = isLikeCountLoading || isRatingLoading || isRecipesLoading;
+
   return (
-    <div className={styles.profile_block}>
-      <div className={styles.profile_block__head}>
-        <div className={styles.profile_block__image}>
-          {user.profileImage ? (
-            <Image
-              src={user.profileImage}
-              alt="User Profile"
-              className={styles.user_block__icon_img}
-              width={100}
-              height={100}
-            />
+    <PageLoading isLoading={isLoading}>
+      <div className={styles.profile_block}>
+        <div className={styles.profile_block__head}>
+          <div className={styles.profile_block__image}>
+            {user.profileImage ? (
+              <Image
+                src={user.profileImage}
+                alt="User Profile"
+                className={styles.user_block__icon_img}
+                width={100}
+                height={100}
+              />
+            ) : (
+              <FaUserCircle size={100} />
+            )}
+          </div>
+          <div className={styles.profile_block__detail}>
+            <h1 className={styles.profile_block__name}>{user.username || "ゲスト"}</h1>
+            <p className={styles.profile_block__email}>{user.email}</p>
+            <div className={styles.profile_block__list}>
+              <div className={styles.item_block}>
+                <div className={styles.item_block__icon}>
+                  <ImSpoonKnife />
+                </div>
+                <div className={styles.item_block__num}>{recipeCount}</div>
+                <div className={styles.item_block__text}>レシピ投稿数</div>
+              </div>
+              <div className={styles.item_block}>
+                <div className={styles.item_block__icon}>
+                  <FaHeart />
+                </div>
+                <div className={styles.item_block__num}>{likeCount}</div>
+                <div className={styles.item_block__text}>合計いいね数</div>
+              </div>
+              <div className={styles.item_block}>
+                <div className={styles.item_block__icon}>
+                  <FaStar />
+                </div>
+                <div className={styles.item_block__num}>{averageRating?.toFixed(1) ?? "0.0"}</div>
+                <div className={styles.item_block__text}>レビュー平均</div>
+              </div>
+            </div>
+            <div className={styles.profile_block__btn}>
+              <Link href="/user/edit">プロフィールを編集</Link>
+            </div>
+          </div>
+        </div>
+        <div className={styles.recommend_block}>
+          <h2 className={styles.recommend_block__title}>おすすめレシピ</h2>
+          {recipes && recipes.length > 0 ? (
+            <div className={styles.recommend_block__inner}>
+                <div className={styles.recommend_block__contents}>
+                {recipes.map((recipe: Recipe) => (
+                  <div key={recipe.id} className={styles.recommend_block__card}>
+                    <RecipeCard
+                      recipe={recipe}
+                      isFavoritePage={false}
+                      path="/recipes/"
+                      size="small"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
-            <FaUserCircle />
+            <div>おすすめのレシピはありません</div>
           )}
         </div>
-        <div className={styles.profile_block__detail}>
-          <h1 className={styles.profile_block__name}>{user.username || "ゲスト"}</h1>
-          <p className={styles.profile_block__email}>{user.email}</p>
-          <div className={styles.profile_block__list}>
-            <div className={styles.item_block}>
-              <div className={styles.item_block__icon}>
-                <ImSpoonKnife />
-              </div>
-              <div className={styles.item_block__num}>{recipeCount}</div>
-              <div className={styles.item_block__text}>レシピ投稿数</div>
-            </div>
-            <div className={styles.item_block}>
-              <div className={styles.item_block__icon}>
-                <FaHeart />
-              </div>
-              <div className={styles.item_block__num}>{likeCount}</div>
-              <div className={styles.item_block__text}>合計いいね数</div>
-            </div>
-            <div className={styles.item_block}>
-              <div className={styles.item_block__icon}>
-                <FaStar />
-              </div>
-              <div className={styles.item_block__num}>{averageRating?.toFixed(1) ?? "0.0"}</div>
-              <div className={styles.item_block__text}>レビュー平均</div>
-            </div>
-          </div>
-          <div className={styles.profile_block__btn}>
-            <Link href="/user/edit">プロフィールを編集</Link>
-          </div>
-        </div>
       </div>
-      <div className={styles.recommend_block}>
-        <h2>おすすめレシピ</h2>
-        {isRecipesLoading ? (
-          <div>Loading...</div>
-        ) : recipes && recipes.length > 0 ? (
-          <div className={styles.grid}>
-            {recipes.map((recipe: Recipe) => (
-              <div key={recipe.id} className={styles.card_block}>
-                <div className={styles.card_block__img}>
-                  <Image
-                    src={recipe.imageUrl || '/images/default-recipe.jpg'}
-                    alt={recipe.name}
-                    width={300}
-                    height={200}
-                  />
-                </div>
-                <h3 className={styles.card_block__name}>{recipe.name}</h3>
-                <p className={styles.card_block__genre}>{recipe.genre?.name || '未分類'}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div>おすすめのレシピはありません</div>
-        )}
-      </div>
-    </div>
+    </PageLoading>
   );
 };
 

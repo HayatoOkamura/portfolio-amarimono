@@ -45,7 +45,6 @@ const initialNewRecipe: NewRecipe = {
     carbohydrates: 0,
     fat: 0,
     protein: 0,
-    sugar: 0,
     salt: 0,
   },
   ingredients: [],
