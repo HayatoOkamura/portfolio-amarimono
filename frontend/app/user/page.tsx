@@ -53,7 +53,7 @@ const UserProfile = ({ user }: { user: any }) => {
             )}
           </div>
           <div className={styles.profile_block__detail}>
-            <h1 className={styles.profile_block__name}>{user.username || "ゲスト"}</h1>
+            <h1 className={styles.profile_block__name}>{user.username || "名前未設定"}</h1>
             <p className={styles.profile_block__email}>{user.email}</p>
             <div className={styles.profile_block__list}>
               <div className={styles.item_block}>
@@ -94,7 +94,6 @@ const UserProfile = ({ user }: { user: any }) => {
                       recipe={recipe}
                       isFavoritePage={false}
                       path="/recipes/"
-                      size="small"
                     />
                   </div>
                 ))}

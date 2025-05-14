@@ -107,14 +107,14 @@
     z-index: 1;
 
     &__title {
-      font-size: 1.5rem;
+      font-size: 1.25rem;
       font-weight: 700;
       color: #333;
-      margin-bottom: 20px;
     }
 
     &__inner {
       overflow: auto;
+      margin-top: 8px;
     }
     
     &__contents {

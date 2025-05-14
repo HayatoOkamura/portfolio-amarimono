@@ -85,7 +85,7 @@ const SideHeader = () => {
           >
             <Link href="/favorite/">
               <FaHeart />
-              <p className={styles.header_block__text}>Favorite</p>
+              <p className={styles.header_block__text}>お気に入り</p>
             </Link>
           </div>
           <ClientAuthMenu />

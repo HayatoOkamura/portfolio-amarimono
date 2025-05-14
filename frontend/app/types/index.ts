@@ -133,6 +133,7 @@ export interface EditIngredient {
   unit: {
     id: number;
     name: string;
+    description: string;
     step: number;
   };
   imageUrl: string | File | null;

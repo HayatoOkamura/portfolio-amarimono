@@ -36,33 +36,6 @@ const RecipeRegistration: React.FC = () => {
     fetchRecipeGenres();
   }, [ingredientsData, setIngredients, fetchRecipeGenres]);
 
-  const handleDeleteRecipe = async (id: string) => {
-    if (confirm("Are you sure you want to delete this recipe?")) {
-      try {
-        await deleteRecipeMutation.mutateAsync(id);
-      } catch (err: any) {
-        console.error(err.message);
-      }
-    }
-  };
-
-  const openEditModal = (recipe: any) => {
-    setEditingRecipe({
-      ...recipe,
-      ingredients: recipe.ingredients.map((ing: Ingredient) => ({
-        id: ing.id,
-        quantity: ing.quantity,
-        unit: ing.unit,
-      })),
-      instructions: recipe.instructions.map((step: Instruction) => ({
-        stepNumber: step.stepNumber,
-        description: step.description,
-        image: step.imageUrl,
-      })),
-    });
-    setIsModalOpen(true);
-  };
-
   const closeEditModal = () => {
     setIsModalOpen(false);
     setEditingRecipe(null);
@@ -108,82 +81,6 @@ const RecipeRegistration: React.FC = () => {
   return (
     <div className={styles.container}>
       <RegistrationForm />
-      <ul className="grid grid-cols-3 gap-3 mt-8">
-        {Array.isArray(recipesData?.recipes) &&
-          recipesData.recipes.map((recipe: Recipe) => (
-            <li key={recipe.id} className="p-6 rounded-lg shadow">
-              <h4 className="text-xl font-bold mb-2">{recipe.name}</h4>
-              {recipe.isDraft && (
-                <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm mb-2">下書き</span>
-              )}
-              {Array.isArray(recipe.instructions) &&
-                recipe.instructions.map((step: Instruction) => (
-                  <p
-                    key={step.stepNumber}
-                  >{`Step ${step.stepNumber}: ${step.description}`}</p>
-                ))}
-              {recipe.imageUrl && (
-                <div className="relative block aspect-video">
-                  <Image
-                    src={
-                      recipe.imageUrl
-                        ? `${imageBaseUrl}/${recipe.imageUrl}`
-                        : "/pic_recipe_default.webp"
-                    }
-                    alt={recipe.name}
-                    className="w-32 h-32 object-cover rounded mb-2"
-                    width={100}
-                    height={100}
-                  />
-                </div>
-              )}
-              {recipe.genre && recipe.genre.name && (
-                <p>Genre: {recipe.genre.name}</p>
-              )}
-
-              <p>Cooking Time: {recipe.cookingTime} minutes</p>
-              <p>Cost: {recipe.costEstimate}</p>
-              <p>Summary: {recipe.summary}</p>
-              <p>Catchphrase: {recipe.catchphrase}</p>
-              <div>
-                <p>Calories: {recipe.nutrition?.calories} kcal</p>
-                <p>Carbohydrates: {recipe.nutrition?.carbohydrates} g</p>
-                <p>Fat: {recipe.nutrition?.fat} g</p>
-                <p>Protein: {recipe.nutrition?.protein} g</p>
-                <p>Salt: {recipe.nutrition?.salt} g</p>
-              </div>
-
-              <h5 className="font-semibold mt-4">Ingredients:</h5>
-              <ul>
-                {Array.isArray(recipe.ingredients) &&
-                  recipe.ingredients.map(
-                    (ingredient: Ingredient, index: number) => (
-                      <li key={index}>
-                        <p>
-                          {ingredient.name} - {ingredient.quantity}
-                        </p>
-                        <span>
-                          {ingredient.unit ? ingredient.unit.name : "No unit"}
-                        </span>
-                      </li>
-                    )
-                  )}
-              </ul>
-              <button
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-                onClick={() => openEditModal(recipe)}
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDeleteRecipe(recipe.id)}
-                className="bg-red-500 text-white px-4 py-2 rounded mt-4"
-              >
-                Delete Recipe
-              </button>
-            </li>
-          ))}
-      </ul>
 
       {isModalOpen && editingRecipe && (
         <div className={styles.modal_block}>

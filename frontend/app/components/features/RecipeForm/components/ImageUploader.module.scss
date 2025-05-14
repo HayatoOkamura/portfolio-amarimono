@@ -69,11 +69,15 @@
     justify-content: center;
   }
 
+  &__placeholderContent {
+    pointer-events: none;
+  }
+
   &__icon {
     margin: 0 auto;
     width: 85px;
     color: #d7d7d7;
-    @include mq('tab') {
+    @include mq("tab") {
       width: 40px;
     }
 

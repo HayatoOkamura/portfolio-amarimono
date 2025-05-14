@@ -18,7 +18,7 @@ const ClientAuthMenu = () => {
         >
           <a>
             <IoLogOut />
-            <p className={styles.header_block__text}>Logout</p>
+            <p className={styles.header_block__text}>ログアウト</p>
           </a>
         </div>
       ) : (
@@ -27,7 +27,7 @@ const ClientAuthMenu = () => {
         >
           <Link href="/login/">
             <IoLogIn />
-            <p className={styles.header_block__text}>Login</p>
+            <p className={styles.header_block__text}>ログイン</p>
           </Link>
         </div>
       )}

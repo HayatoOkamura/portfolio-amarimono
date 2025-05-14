@@ -14,7 +14,7 @@ interface IngredientFormProps {
     name: string;
     genre: { id: number; name: string };
     unit: { id: number; name: string; description: string; step: number };
-    imageUrl?: string;
+    imageUrl?: string | File | null;
     nutrition: {
       calories: number;
       protein: number;
@@ -254,7 +254,7 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
       <div className={styles.field}>
         <label className={styles.label}>画像</label>
         <ImageUploader
-          imageUrl={initialData?.imageUrl}
+          imageUrl={typeof initialData?.imageUrl === 'string' ? initialData.imageUrl : undefined}
           image={image}
           onImageChange={handleImageChange}
         />

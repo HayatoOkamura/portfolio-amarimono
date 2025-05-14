@@ -31,7 +31,7 @@ const ClientAuthMenu = () => {
               )}
             </div>
             <p className={styles.user_block__name}>
-              {user.username || "ゲスト"}
+              {user.username || "名前未設定"}
             </p>
           </Link>
         </div>

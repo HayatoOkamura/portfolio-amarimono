@@ -75,7 +75,7 @@ const AdminIngredients = () => {
       if (!unit || !genre) return;
       
       const image = formData.get("image") as File;
-      const imageUrl = image ? image : formData.get("image_url") as string || null;
+      const imageUrl = image ? image : (editingIngredient.imageUrl as string) || null;
 
       const updatedIngredient = {
         ...editingIngredient,
