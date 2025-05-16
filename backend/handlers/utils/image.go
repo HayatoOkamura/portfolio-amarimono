@@ -48,6 +48,9 @@ func saveToLocal(c *gin.Context, file *multipart.FileHeader, dir string, id stri
 	} else if dir == "temp_uploads" {
 		// 一時的なアップロードの場合
 		saveDir = filepath.Join(".", "uploads", "temp")
+	} else if strings.HasPrefix(dir, "users/") {
+		// ユーザープロフィール画像の場合
+		saveDir = filepath.Join(".", "uploads", dir)
 	} else {
 		// レシピの画像の場合
 		if id == "" {
@@ -83,6 +86,8 @@ func saveToLocal(c *gin.Context, file *multipart.FileHeader, dir string, id stri
 		return filepath.Join("ingredients", id, uniqueFilename), nil
 	} else if dir == "temp_uploads" {
 		return filepath.Join("temp", uniqueFilename), nil
+	} else if strings.HasPrefix(dir, "users/") {
+		return filepath.Join(dir, uniqueFilename), nil
 	} else {
 		return filepath.Join("recipes", id, dir, uniqueFilename), nil
 	}
@@ -136,6 +141,10 @@ func saveToSupabase(file *multipart.FileHeader, dir string, id string) (string, 
 		// 一時的なアップロードの場合
 		encodedFilename := url.PathEscape(uniqueFilename)
 		filePath = fmt.Sprintf("temp/%s", encodedFilename)
+	} else if strings.HasPrefix(dir, "users/") {
+		// ユーザープロフィール画像の場合
+		encodedFilename := url.PathEscape(uniqueFilename)
+		filePath = fmt.Sprintf("%s/%s", dir, encodedFilename)
 	} else {
 		// レシピの画像の場合
 		if id == "" {
@@ -223,6 +232,9 @@ func deleteFromLocal(imagePath string) error {
 		fullPath = filepath.Join(".", "uploads", imagePath)
 	case "temp":
 		// 一時的な画像の場合
+		fullPath = filepath.Join(".", "uploads", imagePath)
+	case "users":
+		// ユーザープロフィール画像の場合
 		fullPath = filepath.Join(".", "uploads", imagePath)
 	default:
 		return fmt.Errorf("invalid image type: %s", parts[0])

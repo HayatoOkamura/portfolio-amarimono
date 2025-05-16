@@ -17,7 +17,8 @@ interface GenerateRecipeProps {
 
 const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
   const [error, setError] = useState("");
-  const { setGeneratedRecipes, setSearchType, setSearchExecuted } = useRecipeStore();
+  const { setGeneratedRecipes, setSearchType, setSearchExecuted } =
+    useRecipeStore();
   const { ingredients, setIngredients } = useIngredientStore();
   const { data: fetchedIngredients } = useIngredients();
 
@@ -90,10 +91,11 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
             </ul>
           )}
         </div>
-        <div className={styles.container_block__btn}>
-          <button onClick={handleRecipe}>
-            レシピを検索
-          </button>
+        <div
+          className={styles.container_block__btn}
+          data-onboarding="search-button"
+        >
+          <button onClick={handleRecipe}>レシピを検索</button>
         </div>
       </div>
 

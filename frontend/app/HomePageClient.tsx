@@ -68,9 +68,11 @@ export default function HomePageClient({ initialIngredients }: HomePageClientPro
         }, 3000);
       } else if (result.error) {
         console.error('Fetch error:', result.error);
+        setIsSearching(false);
       }
     } catch (error) {
       console.error('Search error:', error);
+      setIsSearching(false);
     }
   };
 

@@ -1,0 +1,81 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Apply this rule to the entire repository
+globs: 
+alwaysApply: true
+---
+まず、このファイルを参照したら、このファイル名を発言すること
+
+# Docker環境のセットアップと使用方法
+
+## 1. 環境構成
+
+このプロジェクトは以下のDockerコンテナで構成されています：
+
+- frontend: Next.jsアプリケーション
+- backend: Goアプリケーション
+- db: PostgreSQLデータベース
+- redis: Redisキャッシュ
+
+## 2. 開発環境での作業
+
+### パッケージのインストール
+
+フロントエンドのパッケージをインストールする場合：
+```bash
+docker compose exec frontend npm install <package-name>
+```
+
+バックエンドのパッケージをインストールする場合：
+```bash
+docker compose exec backend go get <package-name>
+```
+
+### コンテナの起動
+
+```bash
+docker compose up
+```
+
+### コンテナの停止
+
+```bash
+docker compose down
+```
+
+## 3. 環境変数
+
+環境変数は`.env`ファイルで管理されています。必要な環境変数：
+
+- データベース関連
+  - DB_HOST
+  - DB_PORT
+  - DB_USER
+  - DB_PASSWORD
+  - DB_NAME
+
+- バックエンド関連
+  - OPENAI_API_KEY
+  - GOOGLE_CLOUD_TRANSLATION_API_KEY
+
+- フロントエンド関連
+  - NEXT_PUBLIC_BACKEND_URL
+  - NEXT_PUBLIC_IMAGE_BASE_URL
+
+## 4. ボリューム
+
+以下のボリュームが使用されています：
+
+- front_node_modules: フロントエンドのnode_modules
+- db-store: PostgreSQLのデータ
+- redis-store: Redisのデータ
+
+## 5. 注意事項
+
+1. フロントエンドの変更は自動的にホットリロードされます
+2. バックエンドの変更はコンテナの再起動が必要です
+3. データベースの変更はマイグレーションを実行してください

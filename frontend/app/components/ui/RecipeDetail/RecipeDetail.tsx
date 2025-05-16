@@ -12,6 +12,7 @@ import { memo } from "react";
 import StarRating from "@/app/components/ui/StarRating/StarRating";
 import { calculateAverageRating } from "@/app/utils/calculateAverageRating";
 import { FaStar } from "react-icons/fa";
+import LoginModal from "@/app/components/ui/LoginModal/LoginModal";
 
 interface RecipeDetailProps {
   recipe: Recipe;
@@ -391,22 +392,10 @@ const RecipeDetail = memo(
           </div>
         )}
 
-        {showLoginModal && (
-          <div className={styles.login_modal}>
-            <div className={styles.login_modal__inner}>
-              <button
-                className={styles.login_modal__close}
-                onClick={onCloseLoginModal}
-              >
-                <span></span>
-                <span></span>
-              </button>
-              <p className={styles.login_modal__title}>ログインしてください</p>
-              <button className={styles.login_modal__login} onClick={onLogin}>
-                ログイン
-              </button>
-            </div>
-          </div>
+        {showLoginModal && onLogin && (
+          <LoginModal
+            onLogin={onLogin}
+          />
         )}
       </div>
     );

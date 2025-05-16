@@ -6,11 +6,11 @@ import { useUserStore } from "@/app/stores/userStore";
 import { FaUserCircle } from "react-icons/fa";
 import Image from "next/image";
 import Link from "next/link";
-
+import { imageBaseUrl } from "@/app/utils/api";
 const ClientAuthMenu = () => {
   const { user } = useUserStore();
   const [imageError, setImageError] = useState(false);
-
+  
   return (
     <>
       {user ? (
@@ -19,7 +19,7 @@ const ClientAuthMenu = () => {
             <div className={styles.user_block__icon}>
               {user.profileImage && !imageError ? (
                 <Image
-                  src={`${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}/uploads/${user.profileImage}`}
+                  src={`${imageBaseUrl}/${user.profileImage}`}
                   alt="User Profile"
                   className={styles.user_block__icon_img}
                   width={100}

@@ -19,8 +19,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             />
           </div>
         </div>
-        <div className={styles.layout_block__content}>{children}
-
+        <div className={styles.layout_block__content}>
+          {children}
         </div>
       </div>
     </div>

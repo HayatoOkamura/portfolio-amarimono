@@ -8,11 +8,18 @@ import { Recipe } from "@/app/types/index";
 import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";
 import { useAuth } from "@/app/hooks/useAuth";
 import { PageLoading } from '@/app/components/ui/Loading/PageLoading';
+import LoginModal from "@/app/components/ui/LoginModal/LoginModal";
+import { useRouter } from 'next/navigation';
 
 const FavoritesPage = () => {
   const { user } = useAuth();
   const { data, isLoading } = useFavorites(user?.id || "");
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const router = useRouter();
+
+  if (!user) {
+    return <LoginModal onLogin={() => router.push('/login')} />;
+  }
 
   const handleRecipeClick = (recipe: Recipe) => {
     setSelectedRecipe(recipe);

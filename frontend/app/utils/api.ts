@@ -1,7 +1,10 @@
 import axios from "axios";
 
-// 開発環境と本番環境で異なるURLを使用
-export const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+// クライアントサイドとサーバーサイドで異なるURLを使用
+export const backendUrl = typeof window !== 'undefined'
+  ? process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+  : 'http://backend:8080';
+
 export const imageBaseUrl = process.env.NODE_ENV === 'production'
     ? process.env.NEXT_PUBLIC_IMAGE_BASE_URL
     : process.env.NEXT_PUBLIC_LOCAL_IMAGE_URL;

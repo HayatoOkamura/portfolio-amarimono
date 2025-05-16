@@ -4,13 +4,27 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import styles from "./edit.module.scss";
 import { useUserStore } from "@/app/stores/userStore";
-import { updateUserProfile } from "@/app/hooks/user";
+import { updateUserProfile, useUser } from "@/app/hooks/user";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LuImagePlus } from "react-icons/lu";
 import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
+import { imageBaseUrl } from "@/app/utils/api";
+
+interface User {
+  id: string;
+  email: string;
+  username?: string;
+  profileImage?: string;
+  age?: number;
+  gender?: string;
+  email_confirmed_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 function EditProfileContent() {
-  const { user, isLoading, fetchUser } = useUserStore();
+  const { user: authUser, isLoading: isAuthLoading, fetchUser } = useUserStore();
+  const { user: userDetails, loading: isUserLoading, error: userError } = useUser(authUser?.id);
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSetupMode = searchParams.get("setup") === "true";
@@ -20,23 +34,25 @@ function EditProfileContent() {
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [age, setAge] = useState<number | "">("");
-  const [gender, setGender] = useState("male");
+  const [gender, setGender] = useState("未設定");
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
 
-  // ユーザー情報を Zustand から取得
+  // ユーザー情報を設定
   useEffect(() => {
-    if (user) {
-      setUsername(user.username || "");
-      setAge(user.age || "");
-      setGender(user.gender || "male");
-      setPreviewImage(user.profileImage || null);
+    if (userDetails) {
+      setUsername(userDetails.username || "");
+      setAge(userDetails.age || "");
+      setGender(userDetails.gender || "未設定");
+      if (userDetails.profileImage) {
+        setPreviewImage(`${imageBaseUrl}/${userDetails.profileImage}`);
+      }
     }
-  }, [user]);
+  }, [userDetails]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.id) return;
+    if (!authUser?.id) return;
 
     setUpdating(true);
     setError("");
@@ -49,7 +65,7 @@ function EditProfileContent() {
         formData.append("profileImage", profileImage);
       }
 
-      await updateUserProfile(user.id, formData);
+      await updateUserProfile(authUser.id, formData);
       await fetchUser();
 
       if (isSetupMode) {
@@ -85,15 +101,15 @@ function EditProfileContent() {
     fileInputRef.current?.click();
   };
 
-  if (!user) return <p>ログインしてください</p>;
+  if (!authUser) return <p>ログインしてください</p>;
 
   return (
-    <PageLoading isLoading={isLoading}>
+    <PageLoading isLoading={isAuthLoading || isUserLoading}>
       <div className={styles.edit_block}>
         <div className={styles.edit_block__inner}>
-          <h1>{isSetupMode ? "プロフィール設定" : "プロフィール編集"}</h1>
-          <p>{isSetupMode && "アカウントの基本情報を設定してください"}</p>
-          <form onSubmit={handleUpdateProfile}>
+          <h1 className={styles.edit_block__title}>{isSetupMode ? "プロフィール設定" : "プロフィール編集"}</h1>
+          <p className={styles.edit_block__description}>{isSetupMode && "アカウントの基本情報を設定してください"}</p>
+          <form onSubmit={handleUpdateProfile} className={styles.edit_block__form}>
             <div className={styles.edit_block__head}>
               {/* プロフィール画像のアップロード */}
               <div
@@ -165,13 +181,16 @@ function EditProfileContent() {
                       value={gender}
                       onChange={(e) => setGender(e.target.value)}
                     >
-                      <option value="male">男性</option>
-                      <option value="female">女性</option>
-                      <option value="other">その他</option>
+                      <option value="未設定">未設定</option>
+                      <option value="男性">男性</option>
+                      <option value="女性">女性</option>
+                      <option value="その他">その他</option>
                     </select>
                   </div>
                 </div>
-                {error && <div className={styles.error_message}>{error}</div>}
+                {(error || userError) && (
+                  <div className={styles.error_message}>{error || userError}</div>
+                )}
                 <button
                   className={styles.edit_block__btn}
                   type="submit"

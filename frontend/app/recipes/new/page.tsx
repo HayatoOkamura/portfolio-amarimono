@@ -17,6 +17,9 @@ import Image from "next/image";
 import { useState } from "react";
 import { Ingredient, Instruction, Recipe } from "@/app/types/index";
 import styles from "./new.module.scss";
+import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
+import LoginModal from "@/app/components/ui/LoginModal/LoginModal";
+import { useRouter } from "next/navigation";
 
 const RecipeRegistration: React.FC = () => {
   const { user } = useAuth();
@@ -28,6 +31,7 @@ const RecipeRegistration: React.FC = () => {
   const updateRecipeMutation = useUpdateRecipe();
   const [editingRecipe, setEditingRecipe] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const router = useRouter();
 
   useEffect(() => {
     if (ingredientsData) {
@@ -77,6 +81,10 @@ const RecipeRegistration: React.FC = () => {
       }
     }
   };
+
+  if (!user) {
+    return <LoginModal onLogin={() => router.push('/login')} />;
+  }
 
   return (
     <div className={styles.container}>

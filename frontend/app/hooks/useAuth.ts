@@ -1,28 +1,17 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/app/stores/userStore";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import { backendUrl } from "@/app/utils/api";
-
-interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-interface RegisterCredentials {
-  email: string;
-  password: string;
-}
 
 interface User {
   id: string;
   email: string;
-  name?: string;
   username?: string;
   profileImage?: string;
   age?: number;
   gender?: string;
+  role?: string;
   email_confirmed_at?: string;
   created_at?: string;
   updated_at?: string;
@@ -35,11 +24,30 @@ export interface AuthError {
 
 // バックエンドのユーザー情報を取得する関数
 const fetchUserDetails = async (userId: string) => {
-  const response = await fetch(`${backendUrl}/api/users/${userId}`);
-  if (!response.ok) {
-    throw new Error("User not found in backend database");
+  try {
+    const response = await fetch(`${backendUrl}/api/users/${userId}`);
+    if (!response.ok) {
+      throw new Error("User not found in backend database");
+    }
+    const data = await response.json();
+    console.log("Backend user data:", data);
+    
+    // role情報が存在することを確認
+    if (!data.role) {
+      console.warn("Role information is missing from backend response");
+    }
+    
+    return {
+      username: data.username,
+      profileImage: data.profileImage,
+      age: data.age,
+      gender: data.gender,
+      role: data.role || null // roleが存在しない場合はnullを設定
+    };
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    return {};
   }
-  return response.json();
 };
 
 // バックエンドにユーザーを作成する関数
@@ -51,6 +59,14 @@ const createBackendUser = async (user: any) => {
   formData.append("age", "0");
   formData.append("gender", "未設定");
 
+  console.log("Sending user data to backend:", {
+    id: user.id,
+    email: user.email,
+    username: user.email?.split("@")[0],
+    age: "0",
+    gender: "未設定"
+  });
+
   const response = await fetch(`${backendUrl}/api/users`, {
     method: "POST",
     body: formData,
@@ -61,7 +77,15 @@ const createBackendUser = async (user: any) => {
     throw new Error(errorData.error || "バックエンドへのユーザー登録に失敗しました");
   }
 
-  return response.json();
+  // ユーザー情報を取得
+  const userResponse = await fetch(`${backendUrl}/api/users/${user.id}`);
+  if (!userResponse.ok) {
+    throw new Error("ユーザー情報の取得に失敗しました");
+  }
+
+  const userData = await userResponse.json();
+  console.log("Received user data from backend:", userData);
+  return userData;
 };
 
 // エラーを生成する関数
@@ -94,12 +118,19 @@ export function useAuth() {
           if (!isMounted) return;
 
           if (authUser) {
+            // バックエンドからユーザー情報を取得
+            const userDetails = await fetchUserDetails(authUser.id);
+            console.log("Fetched user details from backend:", userDetails);
+
             const userData: User = {
               id: authUser.id,
               email: authUser.email || '',
               created_at: authUser.created_at,
-              updated_at: authUser.updated_at
+              updated_at: authUser.updated_at,
+              ...userDetails, // バックエンドから取得した情報をマージ
+              role: userDetails.role || 'user' // role情報がnullの場合は'user'をデフォルト値として設定
             };
+            console.log("Final user data:", userData);
             setUser(userData);
             setStoreUser(userData);
           }
@@ -143,7 +174,14 @@ export function useAuth() {
     if (storeUser !== user) {
       setUser(storeUser);
     }
-  }, [storeUser]);
+  }, [storeUser, user]);
+
+  const setUserState = (userData: User | null) => {
+    console.log("Setting user state:", userData);
+    // 状態更新を同期的に行う
+    setUser(userData);
+    setStoreUser(userData);
+  };
 
   const login = async ({ email, password }: { email: string; password: string }) => {
     try {
@@ -184,8 +222,7 @@ export function useAuth() {
           created_at: user.created_at,
           updated_at: user.updated_at
         };
-        setUser(formattedUser);
-        setStoreUser(formattedUser);
+        setUserState(formattedUser);
       }
 
       return null;
@@ -274,31 +311,23 @@ export function useAuth() {
   };
 
   const createUserAfterVerification = async (user: any) => {
+    console.log("=== createUserAfterVerification Start ===");
     try {
       if (!user?.id) {
         console.error("Invalid user data:", user);
         throw new Error("ユーザーIDが存在しません");
       }
 
-      // 既に作成済みかチェック
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', user.id)
-        .single();
-
-      if (existingUser) {
-        console.log("User already exists in backend:", existingUser);
-        return existingUser;
-      }
-
+      console.log("Creating backend user...");
       // バックエンドにユーザーを作成
       const userData = await createBackendUser(user);
+      console.log("Backend user creation result:", userData);
       
       if (!userData) {
         throw new Error("ユーザー情報の作成に失敗しました");
       }
 
+      console.log("Formatting user data...");
       // ユーザー情報を更新
       const formattedUser: User = {
         id: user.id,
@@ -309,9 +338,11 @@ export function useAuth() {
         ...userData
       };
 
-      setUser(formattedUser);
-      setStoreUser(formattedUser);
+      console.log("Setting user state...");
+      // 状態更新を一度だけ行う
+      setUserState(formattedUser);
 
+      console.log("=== createUserAfterVerification End ===");
       return userData;
     } catch (error) {
       console.error("ユーザー作成エラー:", error);
@@ -327,8 +358,8 @@ export function useAuth() {
     login,
     register,
     logout,
-    setUser,
     createUserAfterVerification,
+    setUser: setUserState
   };
 }
 

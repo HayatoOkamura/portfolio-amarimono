@@ -1,0 +1,132 @@
+@import '../styles/config/breakpoints';
+
+.help_block {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: #fff;
+
+  &__header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  &__title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-font-color);
+    margin-bottom: 0.5rem;
+  }
+
+  &__subtitle {
+    font-size: 1.125rem;
+    color: var(--primary-font-color);
+    line-height: 1.5;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  @include mq('sp') {
+    padding: 1rem;
+    margin: 1rem;
+
+    .help_block__title {
+      font-size: 1.5rem;
+    }
+
+    .help_block__subtitle {
+      font-size: 1rem;
+    }
+  }
+}
+
+.help_section_block {
+  &__header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--primary-font-color);
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--primary-font-color);
+    margin: 0;
+  }
+}
+
+.help_content_block {
+  padding: 0 1rem;
+
+  &__item {
+    margin-bottom: 1.5rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__subtitle {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--primary-font-color);
+    margin-bottom: 0.5rem;
+  }
+
+  &__list {
+    list-style-position: outside;
+    margin: 0;
+    padding-left: 1.5rem;
+    color: var(--primary-font-color);
+    font-size: 0.95rem;
+
+    li {
+      margin-bottom: 0.5rem;
+      line-height: 1.6;
+      padding-left: 0.5rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  &__text {
+    color: var(--primary-font-color);
+    line-height: 1.6;
+    margin: 0;
+  }
+}
+
+.help_faq_block {
+  &__item {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--primary-font-color);
+
+    &:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    &__question {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      color: var(--primary-font-color);
+    }
+
+    &__answer {
+      line-height: 1.6;
+      color: var(--primary-font-color);
+    }
+  }
+} 

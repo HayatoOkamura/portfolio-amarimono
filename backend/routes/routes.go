@@ -25,6 +25,7 @@ func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, like
 	router.PUT("/api/users/:id", userHandler.UpdateUserProfile)
 	router.GET("/api/users/:id/likes", userHandler.GetUserLikeCount) // ユーザーの投稿レシピの合計いいね数を取得
 	router.GET("/api/users/:id/reviews", userHandler.GetUserRecipeAverageRating)
+	router.POST("/api/users/role", userHandler.SetUserRole)       // 管理者権限設定用のエンドポイント
 	router.GET("/api/user/recipes", recipeHandler.GetUserRecipes) // 特定のレシピ取得
 
 	// ジャンル取得エンドポイント
@@ -41,19 +42,19 @@ func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, like
 	// 管理画面用エンドポイント
 	admin := router.Group("/admin")
 	{
-		admin.GET("/ingredients", adminHandler.ListIngredients)                   // 具材一覧
-		admin.POST("/ingredients", adminHandler.AddIngredient)                    // 具材追加
-		admin.PATCH("/ingredients/:id", adminHandler.UpdateIngredient)            // 具材更新
-		admin.DELETE("/ingredients/:id", adminHandler.DeleteIngredient)           // 具材削除
-		admin.GET("/ingredients/translate", adminHandler.TranslateIngredientName) // 具材名の翻訳
-		admin.GET("/recipes", adminHandler.ListRecipes)                           // レシピ一覧
-		admin.GET("/recipes/:id", adminHandler.GetRecipe)                         // レシピ取得
-		admin.POST("/recipes", adminHandler.AddRecipe)                            // レシピ追加
-		admin.PUT("/recipes/:id", adminHandler.UpdateRecipe)                      // レシピ更新
-		admin.DELETE("/recipes/:id", adminHandler.DeleteRecipe)                   // レシピ削除
+		admin.GET("/ingredients", adminHandler.ListIngredients)                    // 具材一覧
+		admin.POST("/ingredients", adminHandler.AddIngredient)                     // 具材追加
+		admin.PATCH("/ingredients/:id", adminHandler.UpdateIngredient)             // 具材更新
+		admin.DELETE("/ingredients/:id", adminHandler.DeleteIngredient)            // 具材削除
+		admin.GET("/ingredients/translate", adminHandler.TranslateIngredientName)  // 具材名の翻訳
+		admin.GET("/recipes", adminHandler.ListRecipes)                            // レシピ一覧
+		admin.GET("/recipes/:id", adminHandler.GetRecipe)                          // レシピ取得
+		admin.POST("/recipes", adminHandler.AddRecipe)                             // レシピ追加
+		admin.PUT("/recipes/:id", adminHandler.UpdateRecipe)                       // レシピ更新
+		admin.DELETE("/recipes/:id", adminHandler.DeleteRecipe)                    // レシピ削除
 		admin.PUT("/recipes/:id/toggle-publish", adminHandler.ToggleRecipePublish) // レシピの公開/非公開を切り替え
-		admin.GET("/units", adminHandler.ListUnits)                               // 単位一覧
-		admin.POST("/draft-recipes", adminHandler.SaveDraftRecipe)                // 下書きレシピの保存
-		admin.GET("/draft-recipes/:userId", adminHandler.GetDraftRecipes)         // 下書きレシピの取得
+		admin.GET("/units", adminHandler.ListUnits)                                // 単位一覧
+		admin.POST("/draft-recipes", adminHandler.SaveDraftRecipe)                 // 下書きレシピの保存
+		admin.GET("/draft-recipes/:userId", adminHandler.GetDraftRecipes)          // 下書きレシピの取得
 	}
 }

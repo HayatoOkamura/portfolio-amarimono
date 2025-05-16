@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { backendUrl } from "../utils/api";
 import { useAuth } from "@/app/hooks/useAuth";
-import { useUserLikeCount, useUserRecipeAverageRating } from "@/app/hooks/user";
+import { useUserLikeCount, useUserRecipeAverageRating, useUser } from "@/app/hooks/user";
 import { imageBaseUrl } from "@/app/utils/api";
 import { useRecommendedRecipes } from "@/app/hooks/recipes";
 import { FaUserCircle } from "react-icons/fa";
@@ -19,12 +19,26 @@ import { Recipe } from "@/app/types/index";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
+import LoginModal from "@/app/components/ui/LoginModal/LoginModal";
+
+interface User {
+  id: string;
+  email: string;
+  username?: string;
+  profileImage?: string;
+  age?: number;
+  gender?: string;
+  email_confirmed_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 // ユーザープロフィールコンポーネント
-const UserProfile = ({ user }: { user: any }) => {
-  const { likeCount, loading: isLikeCountLoading } = useUserLikeCount(user.id);
-  const { averageRating, loading: isRatingLoading } = useUserRecipeAverageRating(user.id);
-  const { data: recipes, isLoading: isRecipesLoading } = useRecommendedRecipes(user.id);
+const UserProfile = ({ userId }: { userId: string }) => {
+  const { user: userDetails, loading: isUserLoading, error: userError } = useUser(userId);
+  const { likeCount, loading: isLikeCountLoading } = useUserLikeCount(userId);
+  const { averageRating, loading: isRatingLoading } = useUserRecipeAverageRating(userId);
+  const { data: recipes, isLoading: isRecipesLoading } = useRecommendedRecipes(userId);
   const [recipeCount, setRecipeCount] = useState(0);
 
   useEffect(() => {
@@ -33,16 +47,24 @@ const UserProfile = ({ user }: { user: any }) => {
     }
   }, [recipes]);
 
-  const isLoading = isLikeCountLoading || isRatingLoading || isRecipesLoading;
+  const isLoading = isUserLoading || isLikeCountLoading || isRatingLoading || isRecipesLoading;
+
+  useEffect(() => {
+    console.log("User data:", userDetails);
+  }, [userDetails]);
+
+  if (userError) {
+    return <div>ユーザー情報の取得に失敗しました</div>;
+  }
 
   return (
     <PageLoading isLoading={isLoading}>
       <div className={styles.profile_block}>
         <div className={styles.profile_block__head}>
           <div className={styles.profile_block__image}>
-            {user.profileImage ? (
+            {userDetails?.profileImage ? (
               <Image
-                src={user.profileImage}
+                src={`${imageBaseUrl}/${userDetails.profileImage}`}
                 alt="User Profile"
                 className={styles.user_block__icon_img}
                 width={100}
@@ -53,8 +75,8 @@ const UserProfile = ({ user }: { user: any }) => {
             )}
           </div>
           <div className={styles.profile_block__detail}>
-            <h1 className={styles.profile_block__name}>{user.username || "名前未設定"}</h1>
-            <p className={styles.profile_block__email}>{user.email}</p>
+            <h1 className={styles.profile_block__name}>{userDetails?.username || "名前未設定"}</h1>
+            <p className={styles.profile_block__email}>{userDetails?.email}</p>
             <div className={styles.profile_block__list}>
               <div className={styles.item_block}>
                 <div className={styles.item_block__icon}>
@@ -108,30 +130,6 @@ const UserProfile = ({ user }: { user: any }) => {
   );
 };
 
-// ログインモーダルコンポーネント
-const LoginModal = ({ onClose, onLogin }: { onClose: () => void; onLogin: () => void }) => {
-  return (
-    <div className={styles.login_modal}>
-      <div className={styles.login_modal__inner}>
-        <button
-          className={styles.login_modal__close}
-          onClick={onClose}
-        >
-          <span></span>
-          <span></span>
-        </button>
-        <h2 className={styles.login_modal__title}>ログインしてください</h2>
-        <button
-          className={styles.login_modal__login}
-          onClick={onLogin}
-        >
-          ログイン
-        </button>
-      </div>
-    </div>
-  );
-};
-
 // メインコンポーネント
 export default function UserPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
@@ -142,11 +140,10 @@ export default function UserPage() {
     <PageLoading isLoading={isAuthLoading}>
       {!user ? (
         <LoginModal
-          onClose={() => setShowLoginModal(false)}
           onLogin={() => router.push('/login')}
         />
       ) : (
-        <UserProfile user={user} />
+        <UserProfile userId={user.id} />
       )}
     </PageLoading>
   );

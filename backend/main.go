@@ -12,6 +12,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	supa "github.com/supabase-community/supabase-go"
 )
 
 func main() {
@@ -49,6 +50,19 @@ func main() {
 		DB:       0,  // 使用するDB番号
 	})
 
+	// Supabaseクライアントの初期化
+	supabase, err := supa.NewClient(
+		os.Getenv("SUPABASE_URL"),
+		os.Getenv("SUPABASE_SERVICE_ROLE_KEY"),
+		nil,
+	)
+	if err != nil {
+		log.Fatalf("Failed to create Supabase client: %v", err)
+	}
+
+	// 認証ハンドラーの初期化
+	authHandler := handlers.NewAuthHandler(supabase, dbConn.Postgres)
+
 	// Redis接続の確認
 	ctx := context.Background()
 	if err := rdb.Ping(ctx).Err(); err != nil {
@@ -84,7 +98,9 @@ func main() {
 	// ハンドラーの初期化
 	uploadHandler := handlers.NewUploadHandler()
 
+	// ルートの設定
 	routes.SetupRoutes(r, recipeHandler, likeHandler, userHandler, genreHandler, adminHandler, reviewHandler, recommendationHandler)
+	routes.SetupAuthRoutes(r, authHandler)
 
 	// 画像アップロード用のエンドポイント
 	r.POST("/api/upload", uploadHandler.UploadImage)

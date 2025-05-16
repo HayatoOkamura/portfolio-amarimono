@@ -9,6 +9,27 @@
     margin-right: auto;
   }
 
+  &__title {
+    font-size: 1.5rem;
+    line-height: 1.5;
+    letter-spacing: 0.03em;
+    color: var(--primary-font-color);
+    font-weight: 600;
+  }
+
+  &__description {
+    font-size: 1rem;
+    line-height: 1.5;
+    letter-spacing: 0.03em;
+    color: var(--primary-font-color);
+    font-weight: 400;
+    margin-top: 12px;
+  }
+
+  &__form {
+    margin-top: 38px;
+  }
+
   &__head {
     display: flex;
     align-items: center;
@@ -46,6 +67,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
+
+    img {
+      width: 100%;
+      object-fit: cover;
+    }
   }
 
   &__placeholder {

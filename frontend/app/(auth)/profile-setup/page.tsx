@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
+import Loading from "@/app/components/ui/Loading/Loading";
 import styles from "./ProfileSetup.module.scss";
 
 export default function ProfileSetupPage() {
@@ -48,6 +49,14 @@ export default function ProfileSetupPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (isSubmitting) {
+    return (
+      <div className={styles.profile_setup}>
+        <Loading />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.profile_setup}>

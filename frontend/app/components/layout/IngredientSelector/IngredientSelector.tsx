@@ -15,14 +15,20 @@ interface IngredientSelectorProps {
   onSearch: () => Promise<void>;
 }
 
-const IngredientSelector = ({ initialIngredients, onSearch }: IngredientSelectorProps) => {
+const IngredientSelector = ({
+  initialIngredients,
+  onSearch,
+}: IngredientSelectorProps) => {
   const router = useRouter();
-  const { data: ingredients = initialIngredients, isLoading: isIngredientsLoading } = useIngredients({
+  const {
+    data: ingredients = initialIngredients,
+    isLoading: isIngredientsLoading,
+  } = useIngredients({
     initialData: initialIngredients,
-    staleTime: process.env.NODE_ENV === 'development' ? 10000 : 86400000, // 開発環境:10秒、本番環境:24時間
+    staleTime: process.env.NODE_ENV === "development" ? 10000 : 86400000, // 開発環境:10秒、本番環境:24時間
     refetchOnMount: false, // マウント時の自動再フェッチを無効化
     refetchOnWindowFocus: false, // ウィンドウフォーカス時の自動再フェッチを無効化
-    refetchOnReconnect: false // 再接続時の自動再フェッチを無効化
+    refetchOnReconnect: false, // 再接続時の自動再フェッチを無効化
   });
 
   const { ingredientGenres, fetchIngredientGenres } = useGenreStore();
@@ -48,7 +54,7 @@ const IngredientSelector = ({ initialIngredients, onSearch }: IngredientSelector
 
       if (element) {
         const topOffset = element.getBoundingClientRect().top;
-        setHeight(`${window.innerHeight - topOffset}px`);
+        setHeight(`${window.innerHeight - topOffset - 20}px`);
       }
     };
 
@@ -76,7 +82,10 @@ const IngredientSelector = ({ initialIngredients, onSearch }: IngredientSelector
   return (
     <div className={styles.container_block}>
       {/* カテゴリカード */}
-      <section className={styles.category_block}>
+      <section
+        className={styles.category_block}
+        data-onboarding="category-filter"
+      >
         <h2 className={styles.category_block__title}>具材カテゴリー</h2>
         <div className={styles.category_block__contents}>
           {genres.map((genre) => (
@@ -90,6 +99,10 @@ const IngredientSelector = ({ initialIngredients, onSearch }: IngredientSelector
       </section>
       {/* 具材一覧 */}
       <section className={styles.ingredient_block}>
+        <div
+          className={styles.ingredient_block__overlay}
+          data-onboarding="ingredient-selector"
+        ></div>
         <h2 className={styles.ingredient_block__title}>具材一覧</h2>
         <div
           className={styles.ingredient_block__wrapper}
@@ -112,15 +125,6 @@ const IngredientSelector = ({ initialIngredients, onSearch }: IngredientSelector
           </div>
         </div>
       </section>
-      {/* 検索ボタン */}
-      <div className={styles.search_button_container}>
-        <button 
-          className={styles.search_button}
-          onClick={onSearch}
-        >
-          レシピを検索
-        </button>
-      </div>
     </div>
   );
 };

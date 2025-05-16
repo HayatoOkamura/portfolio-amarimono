@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/app/lib/api/supabase/supabaseClient";
+import Loading from "@/app/components/ui/Loading/Loading";
 import styles from "./VerifyEmail.module.scss";
 
 export default function VerifyEmailPage() {
@@ -14,6 +15,7 @@ export default function VerifyEmailPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState<boolean>(false);
   const [cooldown, setCooldown] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const getEmail = async () => {
@@ -22,6 +24,7 @@ export default function VerifyEmailPage() {
         const emailFromUrl = searchParams.get('email');
         if (emailFromUrl) {
           setEmail(emailFromUrl);
+          setIsLoading(false);
           return;
         }
 
@@ -29,6 +32,7 @@ export default function VerifyEmailPage() {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.email) {
           setEmail(session.user.email);
+          setIsLoading(false);
           return;
         }
 
@@ -37,6 +41,7 @@ export default function VerifyEmailPage() {
       } catch (error) {
         console.error("メールアドレス取得エラー:", error);
         setError("メールアドレスの取得に失敗しました");
+        setIsLoading(false);
       }
     };
 
@@ -152,6 +157,14 @@ export default function VerifyEmailPage() {
       setIsResending(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className={styles.verify_block}>
+        <Loading />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.verify_block}>

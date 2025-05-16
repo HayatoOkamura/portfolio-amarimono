@@ -1,6 +1,65 @@
 import { useEffect, useState } from "react";
 import { backendUrl, handleApiResponse } from "../utils/api";
 
+interface User {
+  id: string;
+  email: string;
+  username?: string;
+  profileImage?: string;
+  age?: number;
+  gender?: string;
+  email_confirmed_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ユーザー情報を取得するフック
+export const useUser = (userId: string | undefined) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUser = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/users/${userId}`);
+        if (!response.ok) {
+          throw new Error("User not found in backend database");
+        }
+        const data = await response.json();
+        if (isMounted) {
+          setUser(data);
+          setError(null);
+        }
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+        if (isMounted) {
+          setError("ユーザー情報の取得に失敗しました");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
+
+  return { user, loading, error };
+};
+
 export const useUserLikeCount = (userId: string | undefined) => {
   const [likeCount, setLikeCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);

@@ -39,48 +39,87 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	}
 
 	// 必要なデータをUser構造体にマッピング
-	age, err := strconv.Atoi(form.Value["age"][0])
-	if err != nil {
-		log.Printf("Invalid age format: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid age format"})
-		return
+	var agePtr *int
+	if ageStr := form.Value["age"][0]; ageStr != "" {
+		age, err := strconv.Atoi(ageStr)
+		if err != nil {
+			log.Printf("Invalid age format: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid age format"})
+			return
+		}
+		agePtr = &age
 	}
 
+	// 性別のデフォルト値を設定
+	var genderPtr *string
+	if len(form.Value["gender"]) > 0 {
+		genderValue := form.Value["gender"][0]
+		// 数値が渡された場合は文字列に変換
+		if genderValue == "0" {
+			gender := "未設定"
+			genderPtr = &gender
+		} else if genderValue == "1" {
+			gender := "男性"
+			genderPtr = &gender
+		} else if genderValue == "2" {
+			gender := "女性"
+			genderPtr = &gender
+		} else {
+			genderPtr = &genderValue
+		}
+	}
+
+	username := form.Value["username"][0]
 	user := models.User{
-		ID:       form.Value["id"][0],       // ID
-		Email:    form.Value["email"][0],    // Email
-		Username: form.Value["username"][0], // ユーザー名
-		Age:      age,                       // 年齢（整数に変換済み）
-		Gender:   form.Value["gender"][0],   // 性別
+		ID:           form.Value["id"][0],
+		Email:        form.Value["email"][0],
+		Username:     &username,
+		Age:          agePtr,
+		Gender:       genderPtr,
+		ProfileImage: nil,
+	}
+
+	// トランザクションを開始
+	tx := h.DB.Begin()
+	if tx.Error != nil {
+		log.Printf("Failed to start transaction: %v", tx.Error)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
 	}
 
 	// ユーザーが既に存在するか確認
 	var existingUser models.User
-	if err := h.DB.Where("id = ?", user.ID).First(&existingUser).Error; err == nil {
+	result := tx.Where("id = ?", user.ID).First(&existingUser)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			// ユーザーが存在しない場合は新規作成
+			if err := tx.Create(&user).Error; err != nil {
+				tx.Rollback()
+				log.Printf("Failed to create user: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー登録に失敗しました"})
+				return
+			}
+		} else {
+			tx.Rollback()
+			log.Printf("Database error: %v", result.Error)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "データベースエラーが発生しました"})
+			return
+		}
+	} else {
 		// ユーザーが存在する場合は更新
-		if err := h.DB.Model(&models.User{}).Where("id = ?", user.ID).Updates(user).Error; err != nil {
+		if err := tx.Model(&models.User{}).Where("id = ?", user.ID).Updates(user).Error; err != nil {
+			tx.Rollback()
 			log.Printf("Failed to update user: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー情報の更新に失敗しました"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
-		return
 	}
 
-	// ユーザーが存在しない場合は新規作成
-	if err := models.CreateUser(h.DB, user); err != nil {
-		log.Printf("Failed to create user: %v", err)
-		// 重複エラーの場合は更新を試みる
-		if err.Error() == "ERROR: duplicate key value violates unique constraint \"users_pkey\" (SQLSTATE 23505)" {
-			if err := h.DB.Model(&models.User{}).Where("id = ?", user.ID).Updates(user).Error; err != nil {
-				log.Printf("Failed to update user: %v", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー情報の更新に失敗しました"})
-				return
-			}
-			c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー登録に失敗しました"})
+	// トランザクションをコミット
+	if err := tx.Commit().Error; err != nil {
+		log.Printf("Failed to commit transaction: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
@@ -90,22 +129,41 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 // GetUserProfile ユーザーのプロフィール情報を取得するハンドラー
 func (h *UserHandler) GetUserProfile(c *gin.Context) {
 	userID := c.Param("id") // URLのパラメータからuserIDを取得
+	log.Printf("GetUserProfile - Request received for user ID: %s", userID)
 
 	user, err := models.GetUserByID(h.DB, userID)
 	if err != nil {
-		log.Printf("Failed to retrieve user: %v", err)
+		log.Printf("GetUserProfile - Failed to retrieve user: %v", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
+	log.Printf("GetUserProfile - User found: %+v", user)
 
-	c.JSON(http.StatusOK, gin.H{
+	// ユーザーのロール情報を取得
+	var role string
+	result := h.DB.Table("user_roles").
+		Select("role").
+		Where("user_id = ?", userID).
+		Scan(&role)
+
+	if result.Error != nil {
+		log.Printf("GetUserProfile - Error fetching user role: %v", result.Error)
+	} else {
+		log.Printf("GetUserProfile - User role: %s", role)
+	}
+
+	response := gin.H{
 		"id":           user.ID,
 		"email":        user.Email,
 		"username":     user.Username,
 		"profileImage": user.ProfileImage,
 		"age":          user.Age,
 		"gender":       user.Gender,
-	})
+		"role":         role,
+	}
+	log.Printf("GetUserProfile - Sending response: %+v", response)
+
+	c.JSON(http.StatusOK, response)
 }
 
 // ユーザーが投稿したレシピのいいね数を取得
@@ -185,8 +243,24 @@ func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
 	if files, exists := form.File["profileImage"]; exists && len(files) > 0 {
 		profileImage := files[0]
 
-		// 画像を保存し、パスを取得（ユーザーIDのディレクトリに保存）
-		imageURL, err := utils.SaveImage(c, profileImage, "users", userID)
+		// 現在のプロフィール画像を取得
+		var currentUser models.User
+		if err := h.DB.First(&currentUser, "id = ?", userID).Error; err != nil {
+			log.Printf("Failed to get current user: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current user"})
+			return
+		}
+
+		// 古い画像が存在する場合は削除
+		if currentUser.ProfileImage != nil {
+			if err := utils.DeleteImage(*currentUser.ProfileImage); err != nil {
+				log.Printf("Failed to delete old profile image: %v", err)
+				// エラーをログに記録するが、処理は続行
+			}
+		}
+
+		// 新しい画像を保存し、パスを取得（ユーザーIDのディレクトリに保存）
+		imageURL, err := utils.SaveImage(c, profileImage, "users/"+userID, "profile")
 		if err != nil {
 			log.Printf("File upload error: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload profile image"})
@@ -205,4 +279,83 @@ func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
+}
+
+// SetUserRole ユーザーのロールを設定するハンドラー
+func (h *UserHandler) SetUserRole(c *gin.Context) {
+	// リクエストユーザーの認証チェック
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
+		return
+	}
+
+	// リクエストユーザーが管理者かチェック
+	var requesterRole struct {
+		Role string
+	}
+	if err := h.DB.Table("user_roles").Where("user_id = ?", userID).First(&requesterRole).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "管理者権限が必要です"})
+		return
+	}
+	if requesterRole.Role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "管理者権限が必要です"})
+		return
+	}
+
+	// リクエストボディから対象ユーザーIDとロールを取得
+	var requestBody struct {
+		UserID string `json:"user_id" binding:"required"`
+		Role   string `json:"role" binding:"required,oneof=admin user"`
+	}
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "無効なリクエストです"})
+		return
+	}
+
+	// トランザクションを開始
+	tx := h.DB.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "データベースエラーが発生しました"})
+		return
+	}
+
+	// 既存のロールを確認
+	var existingRole struct {
+		Role string
+	}
+	result := tx.Table("user_roles").Where("user_id = ?", requestBody.UserID).First(&existingRole)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			// 新規作成
+			if err := tx.Table("user_roles").Create(map[string]interface{}{
+				"user_id": requestBody.UserID,
+				"role":    requestBody.Role,
+			}).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "ロールの設定に失敗しました"})
+				return
+			}
+		} else {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "データベースエラーが発生しました"})
+			return
+		}
+	} else {
+		// 更新
+		if err := tx.Table("user_roles").Where("user_id = ?", requestBody.UserID).Update("role", requestBody.Role).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ロールの更新に失敗しました"})
+			return
+		}
+	}
+
+	// トランザクションをコミット
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "データベースエラーが発生しました"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "ロールを設定しました"})
 }

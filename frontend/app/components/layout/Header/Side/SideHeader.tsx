@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import styles from "./SideHeader.module.scss";
 import Image from "next/image";
 import Link from "next/link";
@@ -14,14 +14,23 @@ import { IoLogOut } from "react-icons/io5";
 import { IoLogIn } from "react-icons/io5";
 import { useUserStore } from "@/app/stores/userStore";
 import ClientAuthMenu from "./ClientAuthMenu";
+import { FaCog } from "react-icons/fa";
+import { useAdmin } from "@/app/hooks/useAdmin";
 
 const SideHeader = () => {
   const { user, signOut } = useUserStore();
   const pathname = usePathname(); // 現在のパスを取得
+  const { isAdmin, isLoading } = useAdmin();
 
   // 現在のパスがリンク先と一致すれば is-active を付与
   const getActiveClass = (paths: string[]) =>
     paths.includes(pathname) ? styles["is-active"] : "";
+
+  // デバッグログ
+  useEffect(() => {
+    console.log("SideHeader - User:", user);
+    console.log("SideHeader - isAdmin:", isAdmin);
+  }, [user, isAdmin]);
 
   return (
     <header className={styles.header_block}>
@@ -88,6 +97,18 @@ const SideHeader = () => {
               <p className={styles.header_block__text}>お気に入り</p>
             </Link>
           </div>
+          {!isLoading && isAdmin && (
+            <div
+              className={`${styles.header_block__icon} ${getActiveClass([
+                "/admin",
+              ])}`}
+            >
+              <Link href="/admin/recipes">
+                <FaCog />
+                <p className={styles.header_block__text}>管理画面</p>
+              </Link>
+            </div>
+          )}
           <ClientAuthMenu />
         </div>
       </div>

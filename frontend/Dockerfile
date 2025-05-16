@@ -11,6 +11,8 @@ ENV CHOKIDAR_USEPOLLING=true
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV npm_config_arch=arm64
 
+# Supabaseの環境変数はcompose.ymlから注入されるため、ここでは設定しない
+
 # パッケージ関連のファイルをコピー
 COPY package.json package-lock.json ./
 
@@ -24,8 +26,10 @@ COPY . .
 RUN chown -R node:node /frontend
 
 # .nextディレクトリの作成とパーミッション設定
-RUN mkdir -p /frontend/.next && \
-    chown -R node:node /frontend/.next
+RUN rm -rf /frontend/.next && \
+    mkdir -p /frontend/.next && \
+    chown -R node:node /frontend/.next && \
+    chmod 755 /frontend/.next
 
 # nodeユーザーに切り替え
 USER node

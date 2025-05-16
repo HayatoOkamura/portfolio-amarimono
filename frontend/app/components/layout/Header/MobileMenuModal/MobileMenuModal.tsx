@@ -13,6 +13,8 @@ import { FaHeart } from "react-icons/fa";
 import { IoLogOut, IoLogIn } from "react-icons/io5";
 import { useUserStore } from "@/app/stores/userStore";
 import MobileUserProfile from "./MobileUserProfile";
+import { FaCog } from "react-icons/fa";
+import { useAdmin } from "@/app/hooks/useAdmin";
 
 interface MobileMenuModalProps {
   isOpen: boolean;
@@ -22,9 +24,16 @@ interface MobileMenuModalProps {
 const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose }) => {
   const { user, signOut } = useUserStore();
   const pathname = usePathname();
+  const { isAdmin, isLoading } = useAdmin();
 
   const getActiveClass = (paths: string[]) =>
     paths.includes(pathname) ? styles["is-active"] : "";
+
+  // デバッグログ
+  useEffect(() => {
+    console.log("MobileMenuModal - User:", user);
+    console.log("MobileMenuModal - isAdmin:", isAdmin);
+  }, [user, isAdmin]);
 
   useEffect(() => {
     if (isOpen) {
@@ -73,6 +82,14 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose }) =>
               <span>お気に入り</span>
             </Link>
           </div>
+          {!isLoading && isAdmin && (
+            <div className={`${styles.modal_content__nav_item} ${getActiveClass(["/admin"])}`}>
+              <Link href="/admin/recipes">
+                <FaCog />
+                <span>管理画面</span>
+              </Link>
+            </div>
+          )}
           {user ? (
             <div className={`${styles.modal_content__nav_item} ${styles["modal_content__nav_item--logout"]}`} onClick={signOut}>
               <IoLogOut />
