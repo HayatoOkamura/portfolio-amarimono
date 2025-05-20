@@ -103,7 +103,7 @@ const SideHeader = () => {
                 "/admin",
               ])}`}
             >
-              <Link href="/admin/recipes">
+              <Link href="/admin/">
                 <FaCog />
                 <p className={styles.header_block__text}>管理画面</p>
               </Link>

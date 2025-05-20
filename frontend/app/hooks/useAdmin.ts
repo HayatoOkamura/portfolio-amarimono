@@ -1,40 +1,78 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/app/lib/api/supabase/supabaseClient';
-import { api } from '@/app/utils/api';
+import { useState, useEffect } from 'react';
+import { backendUrl } from "@/app/utils/api";
+import { useAuth } from './useAuth';
+
+interface User {
+  id: string;
+  email: string;
+  username?: string;
+  role?: string;
+}
 
 export const useAdmin = () => {
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          setIsAdmin(false);
-          setIsLoading(false);
-          return;
-        }
+    setIsAdmin(user?.role === 'admin');
+  }, [user]);
 
-        const response = await api.get(`/api/users/${session.user.id}`, {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        });
-        
-        const userData = response.data;
-        setIsAdmin(userData?.role === 'admin');
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-        setIsAdmin(false);
-      } finally {
-        setIsLoading(false);
+  const fetchUsers = async (): Promise<User[]> => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`${backendUrl}/api/users`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error("ユーザー一覧の取得に失敗しました");
       }
-    };
+      return await response.json();
+    } catch (err) {
+      setError("ユーザー一覧の取得に失敗しました");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    checkAdminStatus();
-  }, []);
+  const updateUserRole = async (userId: string, newRole: string): Promise<void> => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`${backendUrl}/api/users/role`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          role: newRole,
+        }),
+      });
 
-  return { isAdmin, isLoading };
+      if (!response.ok) {
+        throw new Error("ロールの更新に失敗しました");
+      }
+    } catch (err) {
+      setError("ロールの更新に失敗しました");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    loading,
+    error,
+    isAdmin,
+    isLoading: loading,
+    fetchUsers,
+    updateUserRole,
+  };
 }; 

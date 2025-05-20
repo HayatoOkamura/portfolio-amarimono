@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
-import { backendUrl } from "@/app/utils/api";
+import { useAdmin } from "@/app/hooks/useAdmin";
 import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
 import LoginModal from "@/app/components/ui/LoginModal/LoginModal";
 import styles from "./users.module.scss";
@@ -16,50 +16,28 @@ interface User {
 
 export default function UserManagementPage() {
   const { user } = useAuth();
+  const { loading, error, fetchUsers, updateUserRole } = useAdmin();
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch(`${backendUrl}/api/admin/users`);
-      if (!response.ok) {
-        throw new Error("ユーザー一覧の取得に失敗しました");
+    const loadUsers = async () => {
+      try {
+        const data = await fetchUsers();
+        setUsers(data);
+      } catch (err) {
+        console.error(err);
       }
-      const data = await response.json();
-      setUsers(data);
-    } catch (err) {
-      setError("ユーザー一覧の取得に失敗しました");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    loadUsers();
+  }, []);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
-      const response = await fetch(`${backendUrl}/api/users/role`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          role: newRole,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("ロールの更新に失敗しました");
-      }
-
-      // ユーザー一覧を更新
-      fetchUsers();
+      await updateUserRole(userId, newRole);
+      const data = await fetchUsers();
+      setUsers(data);
     } catch (err) {
-      setError("ロールの更新に失敗しました");
+      console.error(err);
     }
   };
 
