@@ -1,87 +1,99 @@
 "use client";
 
 import React, { useEffect } from "react";
-import styles from "./SearchIngredientCard.module.scss";
-import { imageBaseUrl } from "@/app/utils/api";
-import { Unit } from "@/app/types/index";
-import Image from "next/image";
+import { Ingredient } from "@/app/types/index";
 import useIngredientStore from "@/app/stores/ingredientStore";
 import { useUpdateIngredientQuantity } from "@/app/hooks/ingredients";
+import { useIngredientDefaults, useUserIngredientDefaults } from "@/app/hooks/userIngredientDefaults";
+import { useAuth } from "@/app/hooks/useAuth";
+import IngredientCard from "../IngredientCard/IngredientCard";
 
-export interface IngredientCardProps {
-  ingredient: {
-    id: number;
-    name: string;
-    genre: {
-      id: number;
-      name: string;
-    };
-    unit: Unit
-    imageUrl?: string | null;
-    quantity: number;
-  };
+interface DefaultIngredient {
+  ingredient_id: number;
+  default_quantity: number;
 }
 
-const IngredientCard: React.FC<IngredientCardProps> = ({
-  ingredient,
-}) => {
+export interface IngredientCardProps {
+  ingredient: Ingredient;
+}
+
+const SearchIngredientCard: React.FC<IngredientCardProps> = ({ ingredient }) => {
   const { mutate: updateQuantity } = useUpdateIngredientQuantity();
   const ingredients = useIngredientStore((state) => state.ingredients);
   const currentIngredient = ingredients.find(i => i.id === ingredient.id);
   const currentQuantity = currentIngredient?.quantity || 0;
+  const isPresence = ingredient.unit.name === 'presence';
+  const { user } = useAuth();
   
-  const handleQuantityUpdate = (id: number, delta: number) => {
+  const { data: ingredientDefaults } = useIngredientDefaults();
+  const { data: userIngredientDefaults } = useUserIngredientDefaults();
+  
+  useEffect(() => {
+    const defaults = user ? userIngredientDefaults : ingredientDefaults;
+    
+    if (defaults && defaults.length > 0) {
+      const defaultIngredient = defaults.find(function(item: DefaultIngredient) {
+        return item.ingredient_id === ingredient.id;
+      });
+      
+      if (defaultIngredient && defaultIngredient.default_quantity > 0 && !currentQuantity) {
+        updateQuantity({
+          ...ingredient,
+          quantity: defaultIngredient.default_quantity,
+          unit: {
+            ...ingredient.unit,
+            type: isPresence ? 'presence' : 'quantity'
+          }
+        });
+      }
+    }
+  }, [ingredientDefaults, userIngredientDefaults, user, ingredient.id, currentQuantity, updateQuantity, ingredient, isPresence]);
+  
+  const handleQuantityUpdate = (id: number, delta: number): void => {
+    if (isPresence) {
+      if (delta > 0 && !currentQuantity) {
+        updateQuantity({ 
+          ...ingredient,
+          quantity: 1,
+          unit: {
+            ...ingredient.unit,
+            type: 'presence'
+          }
+        });
+      } else if (delta < 0 && currentQuantity) {
+        updateQuantity({ 
+          ...ingredient,
+          quantity: 0,
+          unit: {
+            ...ingredient.unit,
+            type: 'presence'
+          }
+        });
+      }
+      return;
+    }
+
     const newQuantity = Math.max(0, currentQuantity + delta);
     if (newQuantity > 0 || currentQuantity > 0) {
       updateQuantity({ 
-        ...ingredient, 
-        quantity: newQuantity, 
-        imageUrl: ingredient.imageUrl || null,
-        nutrition: currentIngredient?.nutrition || {
-          calories: 0,
-          carbohydrates: 0,
-          fat: 0,
-          protein: 0,
-          salt: 0
+        ...ingredient,
+        quantity: newQuantity,
+        unit: {
+          ...ingredient.unit,
+          type: 'quantity'
         }
       });
     }
   };
 
   return (
-    <li className={styles.card_block}>
-      <div className={styles.card_block__image}>
-        <Image
-          src={
-            ingredient.imageUrl
-              ? `${imageBaseUrl}/${ingredient.imageUrl}`
-              : "/pic_recipe_default.webp"
-          }
-          alt={ingredient.name}
-          width={100}
-          height={100}
-        />
-      </div>
-      <p className={styles.card_block__name}>{ingredient.name}</p>
-      <div className={styles.card_block__controls}>
-        <button
-          onClick={() => handleQuantityUpdate(ingredient.id, ingredient.unit.step)}
-          aria-label={`Increase quantity of ${ingredient.name}`}
-          className={`${styles.card_block__button} ${styles['card_block__button--plus']}`}
-        />
-
-        <span>
-          {Number.isInteger(currentQuantity) ? currentQuantity : Number(currentQuantity).toFixed(1)}
-          {ingredient.unit.name}
-        </span>
-        <button
-          onClick={() => handleQuantityUpdate(ingredient.id, -ingredient.unit.step)}
-          aria-label={`Decrease quantity of ${ingredient.name}`}
-          className={`${styles.card_block__button} ${styles["card_block__button--minus"]}`}
-        />
-      </div>
-    </li>
+    <IngredientCard
+      ingredient={ingredient}
+      currentQuantity={currentQuantity}
+      isPresence={isPresence}
+      onQuantityChange={handleQuantityUpdate}
+    />
   );
 };
 
-export default IngredientCard;
+export default SearchIngredientCard;

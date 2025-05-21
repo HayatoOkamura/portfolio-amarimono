@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Joyride, { CallBackProps, STATUS, Step, Placement } from 'react-joyride';
 import styles from './CoachmarkOnboarding.module.scss';
+import { InitialSettingsStep } from '../../features/Onboarding/InitialSettingsStep';
 
 interface CoachmarkOnboardingProps {
   isOpen: boolean;
@@ -8,6 +9,9 @@ interface CoachmarkOnboardingProps {
 }
 
 export const CoachmarkOnboarding: React.FC<CoachmarkOnboardingProps> = ({ isOpen, onClose }) => {
+  const [showInitialSettings, setShowInitialSettings] = useState(false);
+  const [showCompletion, setShowCompletion] = useState(false);
+
   const [steps] = useState<Step[]>([
     {
       target: 'body',
@@ -64,11 +68,43 @@ export const CoachmarkOnboarding: React.FC<CoachmarkOnboardingProps> = ({ isOpen
     });
 
     if ((status === STATUS.FINISHED || status === STATUS.SKIPPED) && index === steps.length - 1) {
-      onClose();
+      setShowInitialSettings(true);
     }
   };
 
+  const handleInitialSettingsComplete = () => {
+    setShowInitialSettings(false);
+    setShowCompletion(true);
+    setTimeout(() => {
+      setShowCompletion(false);
+      onClose();
+    }, 3000);
+  };
+
   if (!isOpen) return null;
+
+  if (showInitialSettings) {
+    return (
+      <div className={styles.modal_overlay}>
+        <div className={styles.modal_content}>
+          <InitialSettingsStep onComplete={handleInitialSettingsComplete} />
+        </div>
+      </div>
+    );
+  }
+
+  if (showCompletion) {
+    return (
+      <div className={styles.modal_overlay}>
+        <div className={styles.modal_content}>
+          <div className={styles.completion_message}>
+            <h3>セットアップ完了！</h3>
+            <p>これで準備完了です。ぜひご利用ください！</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Joyride

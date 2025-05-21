@@ -12,6 +12,7 @@ export const imageBaseUrl = process.env.NODE_ENV === 'production'
 // axiosインスタンスの作成
 export const api = axios.create({
   baseURL: backendUrl,
+  withCredentials: true, // クッキーを含めるために必要
   headers: {
     "Content-Type": "application/json",
   },

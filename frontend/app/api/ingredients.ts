@@ -13,3 +13,24 @@ export const createIngredient = async (formData: FormData) => {
     return { success: false, error: "Failed to create ingredient" };
   }
 };
+
+// ユーザーの初期設定具材を取得
+export const getUserIngredientDefaults = async () => {
+  const response = await api.get("/api/user/ingredient-defaults");
+  return response.data;
+};
+
+// ユーザーの初期設定具材を更新
+export const updateUserIngredientDefault = async (data: {
+  ingredient_id: number;
+  default_quantity: number;
+}[]) => {
+  const response = await api.put("/api/user/ingredient-defaults", data);
+  return response.data;
+};
+
+// カテゴリ別の具材を取得
+export const getIngredientsByCategory = async (category: string) => {
+  const response = await api.get(`/api/ingredients/by-category?category=${encodeURIComponent(category)}`);
+  return response.data;
+};

@@ -93,6 +93,7 @@ const IngredientSelector = ({
               key={genre.id}
               genre={genre}
               onClick={() => setSelectedGenre(genre.name)}
+              isSelected={genre.name === selectedGenre}
             />
           ))}
         </div>

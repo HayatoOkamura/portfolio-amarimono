@@ -15,6 +15,10 @@
     background-color: #ddd;
   }
 
+  &.current {
+    border: 2px solid var(--primary-accent-color);
+  }
+
   &__image {
     position: relative;
     width: 42px;

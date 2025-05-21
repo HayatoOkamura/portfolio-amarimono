@@ -19,6 +19,7 @@ export interface Unit {
   name: string;
   description: string;
   step: number;
+  type: 'presence' | 'quantity';
 }
 
 export interface Ingredient {

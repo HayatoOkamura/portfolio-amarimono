@@ -1,0 +1,53 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Amarimono - レシピ管理システム
+
+## 📦 データベース管理
+
+### ローカル開発
+
+アプリケーションはローカル開発にPostgreSQLを使用しています。以下のコマンドでデータベースにアクセスできます：
+
+```bash
+# データベースコンテナにアクセス
+docker compose exec db psql -U postgres -d amarimono
+
+# マイグレーションの実行
+docker compose exec backend migrate -database "postgres://postgres:password@db:5432/amarimono?sslmode=disable" -path db/migrations up
+```
+
+### データベース実装ルール
+
+1. **マイグレーション実行前の確認**
+   - 必ずdbコンテナに入って最新の状態を確認
+   - 現在のテーブル構造、列挙型、インデックスなどを確認
+   - マイグレーションファイルの内容が実際のDB状態と整合しているか確認
+
+2. **マイグレーション実行手順**
+   ```bash
+   # 1. データベースコンテナにアクセス
+   docker compose exec db psql -U postgres -d amarimono
+
+   # 2. 現在の状態を確認
+   \dt  # テーブル一覧
+   \d+ テーブル名  # テーブル構造
+   \dT+  # 列挙型一覧
+   \di  # インデックス一覧
+
+   # 3. 確認後、マイグレーションを実行
+   docker compose exec backend migrate -database "postgres://postgres:password@db:5432/amarimono?sslmode=disable" -path db/migrations up
+   ```
+
+3. **マイグレーションファイル作成時の注意点**
+   - 既存のテーブル構造を尊重
+   - 既存のデータを考慮した更新処理
+   - ロールバック時のデータ整合性確保
+   - インデックスの適切な設定
+
+4. **トラブルシューティング**
+   - マイグレーション失敗時は即座にロールバック
+   - エラーログの確認と分析
+   - 必要に応じてバックアップからの復元

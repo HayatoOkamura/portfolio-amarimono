@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import styles from "./user.module.scss";
 import Image from "next/image";
 import Link from "next/link";
-import { backendUrl } from "../utils/api";
+// import { backendUrl } from "../utils/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useUserLikeCount, useUserRecipeAverageRating, useUser } from "@/app/hooks/user";
 import { imageBaseUrl } from "@/app/utils/api";

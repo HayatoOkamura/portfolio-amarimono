@@ -4,9 +4,10 @@ import (
 	"portfolio-amarimono/handlers"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, likeHandler *handlers.LikeHandler, userHandler *handlers.UserHandler, genreHandler *handlers.GenreHandler, adminHandler *handlers.AdminHandler, reviewHandler *handlers.ReviewHandler, recommendationHandler *handlers.RecommendationHandler) {
+func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, likeHandler *handlers.LikeHandler, userHandler *handlers.UserHandler, genreHandler *handlers.GenreHandler, adminHandler *handlers.AdminHandler, reviewHandler *handlers.ReviewHandler, recommendationHandler *handlers.RecommendationHandler, userIngredientDefaultHandler *handlers.UserIngredientDefaultHandler, db *gorm.DB) {
 	// いいね機能のエンドポイント
 	router.POST("/api/likes/:user_id/:recipe_id", likeHandler.ToggleUserLike) // レシピにいいねを追加
 	router.GET("/api/likes/:user_id", likeHandler.GetUserLikes)               // ユーザーのお気に入りレシピを取得
@@ -39,6 +40,15 @@ func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, like
 	router.PUT("/api/reviews/:id", reviewHandler.UpdateReview)                 // レビュー更新
 	router.DELETE("/api/reviews/:id", reviewHandler.DeleteReview)              // レビュー削除
 
+	// 具材関連のルーティング（認証不要）
+	router.GET("/api/ingredients/by-category", userIngredientDefaultHandler.GetIngredientsByCategory) // カテゴリ別の具材を取得
+	router.GET("/api/ingredient-defaults", userIngredientDefaultHandler.GetIngredientDefaults)        // 具材の初期設定を取得
+	router.PUT("/api/ingredient-defaults", userIngredientDefaultHandler.UpdateIngredientDefaults)     // 具材の初期設定を更新
+
+	// ユーザー固有の具材設定（認証必須）
+	router.GET("/api/user/ingredient-defaults", userIngredientDefaultHandler.GetUserIngredientDefaults)   // ユーザーの初期設定具材を取得
+	router.PUT("/api/user/ingredient-defaults", userIngredientDefaultHandler.UpdateUserIngredientDefault) // ユーザーの初期設定具材を更新
+
 	// 管理画面用エンドポイント
 	admin := router.Group("/admin")
 	{
@@ -55,6 +65,6 @@ func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, like
 		admin.PUT("/recipes/:id/toggle-publish", adminHandler.ToggleRecipePublish) // レシピの公開/非公開を切り替え
 		admin.GET("/units", adminHandler.ListUnits)                                // 単位一覧
 		admin.POST("/draft-recipes", adminHandler.SaveDraftRecipe)                 // 下書きレシピの保存
-		admin.GET("/draft-recipes/:userId", adminHandler.GetDraftRecipes)          // 下書きレシピの取得
+		admin.GET("/draft-recipes/:userId", adminHandler.GetDraftRecipes)
 	}
 }

@@ -9,16 +9,18 @@ import { Genre } from "@/app/types/index";
 type CategoryCardProps = {
   genre: Genre;
   onClick: () => void;
+  isSelected?: boolean;
 };
 
-const CategoryCard: React.FC<CategoryCardProps> = ({ genre, onClick }) => {
+const CategoryCard: React.FC<CategoryCardProps> = ({ genre, onClick, isSelected }) => {
   // IDが1桁の場合は0を付加し、2桁の場合はそのまま使用
   const imageId = genre.id < 10 ? `0${genre.id}` : genre.id;
-  
 
+  console.log(isSelected);
+  
   return (
     <button
-      className={styles.card_block}
+      className={`${styles.card_block} ${isSelected ? styles["current"] : ''}`}
       onClick={onClick}
     >
       <div className={styles.card_block__image}>

@@ -9,6 +9,8 @@ services:
     volumes:
       - ./backend:/app
       - ./backend/uploads:/app/uploads
+    env_file:
+      - .env
     environment:
       - USE_SUPABASE=${USE_SUPABASE:-false}
       - DB_HOST=${DB_HOST:-db}
@@ -126,7 +128,6 @@ volumes:
   front_node_modules:
   front_next:
   redis-store:
-
 
 networks:
   app-network:

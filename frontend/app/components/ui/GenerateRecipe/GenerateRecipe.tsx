@@ -80,12 +80,14 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
                   <p className={styles.ingredients_list__name}>
                     {ingredient.name}
                   </p>
-                  <p className={styles.ingredients_list__quantity}>
-                    {Number.isInteger(ingredient.quantity)
-                      ? ingredient.quantity
-                      : Number(ingredient.quantity).toFixed(1)}
-                    {ingredient.unit?.name || ""}
-                  </p>
+                  {ingredient.unit?.name !== 'presence' && (
+                    <p className={styles.ingredients_list__quantity}>
+                      {Number.isInteger(ingredient.quantity)
+                        ? ingredient.quantity
+                        : Number(ingredient.quantity).toFixed(1)}
+                      {ingredient.unit?.name || ""}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>

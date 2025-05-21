@@ -8,6 +8,7 @@ type Ingredient struct {
 	ImageUrl  string          `json:"image_url"`
 	UnitID    int             `json:"unit_id" gorm:"not null"`
 	Unit      Unit            `json:"unit" gorm:"foreignKey:UnitID;references:ID"`
+	UnitType  UnitType        `json:"unit_type" gorm:"-"`
 	Nutrition NutritionInfo   `json:"nutrition" gorm:"type:jsonb"`
 }
 

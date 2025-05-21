@@ -4,6 +4,7 @@ import { Ingredient, Genre, Unit, NewIngredient, EditIngredient } from "../types
 import { api } from "../utils/api";
 import useIngredientStore from "../stores/ingredientStore";
 import axios from "axios";
+import { getUserIngredientDefaults, updateUserIngredientDefault, getIngredientsByCategory } from '../api/ingredients';
 
 // Query keys
 const ingredientKeys = {
@@ -221,5 +222,41 @@ export const fetchIngredientsServer = async (): Promise<Ingredient[]> => {
   const response = await axios.create({ baseURL }).get("/admin/ingredients");
   const mappedIngredients = mapIngredients(response.data);
   return mappedIngredients;
+};
+
+// ユーザーの初期設定具材を取得するフック
+export const useUserIngredientDefaults = () => {
+  return useQuery({
+    queryKey: ['userIngredientDefaults'],
+    queryFn: getUserIngredientDefaults,
+  });
+};
+
+// ユーザーの初期設定具材を更新するフック
+export const useUpdateUserIngredientDefault = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateUserIngredientDefault,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userIngredientDefaults'] });
+    },
+  });
+};
+
+// カテゴリ別の具材を取得するフック
+export const useIngredientsByCategory = (categoryId: number) => {
+  return useQuery<Ingredient[]>({
+    queryKey: ['ingredients', categoryId],
+    queryFn: async () => {
+      // カテゴリIDが0（すべて）の場合は、すべての具材を取得
+      if (categoryId === 0) {
+        const response = await api.get<any[]>('/admin/ingredients');
+        return mapIngredients(response.data);
+      }
+      // それ以外の場合は、カテゴリ別の具材を取得
+      const response = await api.get<any[]>(`/api/ingredients/by-category?category_id=${categoryId}`);
+      return mapIngredients(response.data);
+    },
+  });
 };
 
