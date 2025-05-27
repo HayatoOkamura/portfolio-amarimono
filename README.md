@@ -23,15 +23,15 @@ Amarimonoは、最新の技術を使用して構築されたフルスタック�
 ### バックエンド
 - **フレームワーク**: Go/Gin
 - **言語**: Go
-- **データベース**: PostgreSQL
+- **データベース**: Supabase
 - **キャッシュ**: Redis
 - **デプロイ**: Render
 
 ### インフラストラクチャ
 - **コンテナ化**: Docker
 - **オーケストレーション**: Docker Compose
-- **データベース**: Supabase (本番環境)
-- **開発用データベース**: PostgreSQL (ローカル)
+- **データベース**: Supabase
+- **開発環境**: Supabase (ローカル開発用)
 
 ## 📋 必要条件
 
@@ -40,6 +40,7 @@ Amarimonoは、最新の技術を使用して構築されたフルスタック�
 - Go 1.21以上
 - Node.js 18以上
 - npmまたはyarn
+- Supabaseアカウント
 
 ## 🚀 始め方
 
@@ -55,26 +56,15 @@ cd portfolio-amarimono
 ルートディレクトリに`.env`ファイルを作成し、以下の変数を設定します：
 
 ```env
-# データベース設定
-DB_HOST=db
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=password
-DB_NAME=amarimono
-
 # Supabase設定
 SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-SUPABASE_DB_PASSWORD=your_supabase_db_password
-
-# OpenAI設定（オプション）
-OPENAI_API_KEY=your_openai_api_key
 
 # フロントエンド設定
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
 NEXT_PUBLIC_BACKEND_INTERNAL_URL=http://backend:8080
-NEXT_PUBLIC_IMAGE_BASE_URL=http://backend:8080
+NEXT_PUBLIC_IMAGE_BASE_URL=https://your-project.supabase.co/storage/v1/object/public/images
 ```
 
 ### 3. 開発環境の起動
@@ -86,63 +76,77 @@ docker compose up --build
 # 特定のサービスを起動
 docker compose up frontend --build
 docker compose up backend --build -d
-docker compose up db --build -d
 ```
 
 ### 4. アプリケーションへのアクセス
 
 - フロントエンド: http://localhost:3000
 - バックエンドAPI: http://localhost:8080
-- データベース: localhost:5432
 
 ## 📦 データベース管理
 
-### ローカル開発
+### Supabaseの設定
 
-アプリケーションはローカル開発にPostgreSQLを使用しています。以下のコマンドでデータベースにアクセスできます：
+1. **ローカル開発環境のセットアップ**
+   - Supabase CLIをインストール
+   ```bash
+   # macOSの場合
+   brew install supabase/tap/supabase
+   ```
+   - プロジェクトの初期化
+   ```bash
+   supabase init
+   ```
+   - ローカル開発環境の起動
+   ```bash
+   supabase start
+   ```
 
-```bash
-# データベースコンテナにアクセス
-docker compose exec db psql -U postgres -d amarimono
+2. **データベースの初期化**
+   - `backend/db/migrations`ディレクトリ内のマイグレーションファイルを実行
+   - SupabaseのSQLエディタでマイグレーションを実行
+   ```bash
+   supabase db reset
+   ```
 
-# マイグレーションの実行
-docker compose exec backend migrate -database "postgres://postgres:password@db:5432/amarimono?sslmode=disable" -path db/migrations up
-```
+3. **ストレージの設定**
+   - Supabaseダッシュボードでストレージバケットを作成
+   - バケット名を`images`に設定
+   - 適切なアクセス権限を設定
 
-### 本番環境（Supabase）
-
-ローカルデータベースをSupabaseと同期するには：
+### データベースのバックアップとリストア
 
 ```bash
 # データベースダンプの作成
-./dump-db.sh
+supabase db dump -f database_dumps/backup_$(date +%Y%m%d_%H%M%S).sql
 
-# スクリプトのプロンプトに従ってSupabaseにリストア
+# データベースのリストア
+supabase db reset
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f database_dumps/backup_YYYYMMDD_HHMMSS.sql
 ```
 
-### dump-db.shの管理
-
-`dump-db.sh`スクリプトは、ローカルデータベースの内容をSupabaseに同期するための重要なツールです。以下の点に注意して管理してください：
+### データベース管理の注意点
 
 1. **スキーマの変更時**
    - 新しいテーブルの追加
    - 既存テーブルのカラム変更
    - 外部キー制約の追加や変更
-   これらの変更がある場合は、`dump-db.sh`のスキーマ定義部分を更新する必要があります。
+   これらの変更がある場合は、マイグレーションファイルを作成して適用する必要があります。
 
 2. **外部キー制約の動作**
    - `ON DELETE CASCADE`: 親レコードが削除されたときに子レコードも削除
    - `ON DELETE SET NULL`: 親レコードが削除されたときに子レコードの外部キーをNULLに設定
-   - これらの動作は、`dump-db.sh`のスキーマ定義で明示的に指定されています
+   - これらの動作は、マイグレーションファイルで明示的に指定されています
 
 3. **定期的なメンテナンス**
-   - データベースの構造が変更された場合のみ修正が必要
+   - データベースの構造が変更された場合は新しいマイグレーションを作成
    - 通常のデータ同期では修正は不要
-   - 変更時は、ローカルとSupabaseの両方で同じ動作になることを確認
+   - 変更時は、Supabaseの動作を確認
 
 4. **バックアップ**
-   - スクリプトを変更する前に必ずバックアップを作成
-   - 変更後はテスト環境で動作確認を実施
+   - 重要な変更前にバックアップを作成
+   - 定期的なバックアップの実施
+   - バックアップの検証
 
 5. **トラブルシューティング**
    - 同期に失敗した場合は、生成されたダンプファイルを確認

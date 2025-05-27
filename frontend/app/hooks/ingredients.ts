@@ -31,7 +31,7 @@ const mapIngredient = (ingredient: any): Ingredient => {
       id: ingredientData.genre?.id || ingredientData.genre_id || 0,
       name: ingredientData.genre?.name || ""
     },
-    unit: ingredientData.unit || { id: 0, name: "", step: 1 },
+    unit: ingredientData.unit || { id: 0, name: "", step: 1, type: 'quantity' },
     imageUrl: ingredientData.image_url || "/pic_recipe_default.webp",
     quantity: ingredientData.quantity || 0,
     nutrition: ingredientData.nutrition || {

@@ -33,13 +33,18 @@ func extractIngredientIDs(ingredients []models.RecipeIngredient) []int {
 	return ids
 }
 
+type RecipeIngredientRequest struct {
+	IngredientID     int     `json:"ingredientId"`
+	QuantityRequired float64 `json:"quantityRequired"`
+	UnitName         string  `json:"unitName"`
+}
+
+// SearchRequestの構造を変更
+type SearchRequest []RecipeIngredientRequest
+
 // SerchRecipes handles POST /api/recipes
 func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
-	type RecipeIngredientRequest struct {
-		IngredientID     int     `json:"ingredientId"`
-		QuantityRequired float64 `json:"quantityRequired"`
-	}
-	var requestIngredients []RecipeIngredientRequest
+	var request SearchRequest
 
 	// 受信したリクエストボディをログに出力
 	body, err := io.ReadAll(c.Request.Body)
@@ -48,41 +53,43 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-	log.Printf("🔍 Request Body: %s", string(body))
+	log.Printf("🔍 Backend: Received request body: %s", string(body))
 
 	// JSONデコードを試みる
-	if err := json.Unmarshal(body, &requestIngredients); err != nil {
+	if err := json.Unmarshal(body, &request); err != nil {
 		log.Printf("JSON Unmarshal error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format", "details": err.Error()})
 		return
 	}
 
 	// リクエストの内容をログ出力
-	log.Printf("🔍 Request Ingredients:")
-	for i, ing := range requestIngredients {
-		log.Printf("  [%d] IngredientID: %d, QuantityRequired: %.2f", i, ing.IngredientID, ing.QuantityRequired)
+	log.Printf("🔍 Backend: Parsed request:")
+	log.Printf("  - Ingredients:")
+	for i, ing := range request {
+		log.Printf("    [%d] ID: %d, Quantity: %.2f", i, ing.IngredientID, ing.QuantityRequired)
 	}
 
-	// `RecipeIngredient` に変換
-	var ingredients []models.RecipeIngredient
-	for _, req := range requestIngredients {
-		ingredients = append(ingredients, models.RecipeIngredient{
-			IngredientID:     req.IngredientID,
-			QuantityRequired: req.QuantityRequired,
-		})
-	}
-
-	// マップで数量を管理
-	quantityMap := make(map[int]float64)
-	for _, ing := range ingredients {
-		quantityMap[ing.IngredientID] = ing.QuantityRequired
+	// 選択された具材のマップを作成（IDをキーとして、数量を値として）
+	selectedIngredients := make(map[int]float64)
+	var ingredientIDs []int
+	for _, ing := range request {
+		selectedIngredients[ing.IngredientID] = ing.QuantityRequired
+		ingredientIDs = append(ingredientIDs, ing.IngredientID)
 	}
 
 	// サブクエリ：指定具材が含まれるレシピを取得（下書きを除外）
-	subQuery := h.DB.Table("recipe_ingredients").
+	var recipeIDs []uuid.UUID
+	if err := h.DB.Table("recipe_ingredients").
 		Select("recipe_id").
-		Where("ingredient_id IN ?", extractIngredientIDs(ingredients)).
-		Group("recipe_id")
+		Where("ingredient_id IN ?", ingredientIDs).
+		Group("recipe_id").
+		Pluck("recipe_id", &recipeIDs).Error; err != nil {
+		log.Printf("Failed to fetch recipe IDs: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query failed", "details": err.Error()})
+		return
+	}
+
+	log.Printf("🔍 Backend: Found recipe IDs: %v", recipeIDs)
 
 	// レシピと関連具材をロード（下書きを除外）
 	var recipes []models.Recipe
@@ -91,14 +98,14 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		Preload("Ingredients.Ingredient.Genre").
 		Preload("Genre").
 		Preload("Reviews").
-		Where("id IN (?) AND is_draft = ?", subQuery, false).
+		Where("id IN ? AND is_draft = ?", recipeIDs, false).
 		Find(&recipes).Error; err != nil {
 		log.Printf("Failed to fetch recipes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query failed", "details": err.Error()})
 		return
 	}
 
-	log.Printf("🔍 Found %d potential recipes", len(recipes))
+	log.Printf("🔍 Backend: Found %d potential recipes", len(recipes))
 
 	// 栄養情報の標準値を取得
 	var standard models.NutritionStandard
@@ -111,79 +118,60 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 	// 結果をフィルタリング
 	var result []models.Recipe
 	for _, recipe := range recipes {
-		// 栄養情報がない場合はデフォルト値を設定
-		if recipe.Nutrition == (models.NutritionInfo{}) {
-			log.Printf("ℹ️ Recipe %s: No nutrition info, using default values", recipe.Name)
-			recipe.Nutrition = models.NutritionInfo{
-				Calories:      0,
-				Carbohydrates: 0,
-				Fat:           0,
-				Protein:       0,
-				Salt:          0,
-			}
-		}
+		// レシピの具材をチェック
+		hasMatchingIngredients := false
 
-		// 栄養素の割合を計算
-		nutritionPercentage := map[string]float64{
-			"calories":      (float64(recipe.Nutrition.Calories) / standard.Calories) * 100,
-			"carbohydrates": (float64(recipe.Nutrition.Carbohydrates) / standard.Carbohydrates) * 100,
-			"fat":           (float64(recipe.Nutrition.Fat) / standard.Fat) * 100,
-			"protein":       (float64(recipe.Nutrition.Protein) / standard.Protein) * 100,
-			"salt":          (float64(recipe.Nutrition.Salt) / standard.Salt) * 100,
-		}
-
-		meetsRequirements := true
-
-		// レシピの具材を順番にチェック
+		log.Printf("🔍 Backend: Checking recipe: %s (ID: %s)", recipe.Name, recipe.ID)
+		log.Printf("  - Recipe ingredients:")
 		for _, recipeIng := range recipe.Ingredients {
-			// リクエストされた具材がレシピに含まれていない場合
-			if reqQuantity, ok := quantityMap[recipeIng.IngredientID]; ok {
-				// 数量が一致しない場合
-				if reqQuantity < recipeIng.QuantityRequired {
-					log.Printf("⚠️ Recipe %s: Insufficient quantity for ingredient %d (required: %.2f, available: %.2f)",
-						recipe.Name, recipeIng.IngredientID, recipeIng.QuantityRequired, reqQuantity)
-					meetsRequirements = false
-					break
-				}
-			} else {
-				// レシピに必要な具材がリクエストに含まれていない場合
-				log.Printf("⚠️ Recipe %s: Missing required ingredient %d",
-					recipe.Name, recipeIng.IngredientID)
-				meetsRequirements = false
+			log.Printf("    * %s (ID: %d, Unit: %s)",
+				recipeIng.Ingredient.Name,
+				recipeIng.IngredientID,
+				recipeIng.Ingredient.Unit.Name)
+		}
+
+		for _, recipeIng := range recipe.Ingredients {
+			// presence単位またはseasoning単位の具材はスキップ
+			if recipeIng.Ingredient.Unit.Name == "presence" ||
+				recipeIng.Ingredient.Unit.Name == "適量" ||
+				recipeIng.Ingredient.Unit.Name == "少々" ||
+				recipeIng.Ingredient.Unit.Name == "ひとつまみ" {
+				log.Printf("    Skipping presence/seasoning ingredient: %s", recipeIng.Ingredient.Name)
+				continue
+			}
+
+			// 選択された具材の中に、このレシピの具材が含まれているかチェック
+			if selectedQuantity, exists := selectedIngredients[recipeIng.IngredientID]; exists {
+				log.Printf("    Found matching ingredient: %s (Selected quantity: %.2f)",
+					recipeIng.Ingredient.Name,
+					selectedQuantity)
+				hasMatchingIngredients = true
 				break
+			} else {
+				log.Printf("    No match for ingredient: %s", recipeIng.Ingredient.Name)
 			}
 		}
 
-		// 全ての具材が一致した場合にのみレシピを結果に追加
-		if meetsRequirements {
-			recipe.NutritionPercentage = nutritionPercentage
+		log.Printf("  - Has matching ingredients: %v", hasMatchingIngredients)
+
+		// 少なくとも1つの具材が一致している場合
+		if hasMatchingIngredients {
 			result = append(result, recipe)
-			log.Printf("✅ Added recipe %s to results", recipe.Name)
+			log.Printf("  ✅ Recipe added to results")
+		} else {
+			log.Printf("  ❌ Recipe not added to results")
 		}
 	}
 
-	// 結果をログ出力
-	log.Printf("🔍 Search Results:")
+	log.Printf("🔍 Backend: Final filtered recipes count: %d", len(result))
 	for i, recipe := range result {
-		log.Printf("  [%d] Recipe: %s", i, recipe.Name)
-		log.Printf("     - Genre: %s", recipe.Genre.Name)
-		log.Printf("     - Cooking Time: %d minutes", recipe.CookingTime)
-		log.Printf("     - Cost Estimate: %d yen", recipe.CostEstimate)
-		log.Printf("     - Nutrition: %+v", recipe.Nutrition)
-		log.Printf("     - Nutrition Percentage: %+v", recipe.NutritionPercentage)
+		log.Printf("  [%d] Recipe: %s (ID: %s)", i, recipe.Name, recipe.ID)
 	}
 
-	// 結果を返す
-	if len(result) == 0 {
-		log.Printf("⚠️ No recipes found matching the criteria")
-		c.JSON(http.StatusOK, []models.Recipe{})
-		return
-	}
-
-	log.Printf("✅ Returning %d matching recipes", len(result))
 	c.JSON(http.StatusOK, result)
 }
 
+// SearchRecipesByName handles GET /api/recipes/search
 func (h *RecipeHandler) SearchRecipesByName(c *gin.Context) {
 	query := c.Query("q")
 
@@ -232,24 +220,23 @@ func (h *RecipeHandler) SearchRecipesByName(c *gin.Context) {
 	c.JSON(http.StatusOK, recipes)
 }
 
-// GetRecipeByID /api/recipes/:id (GET) レシピをIDで取得
+// GetRecipeByID は特定のレシピを取得するハンドラー
 func (h *RecipeHandler) GetRecipeByID(c *gin.Context) {
-	idStr := c.Param("id")
-	// UUIDに変換
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid recipe ID"})
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Recipe ID is required"})
 		return
 	}
 
 	var recipe models.Recipe
-	if err := h.DB.
-		Preload("Genre").
+	if err := h.DB.Preload("Ingredients.Ingredient").
 		Preload("Ingredients.Ingredient.Unit").
+		Preload("Ingredients.Ingredient.Genre").
+		Preload("Genre").
 		Preload("Reviews").
-		Where("id = ?", id).
-		First(&recipe).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Recipe not found"})
+		First(&recipe, "id = ?", id).Error; err != nil {
+		log.Printf("Error fetching recipe: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipe"})
 		return
 	}
 
@@ -381,4 +368,237 @@ func calculateRecipeNutrition(ingredients []models.RecipeIngredient) models.Nutr
 	}
 
 	return nutrition
+}
+
+// GetRecipes はレシピ一覧を取得するハンドラー
+func (h *RecipeHandler) GetRecipes(c *gin.Context) {
+	var recipes []models.Recipe
+
+	if err := h.DB.Find(&recipes).Error; err != nil {
+		log.Printf("Error fetching recipes: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
+		return
+	}
+
+	c.JSON(http.StatusOK, recipes)
+}
+
+// GetRecipe は特定のレシピを取得するハンドラー
+func (h *RecipeHandler) GetRecipe(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Recipe ID is required"})
+		return
+	}
+
+	var recipe models.Recipe
+	if err := h.DB.First(&recipe, "id = ?", id).Error; err != nil {
+		log.Printf("Error fetching recipe: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipe"})
+		return
+	}
+
+	c.JSON(http.StatusOK, recipe)
+}
+
+// CreateRecipe は新しいレシピを作成するハンドラー
+func (h *RecipeHandler) CreateRecipe(c *gin.Context) {
+	var recipe models.Recipe
+	if err := c.ShouldBindJSON(&recipe); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.DB.Create(&recipe).Error; err != nil {
+		log.Printf("Error creating recipe: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create recipe"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, recipe)
+}
+
+// UpdateRecipe はレシピを更新するハンドラー
+func (h *RecipeHandler) UpdateRecipe(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Recipe ID is required"})
+		return
+	}
+
+	var recipe models.Recipe
+	if err := c.ShouldBindJSON(&recipe); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.DB.Model(&models.Recipe{}).Where("id = ?", id).Updates(recipe).Error; err != nil {
+		log.Printf("Error updating recipe: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update recipe"})
+		return
+	}
+
+	c.JSON(http.StatusOK, recipe)
+}
+
+// DeleteRecipe はレシピを削除するハンドラー
+func (h *RecipeHandler) DeleteRecipe(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Recipe ID is required"})
+		return
+	}
+
+	if err := h.DB.Delete(&models.Recipe{}, "id = ?", id).Error; err != nil {
+		log.Printf("Error deleting recipe: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete recipe"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Recipe deleted successfully"})
+}
+
+// GetRecipeByUserID はユーザーIDに基づいてレシピを取得するハンドラー
+func (h *RecipeHandler) GetRecipeByUserID(c *gin.Context) {
+	userID := c.Param("user_id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
+		return
+	}
+
+	var recipes []models.Recipe
+	if err := h.DB.Preload("Ingredients.Ingredient").
+		Preload("Ingredients.Ingredient.Unit").
+		Preload("Ingredients.Ingredient.Genre").
+		Preload("Genre").
+		Preload("Reviews").
+		Where("user_id = ?", userID).
+		Find(&recipes).Error; err != nil {
+		log.Printf("Error fetching recipes: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
+		return
+	}
+
+	c.JSON(http.StatusOK, recipes)
+}
+
+// GetRecipeByGenreID はジャンルIDに基づいてレシピを取得するハンドラー
+func (h *RecipeHandler) GetRecipeByGenreID(c *gin.Context) {
+	genreID := c.Param("genre_id")
+	if genreID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Genre ID is required"})
+		return
+	}
+
+	var recipes []models.Recipe
+	if err := h.DB.Preload("Ingredients.Ingredient").
+		Preload("Ingredients.Ingredient.Unit").
+		Preload("Ingredients.Ingredient.Genre").
+		Preload("Genre").
+		Preload("Reviews").
+		Where("genre_id = ?", genreID).
+		Find(&recipes).Error; err != nil {
+		log.Printf("Error fetching recipes: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
+		return
+	}
+
+	c.JSON(http.StatusOK, recipes)
+}
+
+// GetRecipeByIngredientID は具材IDに基づいてレシピを取得するハンドラー
+func (h *RecipeHandler) GetRecipeByIngredientID(c *gin.Context) {
+	ingredientID := c.Param("ingredient_id")
+	if ingredientID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ingredient ID is required"})
+		return
+	}
+
+	var recipes []models.Recipe
+	if err := h.DB.Preload("Ingredients.Ingredient").
+		Preload("Ingredients.Ingredient.Unit").
+		Preload("Ingredients.Ingredient.Genre").
+		Preload("Genre").
+		Preload("Reviews").
+		Joins("JOIN recipe_ingredients ON recipes.id = recipe_ingredients.recipe_id").
+		Where("recipe_ingredients.ingredient_id = ?", ingredientID).
+		Find(&recipes).Error; err != nil {
+		log.Printf("Error fetching recipes: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
+		return
+	}
+
+	c.JSON(http.StatusOK, recipes)
+}
+
+// GetRecipeByNutrition は栄養素に基づいてレシピを取得するハンドラー
+func (h *RecipeHandler) GetRecipeByNutrition(c *gin.Context) {
+	var nutrition models.NutritionInfo
+	if err := c.ShouldBindJSON(&nutrition); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var recipes []models.Recipe
+	if err := h.DB.Preload("Ingredients.Ingredient").
+		Preload("Ingredients.Ingredient.Unit").
+		Preload("Ingredients.Ingredient.Genre").
+		Preload("Genre").
+		Preload("Reviews").
+		Where("nutrition @> ?", nutrition).
+		Find(&recipes).Error; err != nil {
+		log.Printf("Error fetching recipes: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
+		return
+	}
+
+	c.JSON(http.StatusOK, recipes)
+}
+
+// GetRecipeByCookingTime は調理時間に基づいてレシピを取得するハンドラー
+func (h *RecipeHandler) GetRecipeByCookingTime(c *gin.Context) {
+	cookingTime := c.Param("cooking_time")
+	if cookingTime == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cooking time is required"})
+		return
+	}
+
+	var recipes []models.Recipe
+	if err := h.DB.Preload("Ingredients.Ingredient").
+		Preload("Ingredients.Ingredient.Unit").
+		Preload("Ingredients.Ingredient.Genre").
+		Preload("Genre").
+		Preload("Reviews").
+		Where("cooking_time <= ?", cookingTime).
+		Find(&recipes).Error; err != nil {
+		log.Printf("Error fetching recipes: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
+		return
+	}
+
+	c.JSON(http.StatusOK, recipes)
+}
+
+// GetRecipeByCostEstimate は費用見積もりに基づいてレシピを取得するハンドラー
+func (h *RecipeHandler) GetRecipeByCostEstimate(c *gin.Context) {
+	costEstimate := c.Param("cost_estimate")
+	if costEstimate == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cost estimate is required"})
+		return
+	}
+
+	var recipes []models.Recipe
+	if err := h.DB.Preload("Ingredients.Ingredient").
+		Preload("Ingredients.Ingredient.Unit").
+		Preload("Ingredients.Ingredient.Genre").
+		Preload("Genre").
+		Preload("Reviews").
+		Where("cost_estimate <= ?", costEstimate).
+		Find(&recipes).Error; err != nil {
+		log.Printf("Error fetching recipes: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
+		return
+	}
+
+	c.JSON(http.StatusOK, recipes)
 }

@@ -31,6 +31,7 @@ func (h *IngredientHandler) ListIngredients(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch ingredients", "details": err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusOK, ingredients)
 }
 

@@ -12,19 +12,16 @@ services:
     env_file:
       - .env
     environment:
-      - USE_SUPABASE=${USE_SUPABASE:-false}
-      - DB_HOST=${DB_HOST:-db}
-      - DB_PORT=${DB_PORT:-5432}
-      - DB_USER=${DB_USER:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-password}
-      - DB_NAME=${DB_NAME:-amarimono}
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - USE_SUPABASE=true
+      - SUPABASE_URL=http://localhost:54321
+      - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      - SUPABASE_DB_HOST=host.docker.internal
+      - SUPABASE_DB_PORT=54322
+      - SUPABASE_DB_USER=postgres
+      - SUPABASE_DB_PASSWORD=postgres
+      - SUPABASE_DB_NAME=postgres
       - GOOGLE_CLOUD_TRANSLATION_API_KEY=${GOOGLE_CLOUD_TRANSLATION_API_KEY}
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     command: go run main.go
@@ -51,15 +48,16 @@ services:
     tty: true
     environment:
       - NODE_ENV=${NODE_ENV:-development}
-      - USE_SUPABASE=${USE_SUPABASE:-false}
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL:-http://localhost:8080}
-      - NEXT_PUBLIC_BACKEND_INTERNAL_URL=${NEXT_PUBLIC_BACKEND_INTERNAL_URL:-http://backend:8080}
-      - NEXT_PUBLIC_IMAGE_BASE_URL=${NEXT_PUBLIC_IMAGE_BASE_URL:-http://backend:8080}
-      - WATCHPACK_POLLING=true
-      - CHOKIDAR_USEPOLLING=true
+      - USE_SUPABASE=true
+      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+      - NEXT_PUBLIC_BACKEND_INTERNAL_URL=http://portfolio-amarimono_backend_1:8080
+      - NEXT_PUBLIC_IMAGE_BASE_URL=${NEXT_PUBLIC_IMAGE_BASE_URL:-https://qmrjsqeigdkizkrpiahs.supabase.co/storage/v1/object/public/images}
+      - WATCHPACK_POLLING=false
+      - CHOKIDAR_USEPOLLING=false
       - NEXT_TELEMETRY_DISABLED=1
+      - NODE_OPTIONS=--max-old-space-size=4096
     command: >
       sh -c "
         npm install && 
@@ -74,35 +72,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1'
-          memory: 4G
+          cpus: '2'
+          memory: 8G
     networks:
       - app-network
     restart: unless-stopped
-  db:
-    image: "postgres:17-alpine"
-    platform: linux/arm64/v8
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-password}
-      - POSTGRES_DB=${DB_NAME:-amarimono}
-      - POSTGRES_INITDB_ARGS=--data-checksums
-      - POSTGRES_HOST_AUTH_METHOD=trust
-    volumes:
-      - db-store:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-    networks:
-      - app-network
   redis:
     image: "redis:alpine"
     platform: linux/arm64/v8
@@ -124,7 +98,6 @@ services:
       - app-network
 
 volumes:
-  db-store:
   front_node_modules:
   front_next:
   redis-store:

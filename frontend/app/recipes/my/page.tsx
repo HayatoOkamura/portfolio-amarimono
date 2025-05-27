@@ -9,16 +9,12 @@ import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";
 import { Recipe } from "@/app/types/index";
 import { useRouter } from 'next/navigation';
 import { PageLoading } from '@/app/components/ui/Loading/PageLoading';
-import LoginModal from "@/app/components/ui/LoginModal/LoginModal";
+import { withAuth } from "@/app/components/auth/withAuth";
 
-const ListMyRecipe = () => {
+const ListMyRecipeContent = () => {
   const { user } = useAuth();
   const { data, isLoading, error } = useUserRecipes(user?.id);
   const router = useRouter();
-
-  if (!user) {
-    return <LoginModal onLogin={() => router.push('/login')} />;
-  }
 
   const recipes = Array.isArray(data) ? data : [];
 
@@ -54,6 +50,10 @@ const ListMyRecipe = () => {
       </div>
     </PageLoading>
   );
-};
+}
 
-export default ListMyRecipe;
+const ListMyRecipe = () => {
+  return <ListMyRecipeContent />;
+}
+
+export default withAuth(ListMyRecipe);

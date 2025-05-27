@@ -6,10 +6,11 @@ WORKDIR /frontend
 ENV NODE_ENV=development
 ENV NEXT_PUBLIC_BACKEND_URL=http://backend:8080
 ENV NEXT_PUBLIC_IMAGE_BASE_URL=http://backend:8080
-ENV WATCHPACK_POLLING=true
-ENV CHOKIDAR_USEPOLLING=true
+ENV WATCHPACK_POLLING=false
+ENV CHOKIDAR_USEPOLLING=false
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV npm_config_arch=arm64
+ENV NODE_OPTIONS=--max-old-space-size=4096
 
 # Supabaseの環境変数はcompose.ymlから注入されるため、ここでは設定しない
 

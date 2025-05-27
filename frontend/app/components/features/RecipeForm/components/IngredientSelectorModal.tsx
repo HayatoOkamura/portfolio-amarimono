@@ -44,9 +44,11 @@ export const IngredientSelectorModal = ({
         (si) => si.id !== ingredient.id
       );
     } else {
+      // presenceタイプの材料の場合は数量を1に固定
+      const initialAmount = ingredient.unit.type === 'presence' ? 1 : 1;
       newSelectedIngredients = [
         ...selectedIngredients,
-        { id: ingredient.id, amount: 1 },
+        { id: ingredient.id, amount: initialAmount },
       ];
     }
 
@@ -54,6 +56,12 @@ export const IngredientSelectorModal = ({
   };
 
   const handleAmountChange = (id: number, amount: number) => {
+    const ingredient = ingredients.find(ing => ing.id === id);
+    if (!ingredient) return;
+
+    // presenceタイプの材料の場合は数量調整を無効
+    if (ingredient.unit.type === 'presence') return;
+
     if (amount === 0) {
       // 数量が0になったら具材を削除
       const newSelectedIngredients = selectedIngredients.filter(
@@ -137,28 +145,37 @@ export const IngredientSelectorModal = ({
               </div>
               {isSelected && (
                 <div className={styles.modal_ingredient__controls}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAmountChange(ingredient.id, (selectedIngredient?.amount || 0) + ingredient.unit.step);
-                    }}
-                    className={`${styles.modal_ingredient__button} ${styles['modal_ingredient__button--plus']}`}
-                    aria-label={`${ingredient.name}を増やす`}
-                  />
-                  <span className={styles.modal_ingredient__quantity}>
-                    {Number.isInteger(selectedIngredient?.amount)
-                      ? selectedIngredient?.amount
-                      : Number(selectedIngredient?.amount).toFixed(1)}
-                    {ingredient.unit.name}
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAmountChange(ingredient.id, Math.max(0, (selectedIngredient?.amount || 0) - ingredient.unit.step));
-                    }}
-                    className={`${styles.modal_ingredient__button} ${styles['modal_ingredient__button--minus']}`}
-                    aria-label={`${ingredient.name}を減らす`}
-                  />
+                  {ingredient.unit.type !== 'presence' && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAmountChange(ingredient.id, (selectedIngredient?.amount || 0) + ingredient.unit.step);
+                        }}
+                        className={`${styles.modal_ingredient__button} ${styles['modal_ingredient__button--plus']}`}
+                        aria-label={`${ingredient.name}を増やす`}
+                      />
+                      <span className={styles.modal_ingredient__quantity}>
+                        {Number.isInteger(selectedIngredient?.amount)
+                          ? selectedIngredient?.amount
+                          : Number(selectedIngredient?.amount).toFixed(1)}
+                        {ingredient.unit.name}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAmountChange(ingredient.id, Math.max(0, (selectedIngredient?.amount || 0) - ingredient.unit.step));
+                        }}
+                        className={`${styles.modal_ingredient__button} ${styles['modal_ingredient__button--minus']}`}
+                        aria-label={`${ingredient.name}を減らす`}
+                      />
+                    </>
+                  )}
+                  {ingredient.unit.type === 'presence' && (
+                    <span className={styles.modal_ingredient__quantity}>
+                      {ingredient.unit.name}
+                    </span>
+                  )}
                 </div>
               )}
             </div>

@@ -59,7 +59,6 @@ docker compose down
   - DB_NAME
 
 - バックエンド関連
-  - OPENAI_API_KEY
   - GOOGLE_CLOUD_TRANSLATION_API_KEY
 
 - フロントエンド関連

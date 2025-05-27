@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { LuImagePlus } from "react-icons/lu";
 import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
 import { imageBaseUrl } from "@/app/utils/api";
+import { withAuth } from "@/app/components/auth/withAuth";
 
 interface User {
   id: string;
@@ -100,8 +101,6 @@ function EditProfileContent() {
   const handleImageClick = () => {
     fileInputRef.current?.click();
   };
-
-  if (!authUser) return <p>ログインしてください</p>;
 
   return (
     <PageLoading isLoading={isAuthLoading || isUserLoading}>
@@ -211,6 +210,8 @@ function EditProfileContent() {
   );
 }
 
-export default function EditProfilePage() {
+function EditProfilePage() {
   return <EditProfileContent />;
 }
+
+export default withAuth(EditProfilePage);

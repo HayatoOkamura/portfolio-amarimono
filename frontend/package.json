@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "export NODE_OPTIONS='--max-old-space-size=2048' && next dev",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -63,6 +63,7 @@
     "@types/node": "^20.17.31",
     "@types/node-fetch": "^2.6.12",
     "@types/parse-json": "^4.0.2",
+    "@types/pg": "^8.15.2",
     "@types/prop-types": "^15.7.14",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.6",

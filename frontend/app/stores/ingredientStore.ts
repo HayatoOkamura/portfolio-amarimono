@@ -15,6 +15,7 @@ interface IngredientStore {
   setNewIngredient: (ingredient: EditIngredient) => void;
   addIngredient: (ingredient: Ingredient) => void;
   deleteIngredient: (id: number) => void;
+  removeIngredient: (id: number) => void;
   fetchIngredients: () => Promise<void>;
 }
 
@@ -53,6 +54,11 @@ const useIngredientStore = create<IngredientStore>()(
         }));
       },
       deleteIngredient: (id: number) => {
+        set((state) => ({
+          ingredients: state.ingredients.filter(ing => ing.id !== id)
+        }));
+      },
+      removeIngredient: (id: number) => {
         set((state) => ({
           ingredients: state.ingredients.filter(ing => ing.id !== id)
         }));

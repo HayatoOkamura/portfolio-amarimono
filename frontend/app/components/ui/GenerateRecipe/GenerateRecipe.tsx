@@ -49,9 +49,16 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
     }
   };
 
-  const selectedIngredients = ingredients.filter(
-    (ingredient: Ingredient) => ingredient.quantity > 0
-  ) as Ingredient[];
+  const selectedIngredients = ingredients
+    .filter((ingredient: Ingredient) => ingredient.quantity > 0)
+    .reduce((acc: Ingredient[], current: Ingredient) => {
+      const existingIngredient = acc.find(item => item.id === current.id);
+      if (existingIngredient) {
+        existingIngredient.quantity = current.quantity;
+        return acc;
+      }
+      return [...acc, current];
+    }, []) as Ingredient[];
 
   return (
     <section className={styles.container_block}>
@@ -80,7 +87,7 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
                   <p className={styles.ingredients_list__name}>
                     {ingredient.name}
                   </p>
-                  {ingredient.unit?.name !== 'presence' && (
+                  {ingredient.unit?.type !== 'presence' && (
                     <p className={styles.ingredients_list__quantity}>
                       {Number.isInteger(ingredient.quantity)
                         ? ingredient.quantity

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/app/stores/userStore";
-import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import { backendUrl } from "@/app/utils/api";
+import { createClient } from "@supabase/supabase-js";
 
 interface User {
   id: string;
@@ -32,17 +32,12 @@ const fetchUserDetails = async (userId: string) => {
     const data = await response.json();
     console.log("Backend user data:", data);
     
-    // role情報が存在することを確認
-    if (!data.role) {
-      console.warn("Role information is missing from backend response");
-    }
-    
     return {
       username: data.username,
       profileImage: data.profileImage,
       age: data.age,
       gender: data.gender,
-      role: data.role || null // roleが存在しない場合はnullを設定
+      role: data.role || 'user'
     };
   } catch (error) {
     console.error("Error fetching user details:", error);
@@ -97,269 +92,77 @@ const createAuthError = (type: AuthError['type'], message: string): AuthError =>
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
   const router = useRouter();
   const { user: storeUser, setUser: setStoreUser } = useUserStore();
 
-  // 初期セッション確認（初回のみ）
+  // ユーザー情報の取得
   useEffect(() => {
-    let isMounted = true;
-
-    const checkSession = async () => {
+    const fetchUser = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const supabase = await createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (!isMounted) return;
+        if (sessionError || !session) {
+          throw new Error('Not authenticated');
+        }
 
-        if (session) {
-          const { data: { user: authUser } } = await supabase.auth.getUser();
-          
-          if (!isMounted) return;
-
-          if (authUser) {
-            // バックエンドからユーザー情報を取得
-            const userDetails = await fetchUserDetails(authUser.id);
-            console.log("Fetched user details from backend:", userDetails);
-
-            const userData: User = {
-              id: authUser.id,
-              email: authUser.email || '',
-              created_at: authUser.created_at,
-              updated_at: authUser.updated_at,
-              ...userDetails, // バックエンドから取得した情報をマージ
-              role: userDetails.role || 'user' // role情報がnullの場合は'user'をデフォルト値として設定
-            };
-            console.log("Final user data:", userData);
-            setUser(userData);
-            setStoreUser(userData);
+        const response = await fetch('/api/auth/user', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
           }
-        } else {
-          setUser(null);
-          setStoreUser(null);
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch user');
+        }
+        const userData = await response.json();
+        
+        if (userData) {
+          const userDetails = await fetchUserDetails(userData.id);
+          const formattedUser: User = {
+            ...userData,
+            ...userDetails
+          };
+          setUser(formattedUser);
+          setStoreUser(formattedUser);
         }
       } catch (error) {
-        console.error('useAuth: Error checking session', error);
-        if (isMounted) {
-          setUser(null);
-          setStoreUser(null);
-        }
+        console.error('Error fetching user:', error);
+        setUser(null);
+        setStoreUser(null);
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
 
-    checkSession();
-
-    // 認証状態の変更を監視（ログアウト時のみ）
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_OUT') {
-        if (isMounted) {
-          setUser(null);
-          setStoreUser(null);
-        }
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
+    fetchUser();
   }, [setStoreUser]);
-
-  // storeUserの変更を監視
-  useEffect(() => {
-    if (storeUser !== user) {
-      setUser(storeUser);
-    }
-  }, [storeUser, user]);
-
-  const setUserState = (userData: User | null) => {
-    console.log("Setting user state:", userData);
-    // 状態更新を同期的に行う
-    setUser(userData);
-    setStoreUser(userData);
-  };
-
-  const login = async ({ email, password }: { email: string; password: string }) => {
-    try {
-      setIsLoggingIn(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        if (error.message.includes("Email not confirmed")) {
-          const authError = { type: 'EMAIL_NOT_CONFIRMED', message: "メール認証が完了していません。認証ページに移動します..." } as AuthError;
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-          return Promise.reject(authError);
-        }
-        throw { type: 'LOGIN_FAILED', message: error.message } as AuthError;
-      }
-
-      if (!data.user?.email_confirmed_at) {
-        const authError = { type: 'EMAIL_NOT_CONFIRMED', message: "メール認証が完了していません。認証ページに移動します..." } as AuthError;
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-        return Promise.reject(authError);
-      }
-
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) {
-        console.error("useAuth: Error getting user data:", userError);
-        throw { type: 'LOGIN_FAILED', message: userError.message } as AuthError;
-      }
-      if (user) {
-        // User型の変換
-        const formattedUser: User = {
-          id: user.id,
-          email: user.email || '',
-          email_confirmed_at: user.email_confirmed_at,
-          created_at: user.created_at,
-          updated_at: user.updated_at
-        };
-        setUserState(formattedUser);
-      }
-
-      return null;
-    } catch (error) {
-      if (error instanceof Error) {
-        throw { type: 'UNKNOWN', message: error.message } as AuthError;
-      }
-      throw error;
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
-  const register = async ({ email, password }: { email: string; password: string }) => {
-    try {
-      setIsRegistering(true);
-
-      // メールアドレスの形式をチェック
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        throw { type: 'REGISTRATION_FAILED', message: "メールアドレスの形式が正しくありません" } as AuthError;
-      }
-
-      // 新規登録処理
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/callback`,
-        },
-      });
-
-      if (error) {
-        console.error("Registration error:", error);
-        console.log("Error details:", {
-          message: error.message,
-          status: error.status,
-          name: error.name
-        });
-
-        if (error.message.includes("already registered") || 
-            error.message.includes("already exists") || 
-            error.message.includes("already in use")) {
-          throw { type: 'EMAIL_IN_USE', message: "このメールアドレスは既に登録されています" } as AuthError;
-        } else if (error.message.includes("rate limit")) {
-          throw { type: 'RATE_LIMIT', message: "送信制限に達しました。しばらく待ってから再度お試しください" } as AuthError;
-        } else if (error.message.includes("email")) {
-          throw { type: 'REGISTRATION_FAILED', message: "メールアドレスが無効です" } as AuthError;
-        } else {
-          throw { type: 'REGISTRATION_FAILED', message: error.message } as AuthError;
-        }
-      }
-
-      if (!data.user) {
-        throw { type: 'REGISTRATION_FAILED', message: "ユーザー登録に失敗しました" } as AuthError;
-      }
-
-      // identitiesを使用して既存ユーザーをチェック
-      const identities = data.user.identities;
-      console.log("User identities:", identities);
-
-      if (identities?.length === 0) {
-        throw { type: 'EMAIL_IN_USE', message: "このメールアドレスは既に登録されています" } as AuthError;
-      }
-
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-      return null;
-    } catch (error) {
-      console.error("Registration process error:", error);
-      throw error;
-    } finally {
-      setIsRegistering(false);
-    }
-  };
 
   const logout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+      
       setUser(null);
       setStoreUser(null);
-      router.push("/login");
+      router.push('/login');
     } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
-
-  const createUserAfterVerification = async (user: any) => {
-    console.log("=== createUserAfterVerification Start ===");
-    try {
-      if (!user?.id) {
-        console.error("Invalid user data:", user);
-        throw new Error("ユーザーIDが存在しません");
-      }
-
-      console.log("Creating backend user...");
-      // バックエンドにユーザーを作成
-      const userData = await createBackendUser(user);
-      console.log("Backend user creation result:", userData);
-      
-      if (!userData) {
-        throw new Error("ユーザー情報の作成に失敗しました");
-      }
-
-      console.log("Formatting user data...");
-      // ユーザー情報を更新
-      const formattedUser: User = {
-        id: user.id,
-        email: user.email || '',
-        email_confirmed_at: user.email_confirmed_at,
-        created_at: user.created_at,
-        updated_at: user.updated_at,
-        ...userData
-      };
-
-      console.log("Setting user state...");
-      // 状態更新を一度だけ行う
-      setUserState(formattedUser);
-
-      console.log("=== createUserAfterVerification End ===");
-      return userData;
-    } catch (error) {
-      console.error("ユーザー作成エラー:", error);
-      throw error;
+      console.error('Logout error:', error);
     }
   };
 
   return {
     user,
     isLoading,
-    isLoggingIn,
-    isRegistering,
-    login,
-    register,
-    logout,
-    createUserAfterVerification,
-    setUser: setUserState
+    logout
   };
 }
 

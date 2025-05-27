@@ -18,10 +18,10 @@ import { useState } from "react";
 import { Ingredient, Instruction, Recipe } from "@/app/types/index";
 import styles from "./new.module.scss";
 import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
-import LoginModal from "@/app/components/ui/LoginModal/LoginModal";
 import { useRouter } from "next/navigation";
+import { withAuth } from "@/app/components/auth/withAuth";
 
-const RecipeRegistration: React.FC = () => {
+const RecipeRegistrationContent = () => {
   const { user } = useAuth();
   const { setIngredients } = useIngredientStore();
   const { fetchRecipeGenres, recipeGenres } = useGenreStore();
@@ -81,10 +81,6 @@ const RecipeRegistration: React.FC = () => {
       }
     }
   };
-
-  if (!user) {
-    return <LoginModal onLogin={() => router.push('/login')} />;
-  }
 
   return (
     <div className={styles.container}>
@@ -197,6 +193,10 @@ const RecipeRegistration: React.FC = () => {
       )}
     </div>
   );
-};
+}
 
-export default RecipeRegistration;
+const RecipeRegistration = () => {
+  return <RecipeRegistrationContent />;
+}
+
+export default withAuth(RecipeRegistration);

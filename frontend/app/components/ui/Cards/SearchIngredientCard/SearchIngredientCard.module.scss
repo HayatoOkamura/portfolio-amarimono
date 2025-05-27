@@ -1,11 +1,12 @@
-.card_block {
+.ingredient_card {
   background: white;
   border-radius: 12px;
   padding: 8px 8px 15px 8px;
   text-align: center;
   transition: all 0.2s ease;
+  cursor: pointer;
 
-  &--selected {
+  &.selected {
     border: 3px solid #de616a;
     background: #f8ecec;
   }
@@ -23,84 +24,63 @@
     }
   }
 
-  &__name {
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__title {
     font-size: 1rem;
     font-weight: 700;
     color: #323232;
+    margin: 0;
   }
 
-  &__genre {
-    font-size: 0.75rem;
-    color: #323232;
-  }
-
-  &__controls {
+  &__quantity {
     display: flex;
     justify-content: center;
     gap: 15px;
-    margin-top: 12px;
     align-items: center;
 
     span {
       color: #323232;
       font-size: 0.75rem;
+      min-width: 2rem;
+    }
+
+    button {
+      background: var(--primary-accent-color);
+      border-radius: 100%;
+      width: 25px;
+      height: 25px;
+      aspect-ratio: 1 / 1;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+      line-height: 1;
+
+      &:disabled {
+        background-color: var(--disabled-color);
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+
+      &:hover:not(:disabled) {
+        opacity: 0.8;
+      }
     }
   }
 
-  &__button {
-    background: var(--primary-accent-color);
-    border-radius: 100%;
-    width: 25px;
-    height: 25px;
-    aspect-ratio: 1 / 1;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &--plus {
-      &::before {
-        content: "";
-        display: block;
-        width: 40%;
-        height: 40%;
-        background: #fff;
-        clip-path: polygon(
-          0% 43%,
-          0% 57%,
-          43% 57%,
-          43% 100%,
-          57% 100%,
-          57% 57%,
-          100% 57%,
-          100% 43%,
-          57% 43%,
-          57% 0,
-          43% 0,
-          43% 43%
-        );
-      }
-    }
-
-    &--disabled {
-      background-color: var(--disabled-color);
-      cursor: not-allowed;
-      opacity: 0.7;
-    }
-
-    &--minus {
-      &::before {
-        content: "";
-        display: block;
-        width: 30%;
-        height: 6%;
-        background: #fff;
-      }
-    }
-
-    &:hover {
-      opacity: 0.8;
-    }
+  &__unit {
+    color: #666;
+    font-size: 0.875rem;
+    font-weight: 500;
   }
 }

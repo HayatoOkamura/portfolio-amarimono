@@ -22,6 +22,7 @@ interface ApiIngredient {
       name: string;
       description: string;
       step: number;
+      type: 'presence' | 'quantity';
     } | null;
   };
   quantity_required: number;
@@ -105,6 +106,10 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
     name: recipe.genre?.name || ''
   } : recipe.genre;
 
+  const isSeasoningUnit = (unitName: string) => {
+    return ['大さじ', '小さじ', '適量', '少々', 'ひとつまみ'].includes(unitName);
+  };
+
   return {
     id: recipe.id,
     name: recipe.name,
@@ -123,7 +128,8 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
         id: ingredient.ingredient.unit?.id || 0,
         name: ingredient.ingredient.unit?.name || "",
         description: ingredient.ingredient.unit?.description || "",
-        step: ingredient.ingredient.unit?.step || 1
+        step: ingredient.ingredient.unit?.step || 1,
+        type: ingredient.ingredient.unit?.name === "presence" ? "presence" : "quantity"
       },
       genre: { id: 0, name: "すべて" },
       imageUrl: null,
@@ -188,7 +194,8 @@ export const mapRecipes = (data: ApiRecipe[]): Recipe[] => {
         id: ingredient.ingredient.unit?.id || 0,
         name: ingredient.ingredient.unit?.name || "",
         description: ingredient.ingredient.unit?.description || "",
-        step: ingredient.ingredient.unit?.step || 1
+        step: ingredient.ingredient.unit?.step || 1,
+        type: ingredient.ingredient.unit?.name === "presence" ? "presence" : "quantity"
       },
       genre: {
         id: 0,

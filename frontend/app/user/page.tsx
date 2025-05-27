@@ -16,10 +16,8 @@ import { FaHeart } from "react-icons/fa";
 import { FaStar } from "react-icons/fa";
 import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";
 import { Recipe } from "@/app/types/index";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
-import LoginModal from "@/app/components/ui/LoginModal/LoginModal";
+import { withAuth } from "@/app/components/auth/withAuth";
 
 interface User {
   id: string;
@@ -131,20 +129,9 @@ const UserProfile = ({ userId }: { userId: string }) => {
 };
 
 // メインコンポーネント
-export default function UserPage() {
-  const { user, isLoading: isAuthLoading } = useAuth();
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const router = useRouter();
-
-  return (
-    <PageLoading isLoading={isAuthLoading}>
-      {!user ? (
-        <LoginModal
-          onLogin={() => router.push('/login')}
-        />
-      ) : (
-        <UserProfile userId={user.id} />
-      )}
-    </PageLoading>
-  );
+function UserPage() {
+  const { user } = useAuth();
+  return <UserProfile userId={user!.id} />;
 }
+
+export default withAuth(UserPage);

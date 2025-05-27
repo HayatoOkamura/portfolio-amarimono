@@ -47,6 +47,12 @@ func (h *AdminHandler) ListIngredients(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch ingredients", "details": err.Error()})
 		return
 	}
+
+	// 取得したデータをログに出力
+	for _, ingredient := range ingredients {
+		log.Printf("🔍 Ingredient: %+v", ingredient)
+	}
+
 	c.JSON(http.StatusOK, ingredients)
 }
 

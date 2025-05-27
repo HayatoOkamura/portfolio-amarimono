@@ -3,8 +3,9 @@
 import React from 'react';
 import { UserIngredientDefaults } from '@/app/components/features/UserIngredientDefaults/UserIngredientDefaults';
 import styles from './page.module.scss';
+import { withAuth } from '@/app/components/auth/withAuth';
 
-export default function UserSettingsPage() {
+function UserSettingsPage() {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>具材の初期設定</h1>
@@ -14,4 +15,6 @@ export default function UserSettingsPage() {
       <UserIngredientDefaults />
     </div>
   );
-} 
+}
+
+export default withAuth(UserSettingsPage); 

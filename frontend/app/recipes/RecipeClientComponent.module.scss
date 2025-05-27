@@ -47,6 +47,25 @@
     }
   }
 
+  .exact_match_button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: #45a049;
+    }
+
+    &:active {
+      background-color: #3d8b40;
+    }
+  }
+
   .current_recipe {
     display: flex;
     align-items: center;
@@ -401,9 +420,9 @@
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: opacity 0.2s;
 
   &:hover {
-    background-color: var(--primary-accent-color-dark);
+    opacity: .8;
   }
 }

@@ -7,8 +7,9 @@ import { handleLikeService } from '@/app/hooks/recipes';
 import { useRecipe } from '@/app/hooks/recipes';
 import { useState } from 'react';
 import { PageLoading } from '@/app/components/ui/Loading/PageLoading';
+import { withAuth } from '@/app/components/auth/withAuth';
 
-export default function MyRecipeDetail() {
+function MyRecipeDetailContent() {
   const { id } = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -78,3 +79,9 @@ export default function MyRecipeDetail() {
     </PageLoading>
   );
 }
+
+function MyRecipeDetail() {
+  return <MyRecipeDetailContent />;
+}
+
+export default withAuth(MyRecipeDetail);

@@ -98,6 +98,7 @@ const IngredientSelector = ({
           ))}
         </div>
       </section>
+
       {/* 具材一覧 */}
       <section className={styles.ingredient_block}>
         <div

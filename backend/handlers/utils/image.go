@@ -21,7 +21,7 @@ var log = logrus.New()
 // SaveImage は環境に応じて画像を保存し、URLを返す
 func SaveImage(c *gin.Context, file *multipart.FileHeader, dir string, recipeID string) (string, error) {
 	// 環境変数で保存先を判定
-	env := os.Getenv("GO_ENV")
+	env := os.Getenv("DATABASE_URL")
 	if env == "production" {
 		return saveToSupabase(file, dir, recipeID)
 	}
@@ -198,7 +198,7 @@ func saveToSupabase(file *multipart.FileHeader, dir string, id string) (string, 
 
 // DeleteImage は環境に応じて画像を削除する
 func DeleteImage(imagePath string) error {
-	env := os.Getenv("GO_ENV")
+	env := os.Getenv("DATABASE_URL")
 	if env == "production" {
 		return deleteFromSupabase(imagePath)
 	}
