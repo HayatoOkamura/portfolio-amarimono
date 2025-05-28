@@ -127,17 +127,26 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 	var result []models.Recipe
 	for _, recipe := range recipes {
 		// レシピの具材をチェック
-		hasMatchingIngredients := false
+		allIngredientsMatch := true
+		missingIngredients := make(map[int]float64)
 
 		log.Printf("🔍 Backend: Checking recipe: %s (ID: %s)", recipe.Name, recipe.ID)
 		log.Printf("  - Recipe ingredients:")
 		for _, recipeIng := range recipe.Ingredients {
-			log.Printf("    * %s (ID: %d, Unit: %s)",
+			log.Printf("    * %s (ID: %d, Unit: %s, Required: %.2f)",
 				recipeIng.Ingredient.Name,
 				recipeIng.IngredientID,
-				recipeIng.Ingredient.Unit.Name)
+				recipeIng.Ingredient.Unit.Name,
+				recipeIng.QuantityRequired)
 		}
 
+		// 選択された具材のマップを作成（調味料を除く）
+		selectedIngredientsMap := make(map[int]float64)
+		for _, ing := range request {
+			selectedIngredientsMap[ing.IngredientID] = ing.QuantityRequired
+		}
+
+		// レシピの各具材をチェック
 		for _, recipeIng := range recipe.Ingredients {
 			// presence単位またはseasoning単位の具材はスキップ
 			if recipeIng.Ingredient.Unit.Name == "presence" ||
@@ -149,21 +158,41 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 			}
 
 			// 選択された具材の中に、このレシピの具材が含まれているかチェック
-			if selectedQuantity, exists := selectedIngredients[recipeIng.IngredientID]; exists {
-				log.Printf("    Found matching ingredient: %s (Selected quantity: %.2f)",
-					recipeIng.Ingredient.Name,
-					selectedQuantity)
-				hasMatchingIngredients = true
+			selectedQuantity, exists := selectedIngredientsMap[recipeIng.IngredientID]
+			if !exists {
+				log.Printf("    Missing ingredient: %s", recipeIng.Ingredient.Name)
+				allIngredientsMatch = false
+				missingIngredients[recipeIng.IngredientID] = recipeIng.QuantityRequired
 				break
-			} else {
-				log.Printf("    No match for ingredient: %s", recipeIng.Ingredient.Name)
+			}
+
+			// 数量が十分かチェック
+			if selectedQuantity < recipeIng.QuantityRequired {
+				log.Printf("    Insufficient quantity for %s: Required %.2f, Selected %.2f",
+					recipeIng.Ingredient.Name,
+					recipeIng.QuantityRequired,
+					selectedQuantity)
+				allIngredientsMatch = false
+				missingIngredients[recipeIng.IngredientID] = recipeIng.QuantityRequired
+				break
+			}
+
+			log.Printf("    Found matching ingredient: %s (Required: %.2f, Selected: %.2f)",
+				recipeIng.Ingredient.Name,
+				recipeIng.QuantityRequired,
+				selectedQuantity)
+		}
+
+		log.Printf("  - All ingredients match: %v", allIngredientsMatch)
+		if !allIngredientsMatch {
+			log.Printf("  - Missing or insufficient ingredients:")
+			for id, required := range missingIngredients {
+				log.Printf("    * ID: %d, Required: %.2f", id, required)
 			}
 		}
 
-		log.Printf("  - Has matching ingredients: %v", hasMatchingIngredients)
-
-		// 少なくとも1つの具材が一致している場合
-		if hasMatchingIngredients {
+		// 全ての具材が一致し、かつ数量が十分な場合のみ結果に追加
+		if allIngredientsMatch {
 			result = append(result, recipe)
 			log.Printf("  ✅ Recipe added to results")
 		} else {
