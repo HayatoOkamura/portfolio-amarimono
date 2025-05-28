@@ -1,6 +1,6 @@
 /* eslint-disable */
 "use client"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { Recipe, Instruction, Ingredient, Review } from "../types/index";
 import { backendUrl, handleApiResponse } from "../utils/api";
 import useRecipeStore from "@/app/stores/recipeStore";
@@ -501,13 +501,11 @@ export const useFetchRecipesAPI = (
     refetchOnMount?: boolean;
     refetchOnWindowFocus?: boolean;
     refetchOnReconnect?: boolean;
-    onSuccess?: (data: Recipe[]) => void;
-    onSettled?: () => void;
   }
 ) => {
   console.log('useFetchRecipesAPI called with:', { ingredients, options });
   
-  return useQuery({
+  return useQuery<Recipe[], Error>({
     queryKey: recipeKeys.list(JSON.stringify(ingredients)),
     queryFn: async () => {
       console.log('queryFn executing with ingredients:', ingredients);
@@ -518,8 +516,7 @@ export const useFetchRecipesAPI = (
       console.log('Valid ingredients:', validIngredients);
       
       if (validIngredients.length === 0) {
-        console.log('No valid ingredients found');
-        return [];
+        throw new Error("具材が選択されていません");
       }
       
       try {
@@ -529,10 +526,14 @@ export const useFetchRecipesAPI = (
         return response;
       } catch (error) {
         console.error('Error fetching recipes:', error);
-        return [];
+        throw error;
       }
     },
-    ...options
+    enabled: options?.enabled ?? false,
+    staleTime: options?.staleTime ?? 0,
+    refetchOnMount: options?.refetchOnMount ?? false,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? false,
+    refetchOnReconnect: options?.refetchOnReconnect ?? false
   });
 };
 

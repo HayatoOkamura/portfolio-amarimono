@@ -111,8 +111,16 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 	var standard models.NutritionStandard
 	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
 		log.Printf("Failed to fetch nutrition standard: %v", err)
-		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
-		return
+		// 標準値が見つからない場合はデフォルト値を設定
+		standard = models.NutritionStandard{
+			AgeGroup:      "18-29",
+			Gender:        "male",
+			Calories:      2500,
+			Carbohydrates: 300,
+			Fat:           70,
+			Protein:       60,
+			Salt:          8,
+		}
 	}
 
 	// 結果をフィルタリング

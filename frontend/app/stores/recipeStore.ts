@@ -4,7 +4,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { Recipe, NewRecipe } from "../types/index";
 import { backendUrl } from "../utils/api";
 
-export type SortOption = "rating_desc" | "cost_asc" | "time_asc" | "calorie_asc";
+export type SortOption = "rating_desc" | "cost_asc" | "time_asc" | "calorie_asc" | "ingredient_match";
 
 interface RecipeStore {
   recipes: Recipe[];

@@ -32,7 +32,14 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
     try {
       const filteredIngredients = ingredients
         .filter((ingredient: Ingredient) => ingredient.quantity > 0)
-        .map(({ id, quantity }: Ingredient) => ({ id, quantity }));
+        .reduce((acc: { id: number; quantity: number }[], current: Ingredient) => {
+          const existingIngredient = acc.find(item => item.id === current.id);
+          if (existingIngredient) {
+            existingIngredient.quantity += current.quantity;
+            return acc;
+          }
+          return [...acc, { id: current.id, quantity: current.quantity }];
+        }, []);
 
       if (filteredIngredients.length === 0) {
         alert("具材が選択されていません。");

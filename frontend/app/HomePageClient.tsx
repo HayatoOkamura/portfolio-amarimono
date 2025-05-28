@@ -21,26 +21,28 @@ export default function HomePageClient({ initialIngredients }: HomePageClientPro
   const { setSearchType, setSearchExecuted, setRecipes } = useRecipeStore();
   const { ingredients } = useIngredientStore();
 
-  const { refetch } = useFetchRecipesAPI(
+  const { refetch, isSuccess, data } = useFetchRecipesAPI(
     ingredients.map(ing => ({
       id: ing.id,
       quantity: ing.quantity
     })),
     {
-      enabled: false,
-      onSuccess: (data: Recipe[]) => {
-        console.log('Fetch successful, recipes:', data);
-        setProgress(100);
-        setSearchType("ingredients");
-        setSearchExecuted(true);
-        setRecipes(data);
-        // 最低3秒間のアニメーション表示を維持
-        setTimeout(() => {
-          router.push("/recipes");
-        }, 3000);
-      }
+      enabled: true
     }
   );
+
+  useEffect(() => {
+    if (isSuccess && data && isSearching) {
+      console.log('Fetch successful, recipes:', data);
+      setProgress(100);
+      setSearchType("ingredients");
+      setSearchExecuted(true);
+      setRecipes(data);
+      setTimeout(() => {
+        router.push("/recipes");
+      }, 3000);
+    }
+  }, [isSuccess, data, isSearching, setProgress, setSearchType, setSearchExecuted, setRecipes, router]);
 
   const handleSearch = async () => {
     if (ingredients.length === 0) {
@@ -51,25 +53,39 @@ export default function HomePageClient({ initialIngredients }: HomePageClientPro
     setIsSearching(true);
     setProgress(0);
     console.log('検索開始: 0%');
+    console.log('送信する具材データ:', ingredients);
     
     try {
+      console.log('refetch開始');
       const result = await refetch();
-      console.log('Refetch result:', result);
+      console.log('refetch完了:', {
+        isSuccess: result.isSuccess,
+        isError: result.isError,
+        error: result.error,
+        data: result.data,
+        status: result.status
+      });
       
-      if (result.data) {
-        console.log('Setting recipes:', result.data);
-        setProgress(100);
-        setSearchType("ingredients");
-        setSearchExecuted(true);
-        setRecipes(result.data);
-        // 最低3秒間のアニメーション表示を維持
-        setTimeout(() => {
-          router.push("/recipes");
-        }, 3000);
-      } else if (result.error) {
-        console.error('Fetch error:', result.error);
+      if (result.isError) {
+        console.error('レシピの取得に失敗しました:', result.error);
+        alert('レシピの取得に失敗しました。もう一度お試しください。');
         setIsSearching(false);
+        return;
       }
+
+      if (!result.isSuccess || !result.data) {
+        console.error('レシピデータが取得できませんでした');
+        alert('レシピデータが取得できませんでした。もう一度お試しください。');
+        setIsSearching(false);
+        return;
+      }
+
+      console.log('レシピデータ取得成功:', {
+        dataType: typeof result.data,
+        isArray: Array.isArray(result.data),
+        dataLength: Array.isArray(result.data) ? result.data.length : 'not an array',
+        data: result.data
+      });
     } catch (error) {
       console.error('Search error:', error);
       setIsSearching(false);

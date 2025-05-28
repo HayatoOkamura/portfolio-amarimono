@@ -10,21 +10,46 @@ import MobileMenuModal from "../MobileMenuModal/MobileMenuModal";
 import { useRouter } from "next/navigation";
 import useRecipeStore from "@/app/stores/recipeStore";
 import { ResponsiveWrapper } from "@/app/components/common/ResponsiveWrapper";
+import { useSearchRecipes } from "@/app/hooks/recipes";
 
 const TopHeader = () => {
   const router = useRouter();
-  const { setSearchType, setQuery, setSearchExecuted } = useRecipeStore();
+  const { setSearchType, setQuery, setSearchExecuted, setRecipes } = useRecipeStore();
   const [searchInput, setSearchInput] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const { refetch } = useSearchRecipes(searchInput, {
+    enabled: false
+  });
+
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchInput.trim()) return;
 
     setSearchType("name");
     setQuery(searchInput);
     setSearchExecuted(true);
-    router.push("/recipes");
+
+    try {
+      const result = await refetch();
+      if (result.isError) {
+        console.error('レシピの取得に失敗しました:', result.error);
+        alert('レシピの取得に失敗しました。もう一度お試しください。');
+        return;
+      }
+
+      if (!result.isSuccess || !result.data) {
+        console.error('レシピデータが取得できませんでした');
+        alert('レシピデータが取得できませんでした。もう一度お試しください。');
+        return;
+      }
+
+      setRecipes(result.data);
+      router.push("/recipes");
+    } catch (error) {
+      console.error('Search error:', error);
+      alert('レシピの検索中にエラーが発生しました。もう一度お試しください。');
+    }
   };
 
   const toggleModal = () => {

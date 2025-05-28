@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./SearchIngredientCard.module.scss";
 import { Ingredient } from "@/app/types/index";
 import useIngredientStore from "@/app/stores/ingredientStore";
@@ -31,6 +31,39 @@ const SearchIngredientCard: React.FC<IngredientCardProps> = ({
 
   //具材をlogで確認
   console.log(ingredient);
+
+  // Cookieから初期値を読み込む
+  useEffect(() => {
+    const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift();
+      return null;
+    };
+
+    const cookieData = getCookie('ingredient_defaults');
+    if (cookieData) {
+      try {
+        const defaultIngredients = JSON.parse(decodeURIComponent(cookieData)) as DefaultIngredient[];
+        const defaultIngredient = defaultIngredients.find(ing => ing.ingredient_id === ingredient.id);
+        
+        if (defaultIngredient) {
+          const initialQuantity = isPresenceType ? 1 : defaultIngredient.default_quantity;
+          setQuantity(initialQuantity);
+          
+          // ストアにも追加
+          if (!isSelected) {
+            addIngredient({
+              ...ingredient,
+              quantity: initialQuantity,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing cookie data:', error);
+      }
+    }
+  }, [ingredient.id, isPresenceType, isSelected, addIngredient]);
 
   const handleQuantityUpdate = (id: number, delta: number): void => {
     if (isPresenceType) return; // presenceタイプは数量変更不可
@@ -103,7 +136,7 @@ const SearchIngredientCard: React.FC<IngredientCardProps> = ({
           -
         </button>
         <p>
-          <span>{quantity}</span>
+          <span>{Number.isInteger(quantity) ? quantity : quantity.toFixed(1)}</span>
           <span>{ingredient.unit.name}</span>
         </p>
         <button

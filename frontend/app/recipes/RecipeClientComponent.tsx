@@ -386,30 +386,6 @@ const RecipeClientComponent = () => {
                 }}
               />
             </div>
-            <div className={styles.sort_block__item}>
-              <button
-                className={styles.exact_match_button}
-                onClick={() => {
-                  const currentRecipes = useRecipeStore.getState().recipes;
-                  const selectedIngredients = useIngredientStore.getState().ingredients;
-                  
-                  // 完全一致のフィルタリング
-                  const exactMatchRecipes = currentRecipes.filter(recipe => {
-                    const recipeIngredientIds = recipe.ingredients
-                      .filter(ing => ing.unit.name !== 'presence')
-                      .map(ing => ing.id);
-                    const selectedIngredientIds = selectedIngredients.map(ing => ing.id);
-                    
-                    // 選択された具材がすべてレシピに含まれているかチェック
-                    return selectedIngredientIds.every(id => recipeIngredientIds.includes(id));
-                  });
-                  
-                  useRecipeStore.getState().setRecipes(exactMatchRecipes);
-                }}
-              >
-                完全一致で絞り込み
-              </button>
-            </div>
           </div>
           {/* レシピリスト */}
           <div className={styles.recipe_list} ref={containerRef}>
