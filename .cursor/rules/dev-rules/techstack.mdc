@@ -75,8 +75,8 @@ SUPABASE_DB_PASSWORD=your_supabase_db_password
 
 # フロントエンド設定
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
-NEXT_PUBLIC_BACKEND_INTERNAL_URL=http://backend:8080
-NEXT_PUBLIC_IMAGE_BASE_URL=http://backend:8080
+NEXT_PUBLIC_BACKEND_INTERNAL_URL=portfolio-amarimono_backend_1
+NEXT_PUBLIC_IMAGE_BASE_URL=portfolio-amarimono_backend_1
 ```
 
 ### 3. 開発環境の起動

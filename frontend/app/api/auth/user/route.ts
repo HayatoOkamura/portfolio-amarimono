@@ -1,31 +1,46 @@
-import { createClient } from '@/app/lib/supabase-auth/server'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
+import { cookies } from 'next/headers'
 
 export async function GET() {
   try {
-    const headersList = headers();
-    const authHeader = headersList.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'No authorization token provided' }, { status: 401 });
-    }
+    const cookieStore = cookies();
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          persistSession: true,
+          storageKey: 'sb-auth-token',
+          storage: {
+            getItem: (key: string): string | null => {
+              const cookie = cookieStore.get(key)?.value;
+              return cookie || null;
+            },
+            setItem: (key: string, value: string): void => {
+              cookieStore.set(key, value, {
+                path: '/',
+                maxAge: 3600 * 24 * 7,
+                secure: true,
+                sameSite: 'lax',
+                httpOnly: true,
+              });
+            },
+            removeItem: (key: string): void => {
+              cookieStore.delete(key);
+            },
+          },
+        },
+      }
+    );
 
-    const token = authHeader.split(' ')[1];
-    const supabase = await createClient();
-    
-    // Verify the token
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
-    }
-
-    if (!user) {
+    if (sessionError || !session) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    return NextResponse.json(user);
+    return NextResponse.json(session.user);
   } catch (error) {
     console.error('Error getting user:', error);
     return NextResponse.json(

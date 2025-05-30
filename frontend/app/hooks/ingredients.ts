@@ -216,7 +216,7 @@ export const useUpdateIngredientQuantity = () => {
 export const fetchIngredientsServer = async (): Promise<Ingredient[]> => {
   // Docker環境ではbackendサービスに直接接続
   const baseURL = process.env.NODE_ENV === 'development' 
-    ? 'http://backend:8080'  // Docker環境用
+    ? 'http://portfolio-amarimono_backend_1:8080'  // Docker環境用
     : process.env.NEXT_PUBLIC_BACKEND_URL || 'https://amarimono-backend.onrender.com';
 
   const response = await axios.create({ baseURL }).get("/admin/ingredients");

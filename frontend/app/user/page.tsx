@@ -130,8 +130,17 @@ const UserProfile = ({ userId }: { userId: string }) => {
 
 // メインコンポーネント
 function UserPage() {
-  const { user } = useAuth();
-  return <UserProfile userId={user!.id} />;
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return null; // withAuth HOCがリダイレクトを処理するため
+  }
+
+  return <UserProfile userId={user.id} />;
 }
 
 export default withAuth(UserPage);

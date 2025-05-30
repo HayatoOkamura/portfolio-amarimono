@@ -1,8 +1,47 @@
 /* eslint-disable */
 import { create } from "zustand";
-import { supabase } from "@/app/lib/api/supabase/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 import { backendUrl } from "../utils/api";
 import { persist } from 'zustand/middleware';
+
+// 認証用の本番環境のクライアントを作成
+const prodSupabase = createClient(
+  process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      persistSession: true,
+      storageKey: 'sb-auth-token',
+      storage: typeof window !== 'undefined' ? {
+        getItem: (key: string): string | null => {
+          try {
+            const cookie = document.cookie
+              .split('; ')
+              .find((row) => row.startsWith(`${key}=`));
+            return cookie ? cookie.split('=')[1] : null;
+          } catch (error) {
+            console.error('Error getting cookie:', error);
+            return null;
+          }
+        },
+        setItem: (key: string, value: string): void => {
+          try {
+            document.cookie = `${key}=${value}; path=/; max-age=3600; secure; samesite=lax`;
+          } catch (error) {
+            console.error('Error setting cookie:', error);
+          }
+        },
+        removeItem: (key: string): void => {
+          try {
+            document.cookie = `${key}=; path=/; max-age=0; secure; samesite=lax`;
+          } catch (error) {
+            console.error('Error removing cookie:', error);
+          }
+        },
+      } : undefined,
+    },
+  }
+);
 
 type UserState = {
   user: any;
@@ -21,7 +60,7 @@ const useUserStore = create<UserState>()(
 
       fetchUser: async () => {
         set({ isLoading: true });
-        const { data, error } = await supabase.auth.getUser();
+        const { data, error } = await prodSupabase.auth.getUser();
         if (error) {
           set({ user: null, isLoading: false });
           return;
@@ -50,15 +89,31 @@ const useUserStore = create<UserState>()(
 
       signOut: async () => {
         set({ isLoading: true });
-        await supabase.auth.signOut();
+        try {
+          // Supabaseのログアウト
+          const { error } = await prodSupabase.auth.signOut();
+          if (error) throw error;
+
+          // ローカルストレージのクリア
+          localStorage.removeItem('sb-auth-token');
+          localStorage.removeItem('user-storage');
+
+          // クッキーのクリア
+          document.cookie = 'sb-auth-token=; path=/; max-age=0; secure; samesite=lax';
+
+          // 状態のリセット
+          set({ user: null, isLoading: false });
+        } catch (error) {
+          console.error('SignOut error:', error);
         set({ user: null, isLoading: false });
+        }
       },
 
       login: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
           // Supabaseでログイン処理
-          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+          const { data, error } = await prodSupabase.auth.signInWithPassword({ email, password });
 
           if (error) {
             alert(error.message);

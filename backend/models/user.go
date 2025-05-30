@@ -1,19 +1,20 @@
 package models
 
 import (
+	"log"
 	"time"
 
 	"gorm.io/gorm"
 )
 
-// User モデル
+// User ユーザーモデル
 type User struct {
-	ID           string     `gorm:"primaryKey" json:"id"`
-	Email        string     `gorm:"not null;unique" json:"email"`
-	Username     *string    `json:"username" gorm:"type:varchar(255)"`
-	ProfileImage *string    `json:"profile_image" gorm:"type:varchar(255)"`
-	Age          *int       `json:"age" gorm:"type:integer"`
-	Gender       *string    `json:"gender" gorm:"type:varchar(10)"`
+	ID           string     `json:"id" gorm:"primaryKey"`
+	Email        string     `json:"email" gorm:"unique;not null"`
+	Username     *string    `json:"username"`
+	Age          *int       `json:"age"`
+	Gender       *string    `json:"gender"`
+	ProfileImage *string    `json:"profile_image"`
 	CreatedAt    time.Time  `json:"created_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt    time.Time  `json:"updated_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
 	DeletedAt    *time.Time `json:"deleted_at" gorm:"index"`
@@ -24,35 +25,28 @@ func (User) TableName() string {
 	return "users"
 }
 
-// CreateUser ユーザーをデータベースに登録
-func CreateUser(db *gorm.DB, user User) error {
-	if err := db.Create(&user).Error; err != nil {
-		return err
-	}
-	return nil
+// CreateUser ユーザーを作成する
+func CreateUser(db *gorm.DB, user *User) error {
+	return db.Create(user).Error
 }
 
-// GetUserByID ユーザーIDでユーザーを取得
-func GetUserByID(db *gorm.DB, userID string) (*User, error) {
+// GetUserByID IDからユーザーを取得する
+func GetUserByID(db *gorm.DB, id string) (*User, error) {
 	var user User
-	if err := db.First(&user, "id = ?", userID).Error; err != nil {
+	err := db.First(&user, "id = ?", id).Error
+	if err != nil {
+		log.Printf("Error getting user by ID: %v", err)
 		return nil, err
 	}
 	return &user, nil
 }
 
-// UpdateUser ユーザー情報を更新
-func UpdateUser(db *gorm.DB, user User) error {
-	if err := db.Save(&user).Error; err != nil {
-		return err
-	}
-	return nil
+// UpdateUser ユーザー情報を更新する
+func UpdateUser(db *gorm.DB, user *User) error {
+	return db.Save(user).Error
 }
 
-// DeleteUser ユーザーを削除（論理削除）
-func DeleteUser(db *gorm.DB, userID string) error {
-	if err := db.Delete(&User{}, "id = ?", userID).Error; err != nil {
-		return err
-	}
-	return nil
+// DeleteUser ユーザーを削除する
+func DeleteUser(db *gorm.DB, id string) error {
+	return db.Delete(&User{}, "id = ?", id).Error
 }

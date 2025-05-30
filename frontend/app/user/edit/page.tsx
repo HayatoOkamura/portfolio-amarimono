@@ -38,6 +38,7 @@ function EditProfileContent() {
   const [gender, setGender] = useState("未設定");
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
+  const [showAuthError, setShowAuthError] = useState(false);
 
   // ユーザー情報を設定
   useEffect(() => {
@@ -52,8 +53,13 @@ function EditProfileContent() {
   }, [userDetails]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
+    console.log("handleUpdateProfile");
     e.preventDefault();
-    if (!authUser?.id) return;
+    
+    if (!authUser?.id) {
+      setShowAuthError(true);
+      return;
+    }
 
     setUpdating(true);
     setError("");
@@ -63,7 +69,7 @@ function EditProfileContent() {
       formData.append("age", age !== "" ? String(age) : "");
       formData.append("gender", gender);
       if (profileImage) {
-        formData.append("profileImage", profileImage);
+        formData.append("profile_image", profileImage);
       }
 
       await updateUserProfile(authUser.id, formData);
@@ -101,6 +107,28 @@ function EditProfileContent() {
   const handleImageClick = () => {
     fileInputRef.current?.click();
   };
+
+  if (showAuthError) {
+    return (
+      <div className={styles.edit_block}>
+        <div className={styles.edit_block__inner}>
+          <div className={styles.error_container}>
+            <h2 className={styles.error_title}>認証エラー</h2>
+            <p className={styles.error_message}>
+              ユーザー情報の取得に失敗しました。<br />
+              再度ログインしてください。
+            </p>
+            <button
+              className={styles.error_button}
+              onClick={() => router.push('/login')}
+            >
+              ログインページへ
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <PageLoading isLoading={isAuthLoading || isUserLoading}>
@@ -188,7 +216,9 @@ function EditProfileContent() {
                   </div>
                 </div>
                 {(error || userError) && (
-                  <div className={styles.error_message}>{error || userError}</div>
+                  <div className={styles.form_error}>
+                    {error || userError}
+                  </div>
                 )}
                 <button
                   className={styles.edit_block__btn}

@@ -13,29 +13,13 @@ import (
 )
 
 type DBConfig struct {
-	Supabase *supabase.Client
 	DB       *gorm.DB
+	Supabase *supabase.Client
 }
 
-var DB *DBConfig
-
-// SetDB はテストなどでDBを上書きするための関数です。
-func SetDB(db *DBConfig) {
-	DB = db
-}
-
-// GetDB はDBインスタンスを取得する関数です。
-func GetDB() *DBConfig {
-	if DB == nil {
-		log.Fatalf("Database not initialized")
-	}
-	return DB
-}
-
+// InitDB はデータベース接続を初期化する関数です。
 func InitDB() (*DBConfig, error) {
 	// 環境変数の取得
-	supabaseURL := os.Getenv("SUPABASE_URL")
-	supabaseKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
 	dbHost := os.Getenv("SUPABASE_DB_HOST")
 	dbPort := os.Getenv("SUPABASE_DB_PORT")
 	dbUser := os.Getenv("SUPABASE_DB_USER")
@@ -43,15 +27,8 @@ func InitDB() (*DBConfig, error) {
 	dbName := os.Getenv("SUPABASE_DB_NAME")
 
 	// 環境変数の検証
-	if supabaseURL == "" || supabaseKey == "" || dbHost == "" || dbPort == "" ||
-		dbUser == "" || dbPassword == "" || dbName == "" {
+	if dbHost == "" || dbPort == "" || dbUser == "" || dbPassword == "" || dbName == "" {
 		return nil, fmt.Errorf("database environment variables are not properly set")
-	}
-
-	// Supabaseクライアントの初期化
-	supabaseClient, err := supabase.NewClient(supabaseURL, supabaseKey, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize Supabase client: %v", err)
 	}
 
 	// 接続文字列の構築
@@ -61,7 +38,7 @@ func InitDB() (*DBConfig, error) {
 	)
 
 	// GORMの初期化
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
@@ -69,7 +46,7 @@ func InitDB() (*DBConfig, error) {
 	}
 
 	// 接続プールの設定
-	sqlDB, err := db.DB()
+	sqlDB, err := database.DB()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database instance: %v", err)
 	}
@@ -87,8 +64,20 @@ func InitDB() (*DBConfig, error) {
 
 	log.Println("Successfully connected to database")
 
+	// Supabaseクライアントの初期化
+	supabaseURL := os.Getenv("SUPABASE_URL")
+	supabaseKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
+	if supabaseURL == "" || supabaseKey == "" {
+		return nil, fmt.Errorf("supabase environment variables are not properly set")
+	}
+
+	supabaseClient, err := supabase.NewClient(supabaseURL, supabaseKey, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize Supabase client: %v", err)
+	}
+
 	return &DBConfig{
+		DB:       database,
 		Supabase: supabaseClient,
-		DB:       db,
 	}, nil
 }

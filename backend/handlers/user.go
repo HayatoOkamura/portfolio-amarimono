@@ -1,11 +1,12 @@
 package handlers
 
 import (
+	"bytes"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
-	"strconv"
 
-	"portfolio-amarimono/handlers/utils"
 	"portfolio-amarimono/models"
 
 	"github.com/gin-gonic/gin"
@@ -23,112 +24,64 @@ func NewUserHandler(db *gorm.DB) *UserHandler {
 	}
 }
 
-// CreateUser ユーザー作成のハンドラー
+// CreateUser handles user creation
 func (h *UserHandler) CreateUser(c *gin.Context) {
-	// Multipart form dataを取得
-	form, err := c.MultipartForm()
+	fmt.Println("🔥CreateUser")
+	var user models.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		log.Printf("Error binding user data: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user data"})
+		return
+	}
+
+	// ユーザーIDの検証
+	if user.ID == "" {
+		log.Printf("Error: User ID is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
+		return
+	}
+
+	// メールアドレスの検証
+	if user.Email == "" {
+		log.Printf("Error: Email is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email is required"})
+		return
+	}
+
+	// 既存のユーザーを確認
+	existingUser, err := models.GetUserByID(h.DB, user.ID)
 	if err != nil {
-		log.Println("Form parsing error:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
-		return
-	}
-
-	// フォームデータのログ
-	for key, values := range form.Value {
-		log.Printf("%s: %v", key, values)
-	}
-
-	// 必要なデータをUser構造体にマッピング
-	var agePtr *int
-	if ageStr := form.Value["age"][0]; ageStr != "" {
-		age, err := strconv.Atoi(ageStr)
-		if err != nil {
-			log.Printf("Invalid age format: %v", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid age format"})
-			return
-		}
-		agePtr = &age
-	}
-
-	// 性別のデフォルト値を設定
-	var genderPtr *string
-	if len(form.Value["gender"]) > 0 {
-		genderValue := form.Value["gender"][0]
-		// 数値が渡された場合は文字列に変換
-		if genderValue == "0" {
-			gender := "未設定"
-			genderPtr = &gender
-		} else if genderValue == "1" {
-			gender := "男性"
-			genderPtr = &gender
-		} else if genderValue == "2" {
-			gender := "女性"
-			genderPtr = &gender
-		} else {
-			genderPtr = &genderValue
-		}
-	}
-
-	username := form.Value["username"][0]
-	user := models.User{
-		ID:           form.Value["id"][0],
-		Email:        form.Value["email"][0],
-		Username:     &username,
-		Age:          agePtr,
-		Gender:       genderPtr,
-		ProfileImage: nil,
-	}
-
-	// トランザクションを開始
-	tx := h.DB.Begin()
-	if tx.Error != nil {
-		log.Printf("Failed to start transaction: %v", tx.Error)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
-		return
-	}
-
-	// ユーザーが既に存在するか確認
-	var existingUser models.User
-	result := tx.Where("id = ?", user.ID).First(&existingUser)
-
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
+		if err == gorm.ErrRecordNotFound {
 			// ユーザーが存在しない場合は新規作成
-			if err := tx.Create(&user).Error; err != nil {
-				tx.Rollback()
-				log.Printf("Failed to create user: %v", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー登録に失敗しました"})
+			if err := models.CreateUser(h.DB, &user); err != nil {
+				log.Printf("Error creating user: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 				return
 			}
-		} else {
-			tx.Rollback()
-			log.Printf("Database error: %v", result.Error)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "データベースエラーが発生しました"})
+			c.JSON(http.StatusCreated, user)
 			return
 		}
-	} else {
-		// ユーザーが存在する場合は更新
-		if err := tx.Model(&models.User{}).Where("id = ?", user.ID).Updates(user).Error; err != nil {
-			tx.Rollback()
-			log.Printf("Failed to update user: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー情報の更新に失敗しました"})
-			return
-		}
-	}
-
-	// トランザクションをコミット
-	if err := tx.Commit().Error; err != nil {
-		log.Printf("Failed to commit transaction: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		// その他のエラーの場合
+		log.Printf("Error checking existing user: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check existing user"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User created successfully"})
+	// ユーザーが既に存在する場合は更新
+	user.CreatedAt = existingUser.CreatedAt // 作成日時は保持
+	if err := models.UpdateUser(h.DB, &user); err != nil {
+		log.Printf("Error updating user: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
 }
 
-// GetUserProfile ユーザーのプロフィール情報を取得するハンドラー
+// GetUserProfile handles retrieving a user's profile
 func (h *UserHandler) GetUserProfile(c *gin.Context) {
-	userID := c.Param("id") // URLのパラメータからuserIDを取得
+	fmt.Println("🔥GetUserProfile")
+	userID := c.Param("id")
 	log.Printf("GetUserProfile - Request received for user ID: %s", userID)
 
 	user, err := models.GetUserByID(h.DB, userID)
@@ -137,33 +90,91 @@ func (h *UserHandler) GetUserProfile(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
-	log.Printf("GetUserProfile - User found: %+v", user)
 
-	// ユーザーのロール情報を取得
-	var role string
-	result := h.DB.Table("user_roles").
-		Select("role").
-		Where("user_id = ?", userID).
-		Scan(&role)
+	c.JSON(http.StatusOK, user)
+}
 
-	if result.Error != nil {
-		log.Printf("GetUserProfile - Error fetching user role: %v", result.Error)
-	} else {
-		log.Printf("GetUserProfile - User role: %s", role)
+// UpdateUserProfile handles updating a user's profile
+func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
+	fmt.Println("🔥UpdateUserProfile")
+	userID := c.Param("id")
+	log.Printf("📝 UpdateUserProfile - Request received for user ID: %s", userID)
+
+	// リクエストボディをログ出力
+	body, err := c.GetRawData()
+	if err != nil {
+		log.Printf("❌ Error reading request body: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	log.Printf("📦 Raw request body: %s", string(body))
+
+	// リクエストボディを元に戻す（後でShouldBindJSONで使用するため）
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+
+	// 更新用のリクエストデータ構造体
+	type UpdateUserRequest struct {
+		Email        *string `json:"email"`
+		Username     *string `json:"username"`
+		Age          *int    `json:"age"`
+		Gender       *string `json:"gender"`
+		ProfileImage *string `json:"profile_image"`
 	}
 
-	response := gin.H{
-		"id":           user.ID,
-		"email":        user.Email,
-		"username":     user.Username,
-		"profileImage": user.ProfileImage,
-		"age":          user.Age,
-		"gender":       user.Gender,
-		"role":         role,
+	var updateData UpdateUserRequest
+	if err := c.ShouldBindJSON(&updateData); err != nil {
+		log.Printf("❌ Error binding JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user data"})
+		return
 	}
-	log.Printf("GetUserProfile - Sending response: %+v", response)
+	log.Printf("📝 Parsed update data: %+v", updateData)
 
-	c.JSON(http.StatusOK, response)
+	// 既存のユーザーを取得
+	existingUser, err := models.GetUserByID(h.DB, userID)
+	if err != nil {
+		log.Printf("❌ Error getting existing user: %v", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+	log.Printf("📝 Existing user data: %+v", existingUser)
+
+	// 更新するフィールドのみを設定
+	if updateData.Email != nil {
+		existingUser.Email = *updateData.Email
+	}
+	if updateData.Username != nil {
+		existingUser.Username = updateData.Username
+	}
+	if updateData.Age != nil {
+		existingUser.Age = updateData.Age
+	}
+	if updateData.Gender != nil {
+		existingUser.Gender = updateData.Gender
+	}
+	if updateData.ProfileImage != nil {
+		existingUser.ProfileImage = updateData.ProfileImage
+	}
+
+	log.Printf("📝 Updating user with data: %+v", existingUser)
+	if err := models.UpdateUser(h.DB, existingUser); err != nil {
+		log.Printf("❌ Error updating user: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		return
+	}
+
+	log.Printf("✅ User updated successfully: %+v", existingUser)
+	c.JSON(http.StatusOK, existingUser)
+}
+
+// DeleteUser handles user deletion
+func (h *UserHandler) DeleteUser(c *gin.Context) {
+	userID := c.Param("id")
+	if err := models.DeleteUser(h.DB, userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 // ユーザーが投稿したレシピのいいね数を取得
@@ -204,81 +215,6 @@ func (h *UserHandler) GetUserRecipeAverageRating(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"average_rating": avgRating})
-}
-
-// UpdateUserProfile ユーザーのプロフィール情報を更新するハンドラー
-func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
-	userID := c.Param("id") // URLのパラメータから userID を取得
-	log.Println("⭐️⭐️⭐️ User ID:", userID)
-
-	// フォームデータを取得
-	form, err := c.MultipartForm()
-	if err != nil {
-		log.Println("Form parsing error:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
-		return
-	}
-
-	// 更新データを格納するマップ
-	updateFields := map[string]interface{}{}
-
-	// フォームデータの取得と更新処理
-	if username, exists := form.Value["username"]; exists && len(username) > 0 {
-		updateFields["username"] = username[0]
-	}
-	if ageStr, exists := form.Value["age"]; exists && len(ageStr) > 0 {
-		age, err := strconv.Atoi(ageStr[0])
-		if err != nil {
-			log.Println("Invalid age format:", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid age format"})
-			return
-		}
-		updateFields["age"] = age
-	}
-	if gender, exists := form.Value["gender"]; exists && len(gender) > 0 {
-		updateFields["gender"] = gender[0]
-	}
-
-	// 画像アップロード処理
-	if files, exists := form.File["profileImage"]; exists && len(files) > 0 {
-		profileImage := files[0]
-
-		// 現在のプロフィール画像を取得
-		var currentUser models.User
-		if err := h.DB.First(&currentUser, "id = ?", userID).Error; err != nil {
-			log.Printf("Failed to get current user: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current user"})
-			return
-		}
-
-		// 古い画像が存在する場合は削除
-		if currentUser.ProfileImage != nil {
-			if err := utils.DeleteImage(*currentUser.ProfileImage); err != nil {
-				log.Printf("Failed to delete old profile image: %v", err)
-				// エラーをログに記録するが、処理は続行
-			}
-		}
-
-		// 新しい画像を保存し、パスを取得（ユーザーIDのディレクトリに保存）
-		imageURL, err := utils.SaveImage(c, profileImage, "users/"+userID, "profile")
-		if err != nil {
-			log.Printf("File upload error: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload profile image"})
-			return
-		}
-		updateFields["profile_image"] = imageURL
-	}
-
-	// 更新処理（`updateFields` が空でない場合のみ実行）
-	if len(updateFields) > 0 {
-		if err := h.DB.Model(&models.User{}).Where("id = ?", userID).Updates(updateFields).Error; err != nil {
-			log.Println("Failed to update user:", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
-			return
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
 }
 
 // SetUserRole ユーザーのロールを設定するハンドラー

@@ -3,7 +3,7 @@ import axios from "axios";
 // クライアントサイドとサーバーサイドで異なるURLを使用
 export const backendUrl = typeof window !== 'undefined'
   ? process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
-  : 'http://backend:8080';
+  : process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL || 'http://portfolio-amarimono_backend_1:8080';
 
 export const imageBaseUrl = process.env.NODE_ENV === 'production'
     ? process.env.NEXT_PUBLIC_IMAGE_BASE_URL

@@ -4,8 +4,8 @@ WORKDIR /frontend
 
 # 環境変数を設定
 ENV NODE_ENV=development
-ENV NEXT_PUBLIC_BACKEND_URL=http://backend:8080
-ENV NEXT_PUBLIC_IMAGE_BASE_URL=http://backend:8080
+ENV NEXT_PUBLIC_BACKEND_URL=http://portfolio-amarimono_backend_1:8080
+ENV NEXT_PUBLIC_IMAGE_BASE_URL=http://portfolio-amarimono_backend_1:8080
 ENV WATCHPACK_POLLING=false
 ENV CHOKIDAR_USEPOLLING=false
 ENV NEXT_TELEMETRY_DISABLED=1

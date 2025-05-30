@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
 import { backendUrl, handleApiResponse } from "../utils/api";
+import { createClient } from "@supabase/supabase-js";
+import { useUserStore } from "@/app/stores/userStore";
+
+// Supabaseクライアントの初期化
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!
+);
 
 interface User {
   id: string;
@@ -145,9 +153,29 @@ export const useUserRecipeAverageRating = (userId: string | undefined) => {
 // ユーザープロフィールを更新
 export const updateUserProfile = async (userId: string, formData: FormData) => {
   try {
+    // ユーザーストアから現在のユーザー情報を取得
+    const { user: currentUser } = useUserStore.getState();
+    
+    if (!currentUser?.email) {
+      throw new Error("User email not found in store");
+    }
+
+    // FormDataからJSONデータを作成
+    const userData = {
+      id: userId,
+      email: currentUser.email, // ストアから取得したメールアドレスを使用
+      username: formData.get('username') || '',
+      age: formData.get('age') ? Number(formData.get('age')) : null,
+      gender: formData.get('gender') || '',
+      profile_image: formData.get('profile_image') ? String(formData.get('profile_image')) : null
+    };
+
     const res = await fetch(`${backendUrl}/api/users/${userId}`, {
       method: "PUT",
-      body: formData,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
     });
 
     return await handleApiResponse(res);

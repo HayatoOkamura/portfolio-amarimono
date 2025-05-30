@@ -56,7 +56,6 @@ func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, like
 		admin.POST("/ingredients", adminHandler.AddIngredient)                     // 具材追加
 		admin.PATCH("/ingredients/:id", adminHandler.UpdateIngredient)             // 具材更新
 		admin.DELETE("/ingredients/:id", adminHandler.DeleteIngredient)            // 具材削除
-		admin.GET("/ingredients/translate", adminHandler.TranslateIngredientName)  // 具材名の翻訳
 		admin.GET("/recipes", adminHandler.ListRecipes)                            // レシピ一覧
 		admin.GET("/recipes/:id", adminHandler.GetRecipe)                          // レシピ取得
 		admin.POST("/recipes", adminHandler.AddRecipe)                             // レシピ追加

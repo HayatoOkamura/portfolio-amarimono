@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -1285,87 +1284,6 @@ func (h *AdminHandler) UploadImage(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"url": imageURL})
 }
 
-// TranslateIngredientName は具材名を英語に翻訳する
-func (h *AdminHandler) TranslateIngredientName(c *gin.Context) {
-	name := c.Query("name")
-	if name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Name is required"})
-		return
-	}
-
-	log.Printf("Translating name: %s", name)
-
-	// APIキーの取得と検証
-	apiKey := os.Getenv("GOOGLE_CLOUD_TRANSLATION_API_KEY")
-	if apiKey == "" {
-		log.Printf("Error: GOOGLE_CLOUD_TRANSLATION_API_KEY is not set")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Translation API key is not configured"})
-		return
-	}
-
-	// Google Cloud Translation APIのエンドポイント
-	url := fmt.Sprintf("https://translation.googleapis.com/language/translate/v2?key=%s", apiKey)
-	log.Printf("Translation API URL: %s", url)
-
-	// リクエストボディの作成
-	requestBody := map[string]interface{}{
-		"q":      name,
-		"source": "ja",
-		"target": "en",
-		"format": "text",
-	}
-
-	jsonData, err := json.Marshal(requestBody)
-	if err != nil {
-		log.Printf("Error marshaling request body: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request"})
-		return
-	}
-
-	log.Printf("Request body: %s", string(jsonData))
-
-	// APIリクエストの送信
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		log.Printf("Error making API request: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to translate"})
-		return
-	}
-	defer resp.Body.Close()
-
-	// レスポンスの読み取り
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("Error reading response body: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response"})
-		return
-	}
-
-	log.Printf("Response body: %s", string(body))
-
-	var result struct {
-		Data struct {
-			Translations []struct {
-				TranslatedText string `json:"translatedText"`
-			} `json:"translations"`
-		} `json:"data"`
-	}
-
-	if err := json.Unmarshal(body, &result); err != nil {
-		log.Printf("Error decoding response: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse translation response"})
-		return
-	}
-
-	if len(result.Data.Translations) == 0 {
-		log.Printf("No translations received in response")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "No translation received"})
-		return
-	}
-
-	// 翻訳結果を返す
-	c.JSON(http.StatusOK, gin.H{"englishName": result.Data.Translations[0].TranslatedText})
-}
 
 // ToggleRecipePublish レシピの公開/非公開状態を切り替える
 func (h *AdminHandler) ToggleRecipePublish(c *gin.Context) {

@@ -32,6 +32,10 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    unoptimized: process.env.NODE_ENV === 'development', // 開発環境では画像の最適化を無効化
   },
   env: {
     // クライアントサイドでの API アクセス用
@@ -41,7 +45,7 @@ const nextConfig = {
     
     // 画像表示用
     IMAGE_BASE_URL: process.env.NODE_ENV === 'development'
-      ? 'http://backend:8080'  // Docker内の画像表示用
+      ? 'http://portfolio-amarimono_backend_1:8080'  // Docker内の画像表示用
       : process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'https://amarimono-backend.onrender.com',
   },
   async rewrites() {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/app/lib/api/supabase/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 import Loading from "@/app/components/ui/Loading/Loading";
 import styles from "./VerifyEmail.module.scss";
 
@@ -17,6 +17,32 @@ export default function VerifyEmailPage() {
   const [cooldown, setCooldown] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 認証用の本番環境のクライアントを作成
+  const prodSupabase = createClient(
+    process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        persistSession: true,
+        storageKey: 'sb-auth-token',
+        storage: {
+          getItem: (key: string): string | null => {
+            const cookie = document.cookie
+              .split('; ')
+              .find((row) => row.startsWith(`${key}=`));
+            return cookie ? cookie.split('=')[1] : null;
+          },
+          setItem: (key: string, value: string): void => {
+            document.cookie = `${key}=${value}; path=/; max-age=3600; secure; samesite=lax`;
+          },
+          removeItem: (key: string): void => {
+            document.cookie = `${key}=; path=/; max-age=0; secure; samesite=lax`;
+          },
+        },
+      },
+    }
+  );
+
   useEffect(() => {
     const getEmail = async () => {
       try {
@@ -29,7 +55,7 @@ export default function VerifyEmailPage() {
         }
 
         // 2. URLパラメータにない場合はセッションから取得
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await prodSupabase.auth.getSession();
         if (session?.user?.email) {
           setEmail(session.user.email);
           setIsLoading(false);
@@ -50,14 +76,17 @@ export default function VerifyEmailPage() {
     // 定期的に認証状態を確認
     const interval = setInterval(async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await prodSupabase.auth.getSession();
         if (error) throw error;
 
         if (session?.user?.email_confirmed_at) {
+          // メール認証が完了した場合、セッションをクリアしてログインページにリダイレクト
+          await prodSupabase.auth.signOut();
           setIsVerified(true);
-          setSuccess("メール認証が完了しています");
-          // 認証完了後、プロフィール設定ページにリダイレクト
-          router.push("/user/edit?setup=true");
+          setSuccess("メール認証が完了しました。ログインページからログインしてください。");
+          setTimeout(() => {
+            router.push("/login");
+          }, 3000);
         }
       } catch (error) {
         console.error("認証状態確認エラー:", error);
@@ -101,15 +130,7 @@ export default function VerifyEmailPage() {
         return;
       }
 
-      console.log("Supabase認証メール再送信を実行:", {
-        type: 'signup',
-        email: email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/callback`,
-        }
-      });
-
-      const { data, error } = await supabase.auth.resend({
+      const { data, error } = await prodSupabase.auth.resend({
         type: 'signup',
         email: email,
         options: {
@@ -117,21 +138,7 @@ export default function VerifyEmailPage() {
         },
       });
 
-      console.log("Supabaseレスポンス:", { 
-        data, 
-        error,
-        email,
-        redirectUrl: `${window.location.origin}/callback`,
-        timestamp: new Date().toISOString()
-      });
-
       if (error) {
-        console.error("メール再送信エラー:", {
-          error,
-          message: error.message,
-          status: error.status,
-          name: error.name
-        });
         if (error.message.includes("rate limit")) {
           setError("送信制限に達しました。しばらく待ってから再度お試しください");
         } else if (error.message.includes("email")) {
@@ -147,9 +154,8 @@ export default function VerifyEmailPage() {
         return;
       }
 
-      console.log("認証メールの再送信が成功しました");
       setSuccess("確認メールを再送信しました");
-      setCooldown(36); // 再送信成功後も36秒のクールダウンを設定
+      setCooldown(36);
     } catch (error) {
       console.error("予期せぬエラーが発生しました:", error);
       setError("予期せぬエラーが発生しました");

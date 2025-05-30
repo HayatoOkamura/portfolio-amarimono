@@ -1,72 +1,172 @@
-import { createClient } from '@/app/lib/supabase-auth/server'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { Pool } from 'pg'
+import { cookies } from 'next/headers'
 
-// 既存のPostgreSQL接続設定
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-})
-
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    console.log('Starting sync process...');
+    const cookieStore = cookies()
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          persistSession: true,
+          storageKey: 'sb-auth-token',
+          storage: {
+            getItem: (key: string): string | null => {
+              try {
+                const cookie = cookieStore.get(key)?.value
+                console.log(`Getting cookie for key ${key}:`, cookie ? 'Found' : 'Not found');
+                return cookie || null
+              } catch (error) {
+                console.error('Error getting cookie:', error);
+                return null;
+              }
+            },
+            setItem: (key: string, value: string): void => {
+              try {
+                cookieStore.set(key, value, {
+                  path: '/',
+                  maxAge: 3600,
+                  secure: true,
+                  sameSite: 'lax',
+                  httpOnly: true,
+                })
+                console.log(`Setting cookie for key ${key}`);
+              } catch (error) {
+                console.error('Error setting cookie:', error);
+              }
+            },
+            removeItem: (key: string): void => {
+              try {
+                cookieStore.delete(key)
+                console.log(`Removing cookie for key ${key}`);
+              } catch (error) {
+                console.error('Error removing cookie:', error);
+              }
+            },
+          },
+        },
+      }
+    )
 
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    // セッションの取得
+    console.log('Fetching session...');
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    console.log('Session data:', JSON.stringify(session, null, 2));
+    console.log('Session error:', sessionError);
+
+    if (sessionError) {
+      console.error('Session error:', sessionError);
+      return NextResponse.json({ error: 'セッションの取得に失敗しました' }, { status: 401 })
     }
 
-    // Supabaseのプロフィール情報を取得
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError) {
-      return NextResponse.json({ error: profileError.message }, { status: 400 })
+    if (!session) {
+      console.error('No session found');
+      return NextResponse.json({ error: '認証セッションが見つかりません' }, { status: 401 })
     }
 
-    // 既存のPostgreSQLデータベースにユーザー情報を同期
-    const client = await pool.connect()
+    // メール認証が完了していない場合はエラーを返す
+    if (!session.user.email_confirmed_at) {
+      console.log('Email not confirmed');
+      return NextResponse.json({ error: 'メール認証が完了していません' }, { status: 403 })
+    }
+
+    // ユーザー情報の取得
+    console.log('Fetching user data for ID:', session.user.id);
     try {
-      await client.query('BEGIN')
+      const backendUrl = `${process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL}/api/users/${session.user.id}`;
+      
+      console.log('Environment variables:', {
+        BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL,
+        NODE_ENV: process.env.NODE_ENV
+      });
+      console.log('Request URL:', backendUrl);
 
-      // ユーザーが存在するか確認
-      const { rows } = await client.query(
-        'SELECT id FROM users WHERE id = $1',
-        [user.id]
-      )
-
-      if (rows.length === 0) {
-        // 新規ユーザーの場合、レコードを作成
-        await client.query(
-          `INSERT INTO users (id, email, username, created_at)
-           VALUES ($1, $2, $3, $4)`,
-          [user.id, user.email, profile.username, new Date()]
-        )
-      } else {
-        // 既存ユーザーの場合、情報を更新
-        await client.query(
-          `UPDATE users 
-           SET email = $1, username = $2, updated_at = $3
-           WHERE id = $4`,
-          [user.email, profile.username, new Date(), user.id]
-        )
+      // バックエンドAPIを使用してユーザー情報を取得
+      let response;
+      try {
+        console.log('Attempting to fetch from backend...');
+        response = await fetch(backendUrl, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          // 明示的にタイムアウトを設定
+          signal: AbortSignal.timeout(5000),
+        });
+        console.log('Fetch successful, status:', response.status);
+      } catch (error) {
+        console.error('Fetch error:', error);
+        if (error instanceof Error) {
+          console.error('Error details:', {
+            message: error.message,
+            name: error.name,
+            stack: error.stack
+          });
+        }
+        throw new Error('Failed to connect to backend service');
       }
 
-      await client.query('COMMIT')
-      return NextResponse.json({ message: 'User synchronized successfully' })
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        if (response.status === 404) {
+          // ユーザーが存在しない場合は新規作成
+          console.log('User not found, creating new user...');
+          const userData = {
+            id: session.user.id,
+            email: session.user.email || '',
+            age: 0,
+            gender: "未設定"
+          };
+
+          const createResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL}/api/users`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+          });
+
+          if (!createResponse.ok) {
+            const error = await createResponse.json();
+            console.error('Error creating user:', error);
+            return NextResponse.json({ 
+              error: 'ユーザーの作成に失敗しました',
+              details: error
+            }, { status: 500 });
+          }
+
+          const newUser = await createResponse.json();
+          console.log('New user created:', JSON.stringify(newUser, null, 2));
+          return NextResponse.json(newUser);
+        }
+
+        const error = await response.json();
+        console.error('Error fetching user:', error);
+        return NextResponse.json({ 
+          error: 'ユーザー情報の取得に失敗しました',
+          details: error
+        }, { status: response.status });
+      }
+
+      const user = await response.json();
+      console.log('Existing user found:', JSON.stringify(user, null, 2));
+      return NextResponse.json(user);
     } catch (error) {
-      await client.query('ROLLBACK')
-      throw error
-    } finally {
-      client.release()
+      console.error('Error in database operation:', error);
+      return NextResponse.json({ 
+        error: 'データベース操作中にエラーが発生しました',
+        details: error
+      }, { status: 500 });
     }
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to sync user data' },
-      { status: 500 }
-    )
+    console.error('Error in sync:', error);
+    return NextResponse.json({ 
+      error: '予期せぬエラーが発生しました',
+      details: error
+    }, { status: 500 });
   }
 } 

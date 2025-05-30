@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAuth, AuthError } from "@/app/hooks/useAuth";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/app/lib/api/supabase/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 import styles from "./LoginForm.module.scss";
 
 export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean; onToggleMode: () => void }) {
@@ -13,7 +13,45 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
   const [formError, setFormError] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
   const { login, register, isLoggingIn, isRegistering } = useAuth();
-  
+
+  // 認証用の本番環境のクライアントを作成
+  const prodSupabase = typeof window !== 'undefined' ? createClient(
+    process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        persistSession: true,
+        storageKey: 'sb-auth-token',
+        storage: {
+          getItem: (key: string): string | null => {
+            try {
+              const cookie = document.cookie
+                .split('; ')
+                .find((row) => row.startsWith(`${key}=`));
+              return cookie ? cookie.split('=')[1] : null;
+            } catch (error) {
+              console.error('Error getting cookie:', error);
+              return null;
+            }
+          },
+          setItem: (key: string, value: string): void => {
+            try {
+              document.cookie = `${key}=${value}; path=/; max-age=3600; secure; samesite=lax`;
+            } catch (error) {
+              console.error('Error setting cookie:', error);
+            }
+          },
+          removeItem: (key: string): void => {
+            try {
+              document.cookie = `${key}=; path=/; max-age=0; secure; samesite=lax`;
+            } catch (error) {
+              console.error('Error removing cookie:', error);
+            }
+          },
+        },
+      },
+    }
+  ) : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,68 +61,52 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
     try {
       if (isLogin) {
         // ログイン処理
-        const error = await login({ email, password });
+        if (!prodSupabase) {
+          throw { type: 'LOGIN_FAILED', message: '認証クライアントの初期化に失敗しました' } as AuthError;
+        }
+        const { data, error } = await prodSupabase.auth.signInWithPassword({ email, password });
+        
         if (error) {
-          throw error;
+          throw { type: 'LOGIN_FAILED', message: error.message } as AuthError;
         }
 
-        // セッションとユーザー情報を確認
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) {
+        if (!data.session) {
           throw { type: 'LOGIN_FAILED', message: "セッションの取得に失敗しました" } as AuthError;
         }
 
-        if (!session?.user) {
-          throw { type: 'LOGIN_FAILED', message: "ログインに失敗しました" } as AuthError;
+        // ユーザー情報の同期
+        const syncResponse = await fetch('/api/auth/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!syncResponse.ok) {
+          const errorData = await syncResponse.json();
+          throw { type: 'LOGIN_FAILED', message: errorData.error || 'ユーザー情報の同期に失敗しました' } as AuthError;
         }
 
-        // ユーザー情報を取得
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError || !user) {
-          throw { type: 'LOGIN_FAILED', message: "ユーザー情報の取得に失敗しました" } as AuthError;
-        }
-
-        // すべての確認が完了したら成功メッセージを表示
+        // 成功時はTOPページにリダイレクト
         setIsSuccess(true);
         setTimeout(() => {
           router.push("/");
         }, 2000);
       } else {
+        // 登録処理
         const error = await register({ email, password });
         if (error) {
           throw error;
         }
         setIsSuccess(true);
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
       }
     } catch (error) {
       setIsSuccess(false);
       
       if ((error as AuthError)?.type) {
         const authError = error as AuthError;
-        
-        switch (authError.type) {
-          case 'EMAIL_IN_USE':
-            setFormError(authError.message);
-            break;
-          case 'REGISTRATION_FAILED':
-            setFormError(authError.message);
-            break;
-          case 'LOGIN_FAILED':
-            setFormError(authError.message);
-            break;
-          case 'RATE_LIMIT':
-            setFormError(authError.message);
-            break;
-          case 'EMAIL_NOT_CONFIRMED':
-            setFormError(authError.message);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            break;
-          case 'UNKNOWN':
-            setFormError(authError.message);
-            break;
-          default:
-            setFormError('予期せぬエラーが発生しました');
-        }
+        setFormError(authError.message);
       } else {
         setFormError('予期せぬエラーが発生しました');
       }
@@ -132,7 +154,7 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
           <p>
             {isLogin 
               ? "ログインに成功しました。TOPページに移動します..."
-              : "新規登録が完了しました。確認メールを送信しました。メールをご確認ください。"}
+              : "確認メールを送信しました。\nメールをご確認ください。"}
           </p>
         </div>
       )}

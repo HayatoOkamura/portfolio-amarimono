@@ -153,3 +153,63 @@
     }
   }
 }
+
+.error_container {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid #c6c6c6;
+  text-align: center;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.error_title {
+  font-size: 1.5rem;
+  color: var(--primary-accent-color);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.error_message {
+  font-size: 1rem;
+  color: var(--primary-font-color);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.error_button {
+  background-color: var(--primary-accent-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-family: 'Noto Sans JP', sans-serif;
+
+  &:hover {
+    background-color: darken(#DE616A, 10%);
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(222, 97, 106, 0.3);
+  }
+}
+
+// フォーム内のエラーメッセージ
+.form_error {
+  color: var(--primary-accent-color);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: rgba(222, 97, 106, 0.1);
+  border-radius: 4px;
+  text-align: left;
+}
