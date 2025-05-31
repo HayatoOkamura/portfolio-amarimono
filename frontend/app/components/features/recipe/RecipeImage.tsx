@@ -10,7 +10,7 @@ interface RecipeImageProps {
 
 export default function RecipeImage({ src, alt, width = 256, height = 256 }: RecipeImageProps) {
     const imageUrl = useMemo(() => {
-        if (process.env.NODE_ENV === 'production') {
+        if (process.env.ENVIRONMENT === 'production') {
             return `${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}/${src}`;
         } else {
             return `${process.env.NEXT_PUBLIC_LOCAL_IMAGE_URL}/${src}`;

@@ -1,20 +1,19 @@
 "use client";
 
-import { useAuth } from "@/app/hooks/useAuth";
+import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
-import LoginModal from "@/app/components/ui/LoginModal/LoginModal";
 import Link from "next/link";
 import styles from "./admin.module.scss";
 
 export default function AdminPage() {
-  const { user, isLoading } = useAuth();
+  const { isAuthorized, isLoading, user } = useAuthGuard(true);
 
   if (isLoading) {
     return <PageLoading isLoading={true}>Loading...</PageLoading>;
   }
 
-  if (!user) {
-    return <LoginModal onLogin={() => window.location.href = '/login'} />;
+  if (!isAuthorized) {
+    return null; // リダイレクトはuseAuthGuard内で処理
   }
 
   return (
@@ -23,9 +22,9 @@ export default function AdminPage() {
       
       <div className={styles.admin__user_info}>
         <h2 className={styles.admin__user_info_title}>ログイン中のユーザー</h2>
-        <p className={styles.admin__user_info_text}>メールアドレス: {user.email}</p>
-        <p className={styles.admin__user_info_text}>ユーザー名: {user.username || "未設定"}</p>
-        <p className={styles.admin__user_info_text}>ロール: {user.role || "user"}</p>
+        <p className={styles.admin__user_info_text}>メールアドレス: {user?.email}</p>
+        <p className={styles.admin__user_info_text}>ユーザー名: {user?.username || "未設定"}</p>
+        <p className={styles.admin__user_info_text}>ロール: {user?.role || "user"}</p>
       </div>
 
       <div className={styles.admin__admin_links}>

@@ -25,14 +25,6 @@ func NewRecipeHandler(db *gorm.DB) *RecipeHandler {
 	}
 }
 
-func extractIngredientIDs(ingredients []models.RecipeIngredient) []int {
-	var ids []int
-	for _, ing := range ingredients {
-		ids = append(ids, ing.IngredientID)
-	}
-	return ids
-}
-
 type RecipeIngredientRequest struct {
 	IngredientID     int     `json:"ingredientId"`
 	QuantityRequired float64 `json:"quantityRequired"`
@@ -384,75 +376,6 @@ func (h *RecipeHandler) GetUserRecipes(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"recipes": recipes})
-}
-
-// calculateRecipeNutrition は具材からレシピの栄養素を計算する
-func calculateRecipeNutrition(ingredients []models.RecipeIngredient) models.NutritionInfo {
-	var nutrition models.NutritionInfo
-
-	for _, ing := range ingredients {
-		// 具材の栄養素を取得
-		ingredientNutrition := ing.Ingredient.Nutrition
-
-		// 量に応じて栄養素を按分計算
-		ratio := ing.QuantityRequired / 100.0 // 100gあたりの栄養素として計算
-
-		nutrition.Calories += ingredientNutrition.Calories * ratio
-		nutrition.Protein += ingredientNutrition.Protein * ratio
-		nutrition.Fat += ingredientNutrition.Fat * ratio
-		nutrition.Carbohydrates += ingredientNutrition.Carbohydrates * ratio
-		nutrition.Salt += ingredientNutrition.Salt * ratio
-	}
-
-	return nutrition
-}
-
-// GetRecipes はレシピ一覧を取得するハンドラー
-func (h *RecipeHandler) GetRecipes(c *gin.Context) {
-	var recipes []models.Recipe
-
-	if err := h.DB.Find(&recipes).Error; err != nil {
-		log.Printf("Error fetching recipes: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
-		return
-	}
-
-	c.JSON(http.StatusOK, recipes)
-}
-
-// GetRecipe は特定のレシピを取得するハンドラー
-func (h *RecipeHandler) GetRecipe(c *gin.Context) {
-	id := c.Param("id")
-	if id == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Recipe ID is required"})
-		return
-	}
-
-	var recipe models.Recipe
-	if err := h.DB.First(&recipe, "id = ?", id).Error; err != nil {
-		log.Printf("Error fetching recipe: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipe"})
-		return
-	}
-
-	c.JSON(http.StatusOK, recipe)
-}
-
-// CreateRecipe は新しいレシピを作成するハンドラー
-func (h *RecipeHandler) CreateRecipe(c *gin.Context) {
-	var recipe models.Recipe
-	if err := c.ShouldBindJSON(&recipe); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.DB.Create(&recipe).Error; err != nil {
-		log.Printf("Error creating recipe: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create recipe"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, recipe)
 }
 
 // UpdateRecipe はレシピを更新するハンドラー

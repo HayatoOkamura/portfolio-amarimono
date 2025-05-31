@@ -3,7 +3,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-const isDevelopment = process.env.NODE_ENV === 'development'
+const isDevelopment = process.env.ENVIRONMENT === 'development'
 
 export async function createClient() {
   const cookieStore = cookies()

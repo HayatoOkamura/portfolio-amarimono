@@ -1,22 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./MobileMenuModal.module.scss";
 import { useUserStore } from "@/app/stores/userStore";
 import { FaUserCircle } from "react-icons/fa";
 import Image from "next/image";
 import Link from "next/link";
+import { imageBaseUrl } from "@/app/utils/api";
 
 const MobileUserProfile = () => {
   const { user } = useUserStore();
   const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    console.log("MobileUserProfile - User:", user);
+  }, [user]);
 
   return (
     <div className={styles.user_profile}>
       <div className={styles.user_profile__image}>
         {user && user.profileImage && !imageError ? (
           <Image
-            src={`${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}/uploads/${user.profileImage}`}
+            src={`${imageBaseUrl}/${user.profileImage}`}
             alt="User Profile"
             width={80}
             height={80}

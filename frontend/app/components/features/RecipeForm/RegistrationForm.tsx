@@ -39,7 +39,7 @@ export const RegistrationForm = ({
 
   // デバッグ用のuseEffect
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.ENVIRONMENT === 'development') {
       console.log('Form Data Updated:', formData);
     }
   }, [formData]);

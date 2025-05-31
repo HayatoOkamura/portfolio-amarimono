@@ -115,7 +115,7 @@ const fetchUserDetails = async (userId: string, session: any) => {
     
     return {
       username: data.username || '',
-      profileImage: data.profileImage || '',
+      profileImage: data.profile_image || '',
       age: data.age || 0,
       gender: data.gender || '未設定',
       role: data.role || 'user'
@@ -171,7 +171,6 @@ const createAuthError = (type: AuthError['type'], message: string): AuthError =>
 });
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -198,34 +197,30 @@ export function useAuth() {
           throw new Error('Failed to fetch user');
         }
         const userData = await response.json();
-        
         if (userData) {
           try {
             const userDetails = await fetchUserDetails(userData.id, session);
             const formattedUser: User = {
               ...userData,
-              ...userDetails
+              ...userDetails,
+              profileImage: userDetails.profileImage || null
             };
-            setUser(formattedUser);
             setStoreUser(formattedUser);
           } catch (error) {
             console.error('Error in fetchUserDetails:', error);
-            // エラーが発生した場合でも、ユーザー情報を設定
             const formattedUser: User = {
               ...userData,
               username: '',
-              profileImage: '',
+              profileImage: null,
               age: 0,
               gender: '未設定',
               role: 'user'
             };
-            setUser(formattedUser);
             setStoreUser(formattedUser);
           }
         }
       } catch (error) {
         console.error('Error fetching user:', error);
-        setUser(null);
         setStoreUser(null);
       } finally {
         setIsLoading(false);
@@ -237,7 +232,6 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      // Supabaseのログアウト
       const { error } = await prodSupabase.auth.signOut();
       if (error) throw error;
 
@@ -249,7 +243,6 @@ export function useAuth() {
       document.cookie = 'sb-auth-token=; path=/; max-age=0; secure; samesite=lax';
       
       // 状態のリセット
-      setUser(null);
       setStoreUser(null);
       
       // ログインページへリダイレクト
@@ -311,7 +304,7 @@ export function useAuth() {
   };
 
   return {
-    user,
+    user: storeUser,
     isLoading,
     logout,
     login,

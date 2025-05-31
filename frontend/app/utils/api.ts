@@ -5,7 +5,7 @@ export const backendUrl = typeof window !== 'undefined'
   ? process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
   : process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL || 'http://portfolio-amarimono_backend_1:8080';
 
-export const imageBaseUrl = process.env.NODE_ENV === 'production'
+export const imageBaseUrl = process.env.ENVIRONMENT === 'production'
     ? process.env.NEXT_PUBLIC_IMAGE_BASE_URL
     : process.env.NEXT_PUBLIC_LOCAL_IMAGE_URL;
 

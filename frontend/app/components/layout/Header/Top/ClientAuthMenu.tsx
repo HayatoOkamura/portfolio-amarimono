@@ -7,10 +7,15 @@ import { FaUserCircle } from "react-icons/fa";
 import Image from "next/image";
 import Link from "next/link";
 import { imageBaseUrl } from "@/app/utils/api";
+
 const ClientAuthMenu = () => {
   const { user } = useUserStore();
   const [imageError, setImageError] = useState(false);
-  
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
   return (
     <>
       {user ? (
@@ -24,10 +29,11 @@ const ClientAuthMenu = () => {
                   className={styles.user_block__icon_img}
                   width={100}
                   height={100}
-                  onError={() => setImageError(true)}
+                  onError={handleImageError}
+                  priority
                 />
               ) : (
-                <FaUserCircle />
+                <FaUserCircle className={styles.user_block__icon_img} />
               )}
             </div>
             <p className={styles.user_block__name}>

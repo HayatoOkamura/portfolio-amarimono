@@ -215,7 +215,7 @@ export const useUpdateIngredientQuantity = () => {
 // サーバーサイド用のデータフェッチ関数
 export const fetchIngredientsServer = async (): Promise<Ingredient[]> => {
   // Docker環境ではbackendサービスに直接接続
-  const baseURL = process.env.NODE_ENV === 'development' 
+  const baseURL = process.env.ENVIRONMENT === 'development' 
     ? 'http://portfolio-amarimono_backend_1:8080'  // Docker環境用
     : process.env.NEXT_PUBLIC_BACKEND_URL || 'https://amarimono-backend.onrender.com';
 

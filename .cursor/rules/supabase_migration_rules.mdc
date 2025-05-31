@@ -76,4 +76,123 @@ alwaysApply: true
 
 ---
 
+## マイグレーションの実行方法
+
+### 開発環境
+```bash
+supabase db push
+```
+
+### 本番環境
+```bash
+supabase db push --db-url <本番環境のデータベースURL>
+```
+
+⚠️ `supabase db reset`は使用しないでください。このコマンドは以下の問題を引き起こします：
+- 手動で登録したデータの消失
+- Storageバケットの内容の消失
+- 本番環境での使用が危険
+
+## マイグレーションファイルの命名規則
+
+1. 連番で管理（例：`001_`, `002_`, ...）
+2. 機能を表す名前を付ける（例：`add_deleted_at_to_ingredients`）
+3. 拡張子は`.sql`を使用
+
+例：
+```
+001_create_uuid_extension.sql
+002_tables_and_data.sql
+003_insert_initial_data.sql
+```
+
+## マイグレーションファイルの構造
+
+### アップマイグレーション（.sql）
+1. 冪等性を持つ（何度実行しても同じ結果になる）
+2. 既存のデータを保持
+3. 条件チェックを含める
+
+例：
+```sql
+-- Add column if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'table_name' 
+        AND column_name = 'column_name'
+    ) THEN
+        ALTER TABLE public.table_name ADD COLUMN column_name TYPE;
+    END IF;
+END $$;
+```
+
+### ダウンマイグレーション（.down.sql）
+1. アップマイグレーションの逆の操作を行う
+2. 冪等性を持つ
+3. 安全にロールバック可能
+
+例：
+```sql
+-- Drop column if it exists
+DO $$ 
+BEGIN
+    IF EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'table_name' 
+        AND column_name = 'column_name'
+    ) THEN
+        ALTER TABLE public.table_name DROP COLUMN column_name;
+    END IF;
+END $$;
+```
+
+## ベストプラクティス
+
+1. トランザクションの使用
+   - 複数の操作を行う場合は、トランザクションで囲む
+   - エラー時はロールバック
+
+2. データの保持
+   - 既存のデータを保持する
+   - 必要な場合のみデータを更新
+
+3. インデックスの管理
+   - インデックスの作成/削除は慎重に行う
+   - 既存のインデックスを確認してから操作
+
+4. 外部キー制約
+   - 外部キー制約の追加/削除は慎重に行う
+   - 既存のデータの整合性を確認
+
+5. ログ出力
+   - 重要な操作はログに出力
+   - エラー時のデバッグを容易にする
+
+## 注意事項
+
+1. 本番環境での実行
+   - 事前にバックアップを取得
+   - メンテナンス時間を考慮
+   - 段階的な適用を検討
+
+2. データの整合性
+   - マイグレーション前後でデータの整合性を確認
+   - 必要に応じてデータの移行スクリプトを作成
+
+3. パフォーマンス
+   - 大量のデータを扱う場合は、バッチ処理を検討
+   - インデックスの作成/削除は慎重に
+
+4. セキュリティ
+   - 機密データの取り扱いに注意
+   - 適切なアクセス制御を設定
+
+---
+
 （最終更新: 2024-05-29）

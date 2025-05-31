@@ -5,9 +5,7 @@ import { useEffect, useState } from "react";
 import styles from "./user.module.scss";
 import Image from "next/image";
 import Link from "next/link";
-// import { backendUrl } from "../utils/api";
-import { useAuth } from "@/app/hooks/useAuth";
-import { useUserLikeCount, useUserRecipeAverageRating, useUser } from "@/app/hooks/user";
+import { useUserLikeCount, useUserRecipeAverageRating } from "@/app/hooks/user";
 import { imageBaseUrl } from "@/app/utils/api";
 import { useRecommendedRecipes } from "@/app/hooks/recipes";
 import { FaUserCircle } from "react-icons/fa";
@@ -18,6 +16,7 @@ import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";
 import { Recipe } from "@/app/types/index";
 import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
 import { withAuth } from "@/app/components/auth/withAuth";
+import { useUserStore } from "@/app/stores/userStore";
 
 interface User {
   id: string;
@@ -32,12 +31,13 @@ interface User {
 }
 
 // ユーザープロフィールコンポーネント
-const UserProfile = ({ userId }: { userId: string }) => {
-  const { user: userDetails, loading: isUserLoading, error: userError } = useUser(userId);
-  const { likeCount, loading: isLikeCountLoading } = useUserLikeCount(userId);
-  const { averageRating, loading: isRatingLoading } = useUserRecipeAverageRating(userId);
-  const { data: recipes, isLoading: isRecipesLoading } = useRecommendedRecipes(userId);
+const UserProfile = () => {
+  const { user } = useUserStore();
+  const { likeCount, loading: isLikeCountLoading } = useUserLikeCount(user?.id || '');
+  const { averageRating, loading: isRatingLoading } = useUserRecipeAverageRating(user?.id || '');
+  const { data: recipes, isLoading: isRecipesLoading } = useRecommendedRecipes(user?.id || '');
   const [recipeCount, setRecipeCount] = useState(0);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     if (recipes) {
@@ -45,13 +45,14 @@ const UserProfile = ({ userId }: { userId: string }) => {
     }
   }, [recipes]);
 
-  const isLoading = isUserLoading || isLikeCountLoading || isRatingLoading || isRecipesLoading;
+  const isLoading = isLikeCountLoading || isRatingLoading || isRecipesLoading;
 
-  useEffect(() => {
-    console.log("User data:", userDetails);
-  }, [userDetails]);
+  const handleImageError = () => {
+    console.error("Error loading profile image");
+    setImageError(true);
+  };
 
-  if (userError) {
+  if (!user) {
     return <div>ユーザー情報の取得に失敗しました</div>;
   }
 
@@ -60,21 +61,23 @@ const UserProfile = ({ userId }: { userId: string }) => {
       <div className={styles.profile_block}>
         <div className={styles.profile_block__head}>
           <div className={styles.profile_block__image}>
-            {userDetails?.profileImage ? (
+            {user.profileImage && !imageError ? (
               <Image
-                src={`${imageBaseUrl}/${userDetails.profileImage}`}
+                src={`${imageBaseUrl}/${user.profileImage}`}
                 alt="User Profile"
                 className={styles.user_block__icon_img}
                 width={100}
                 height={100}
+                onError={handleImageError}
+                priority
               />
             ) : (
               <FaUserCircle size={100} />
             )}
           </div>
           <div className={styles.profile_block__detail}>
-            <h1 className={styles.profile_block__name}>{userDetails?.username || "名前未設定"}</h1>
-            <p className={styles.profile_block__email}>{userDetails?.email}</p>
+            <h1 className={styles.profile_block__name}>{user.username || "名前未設定"}</h1>
+            <p className={styles.profile_block__email}>{user.email}</p>
             <div className={styles.profile_block__list}>
               <div className={styles.item_block}>
                 <div className={styles.item_block__icon}>
@@ -107,7 +110,7 @@ const UserProfile = ({ userId }: { userId: string }) => {
           <h2 className={styles.recommend_block__title}>おすすめレシピ</h2>
           {recipes && recipes.length > 0 ? (
             <div className={styles.recommend_block__inner}>
-                <div className={styles.recommend_block__contents}>
+              <div className={styles.recommend_block__contents}>
                 {recipes.map((recipe: Recipe) => (
                   <div key={recipe.id} className={styles.recommend_block__card}>
                     <RecipeCard
@@ -130,17 +133,7 @@ const UserProfile = ({ userId }: { userId: string }) => {
 
 // メインコンポーネント
 function UserPage() {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
-    return null; // withAuth HOCがリダイレクトを処理するため
-  }
-
-  return <UserProfile userId={user.id} />;
+  return <UserProfile />;
 }
 
 export default withAuth(UserPage);

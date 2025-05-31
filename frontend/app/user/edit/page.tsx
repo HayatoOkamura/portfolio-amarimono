@@ -10,6 +10,7 @@ import { LuImagePlus } from "react-icons/lu";
 import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
 import { imageBaseUrl } from "@/app/utils/api";
 import { withAuth } from "@/app/components/auth/withAuth";
+import { toast } from "react-hot-toast";
 
 interface User {
   id: string;
@@ -24,7 +25,7 @@ interface User {
 }
 
 function EditProfileContent() {
-  const { user: authUser, isLoading: isAuthLoading, fetchUser } = useUserStore();
+  const { user: authUser, isLoading: isAuthLoading } = useUserStore();
   const { user: userDetails, loading: isUserLoading, error: userError } = useUser(authUser?.id);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -52,40 +53,30 @@ function EditProfileContent() {
     }
   }, [userDetails]);
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    console.log("handleUpdateProfile");
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!authUser?.id) {
-      setShowAuthError(true);
-      return;
-    }
+    if (!authUser) return;
 
-    setUpdating(true);
-    setError("");
     try {
       const formData = new FormData();
-      formData.append("username", username);
-      formData.append("age", age !== "" ? String(age) : "");
-      formData.append("gender", gender);
+      formData.append('username', username);
+      formData.append('age', age.toString());
+      formData.append('gender', gender);
       if (profileImage) {
-        formData.append("profile_image", profileImage);
+        formData.append('image', profileImage);
       }
 
       await updateUserProfile(authUser.id, formData);
-      await fetchUser();
-
+      toast.success('プロフィールを更新しました');
       if (isSetupMode) {
         alert("プロフィールの設定が完了しました");
         router.push("/");
       } else {
-        alert("プロフィールを更新しました");
         router.push("/user");
       }
-    } catch (err) {
-      setError("プロフィールの更新に失敗しました");
-    } finally {
-      setUpdating(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('プロフィールの更新に失敗しました');
     }
   };
 
@@ -136,7 +127,7 @@ function EditProfileContent() {
         <div className={styles.edit_block__inner}>
           <h1 className={styles.edit_block__title}>{isSetupMode ? "プロフィール設定" : "プロフィール編集"}</h1>
           <p className={styles.edit_block__description}>{isSetupMode && "アカウントの基本情報を設定してください"}</p>
-          <form onSubmit={handleUpdateProfile} className={styles.edit_block__form}>
+          <form onSubmit={handleSubmit} className={styles.edit_block__form}>
             <div className={styles.edit_block__head}>
               {/* プロフィール画像のアップロード */}
               <div

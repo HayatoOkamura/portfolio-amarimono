@@ -5,16 +5,18 @@ import styles from "./SideHeader.module.scss";
 import { useUserStore } from "@/app/stores/userStore";
 import { IoLogOut, IoLogIn } from "react-icons/io5";
 import Link from "next/link";
+import { useAuth } from "@/app/hooks/useAuth";
 
 const ClientAuthMenu = () => {
-  const { user, signOut } = useUserStore();
+  const { user } = useUserStore();
+  const { logout } = useAuth();
 
   return (
     <>
       {user ? (
         <div
           className={`${styles.header_block__icon} ${styles["header_block__icon--foot"]}`}
-          onClick={signOut}
+          onClick={logout}
         >
           <a>
             <IoLogOut />

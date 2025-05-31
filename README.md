@@ -245,7 +245,7 @@ https://dashboard.render.com/
   - SEO対策が必要
 - **設定**:
   ```typescript
-  export const revalidate = process.env.NODE_ENV === 'production' ? 86400 : 10; // 本番:24時間、開発:10秒
+  export const revalidate = process.env.ENVIRONMENT === 'production' ? 86400 : 10; // 本番:24時間、開発:10秒
   ```
 
 ### 2. その他のページ

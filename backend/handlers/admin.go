@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"time"
@@ -388,23 +387,6 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	faqJSON := form.Value["faq"]
 	log.Printf("🔍 FAQ data: %v", faqJSON)
 
-	// 画像ファイルの取得とログ
-	files := form.File["image"]
-	var imageURL string
-	if len(files) > 0 {
-		log.Printf("🔍 Image file received: %s", files[0].Filename)
-		// 画像を保存
-		imagePath, err := utils.SaveImage(c, files[0], "recipes", name[0])
-		if err != nil {
-			log.Printf("❌ Error saving image: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
-			return
-		}
-		imageURL = imagePath
-	} else {
-		log.Printf("⚠️ No image file received")
-	}
-
 	// データのパース
 	var instructions models.JSONBInstructions
 	if len(instructionsJSON) > 0 {
@@ -453,14 +435,11 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 		CostEstimate: parseInt(form.Value["cost_estimate"][0]),
 		Summary:      form.Value["summary"][0],
 		Catchphrase:  form.Value["catchphrase"][0],
-		MainImage:    imageURL,
 		Instructions: instructions,
 		Ingredients:  ingredients,
 		Nutrition:    nutrition,
 		FAQ:          faq,
 	}
-
-	log.Printf("🔍 Created recipe object: %+v", recipe)
 
 	// トランザクションの開始
 	tx := h.DB.Begin()
@@ -475,6 +454,56 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 		tx.Rollback()
 		log.Printf("❌ Error creating recipe: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create recipe"})
+		return
+	}
+
+	// 画像ファイルの取得とログ
+	files := form.File["image"]
+	if len(files) > 0 {
+		log.Printf("🔍 Image file received: %s", files[0].Filename)
+		// 画像を保存
+		imagePath, err := utils.SaveRecipeImage(c, files[0], recipe.ID.String(), false)
+		if err != nil {
+			log.Printf("❌ Error saving image: %v", err)
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
+			return
+		}
+		recipe.MainImage = imagePath
+		if err := tx.Save(&recipe).Error; err != nil {
+			tx.Rollback()
+			log.Printf("❌ Error updating recipe with image path: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update recipe with image path"})
+			return
+		}
+	} else {
+		log.Printf("⚠️ No image file received")
+	}
+
+	// 手順の画像ファイルの処理
+	for i := range instructions {
+		fileKey := fmt.Sprintf("instruction_image_%d", i)
+		if imageFile, err := c.FormFile(fileKey); err == nil {
+			log.Printf("🔍 Instruction image file received for step %d: %s", i, imageFile.Filename)
+			// 画像を保存
+			imagePath, err := utils.SaveRecipeImage(c, imageFile, recipe.ID.String(), true)
+			if err != nil {
+				log.Printf("❌ Error saving instruction image: %v", err)
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save instruction image"})
+				return
+			}
+			instructions[i].ImageURL = imagePath
+			log.Printf("✅ Saved instruction image for step %d: %s", i, imagePath)
+		}
+	}
+
+	// 手順データを更新
+	recipe.Instructions = instructions
+	if err := tx.Save(&recipe).Error; err != nil {
+		tx.Rollback()
+		log.Printf("❌ Error updating recipe with instructions: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update recipe with instructions"})
 		return
 	}
 
@@ -544,6 +573,24 @@ func (h *AdminHandler) DeleteRecipe(c *gin.Context) {
 		return
 	}
 
+	// メイン画像の削除
+	if recipe.MainImage != "" {
+		if err := utils.DeleteImage(recipe.MainImage); err != nil {
+			log.Printf("Warning: Failed to delete main image: %v", err)
+			// 画像の削除に失敗してもレシピの削除は続行
+		}
+	}
+
+	// 手順画像の削除
+	for _, instruction := range recipe.Instructions {
+		if instruction.ImageURL != "" {
+			if err := utils.DeleteImage(instruction.ImageURL); err != nil {
+				log.Printf("Warning: Failed to delete instruction image: %v", err)
+				// 画像の削除に失敗してもレシピの削除は続行
+			}
+		}
+	}
+
 	// 関連するrecipe_ingredientsを削除
 	if err := tx.Where("recipe_id = ?", recipeID).Delete(&models.RecipeIngredient{}).Error; err != nil {
 		tx.Rollback()
@@ -583,9 +630,6 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 		}
 		return
 	}
-
-	// フォルダ名を作成
-	recipeFolder := sanitizeFolderName(recipe.Name)
 
 	// フォームデータ取得
 	name := c.PostForm("name")
@@ -642,12 +686,12 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Image file size exceeds 10MB limit"})
 			return
 		}
-		imageURL, err := utils.SaveImage(c, imageFile, recipeFolder, fmt.Sprintf("%d", recipe.ID))
+		imageURL, err := utils.SaveRecipeImage(c, imageFile, recipe.ID.String(), false)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save main image"})
 			return
 		}
-		recipe.MainImage = filepath.ToSlash(filepath.Join(recipeFolder, filepath.Base(imageURL)))
+		recipe.MainImage = imageURL
 	}
 
 	// instructions の取得と画像処理
@@ -669,7 +713,7 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 					return
 				}
 				log.Printf("📝 Found new image file for instruction %d: %s", i, imageFile.Filename)
-				imageURL, err := utils.SaveImage(c, imageFile, "instructions", recipe.ID.String())
+				imageURL, err := utils.SaveRecipeImage(c, imageFile, recipe.ID.String(), true)
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save instruction image"})
 					return
@@ -1283,7 +1327,6 @@ func (h *AdminHandler) UploadImage(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"url": imageURL})
 }
-
 
 // ToggleRecipePublish レシピの公開/非公開状態を切り替える
 func (h *AdminHandler) ToggleRecipePublish(c *gin.Context) {

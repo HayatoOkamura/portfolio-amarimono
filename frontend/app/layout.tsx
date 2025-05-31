@@ -4,6 +4,7 @@ import QueryProvider from "./providers/QueryProvider";
 import LoadingProvider from "./providers/LoadingProvider";
 import type { Metadata } from "next";
 import Container from "@/app/components/layout/Container/Container";
+import { Toaster } from 'react-hot-toast';
 
 const notoSansJp = Noto_Sans_JP({
   subsets: ["latin", "latin-ext"],
@@ -55,6 +56,7 @@ export default function RootLayout({
             <Container>{children}</Container>
           </LoadingProvider>
         </QueryProvider>
+        <Toaster position="top-center" />
       </body>
     </html>
   );

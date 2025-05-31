@@ -21,7 +21,7 @@ export const useImageUpload = () => {
       if (imageUrl.startsWith('http')) {
         return imageUrl;
       }
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.ENVIRONMENT === 'production') {
         return `${imageBaseUrl}/${imageUrl}`;
       }
       return `${imageBaseUrl}/${imageUrl}`;

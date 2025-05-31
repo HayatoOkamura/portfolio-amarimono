@@ -80,7 +80,7 @@ export async function POST(request: Request) {
       
       console.log('Environment variables:', {
         BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL,
-        NODE_ENV: process.env.NODE_ENV
+        ENVIRONMENT: process.env.ENVIRONMENT
       });
       console.log('Request URL:', backendUrl);
 

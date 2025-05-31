@@ -1,13 +1,5 @@
 import { useEffect, useState } from "react";
 import { backendUrl, handleApiResponse } from "../utils/api";
-import { createClient } from "@supabase/supabase-js";
-import { useUserStore } from "@/app/stores/userStore";
-
-// Supabaseクライアントの初期化
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!
-);
 
 interface User {
   id: string;
@@ -21,7 +13,7 @@ interface User {
   updated_at?: string;
 }
 
-// ユーザー情報を取得するフック
+// 特定のユーザー情報を取得するフック
 export const useUser = (userId: string | undefined) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,6 +60,7 @@ export const useUser = (userId: string | undefined) => {
   return { user, loading, error };
 };
 
+// ユーザーのいいね数を取得するフック
 export const useUserLikeCount = (userId: string | undefined) => {
   const [likeCount, setLikeCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -109,6 +102,7 @@ export const useUserLikeCount = (userId: string | undefined) => {
   return { likeCount, loading };
 };
 
+// ユーザーのレシピ評価平均を取得するフック
 export const useUserRecipeAverageRating = (userId: string | undefined) => {
   const [averageRating, setAverageRating] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -153,29 +147,9 @@ export const useUserRecipeAverageRating = (userId: string | undefined) => {
 // ユーザープロフィールを更新
 export const updateUserProfile = async (userId: string, formData: FormData) => {
   try {
-    // ユーザーストアから現在のユーザー情報を取得
-    const { user: currentUser } = useUserStore.getState();
-    
-    if (!currentUser?.email) {
-      throw new Error("User email not found in store");
-    }
-
-    // FormDataからJSONデータを作成
-    const userData = {
-      id: userId,
-      email: currentUser.email, // ストアから取得したメールアドレスを使用
-      username: formData.get('username') || '',
-      age: formData.get('age') ? Number(formData.get('age')) : null,
-      gender: formData.get('gender') || '',
-      profile_image: formData.get('profile_image') ? String(formData.get('profile_image')) : null
-    };
-
     const res = await fetch(`${backendUrl}/api/users/${userId}`, {
       method: "PUT",
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
+      body: formData,
     });
 
     return await handleApiResponse(res);

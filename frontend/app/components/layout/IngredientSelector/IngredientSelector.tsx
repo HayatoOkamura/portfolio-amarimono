@@ -25,7 +25,7 @@ const IngredientSelector = ({
     isLoading: isIngredientsLoading,
   } = useIngredients({
     initialData: initialIngredients,
-    staleTime: process.env.NODE_ENV === "development" ? 10000 : 86400000, // 開発環境:10秒、本番環境:24時間
+    staleTime: process.env.ENVIRONMENT === "development" ? 10000 : 86400000, // 開発環境:10秒、本番環境:24時間
     refetchOnMount: false, // マウント時の自動再フェッチを無効化
     refetchOnWindowFocus: false, // ウィンドウフォーカス時の自動再フェッチを無効化
     refetchOnReconnect: false, // 再接続時の自動再フェッチを無効化

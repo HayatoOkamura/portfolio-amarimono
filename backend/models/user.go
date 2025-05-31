@@ -15,6 +15,7 @@ type User struct {
 	Age          *int       `json:"age"`
 	Gender       *string    `json:"gender"`
 	ProfileImage *string    `json:"profile_image"`
+	Role         string     `json:"role" gorm:"-"` // データベースには保存しないが、JSONには含める
 	CreatedAt    time.Time  `json:"created_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt    time.Time  `json:"updated_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
 	DeletedAt    *time.Time `json:"deleted_at" gorm:"index"`

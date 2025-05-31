@@ -24,7 +24,8 @@ func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, like
 	router.POST("/api/users", userHandler.CreateUser)
 	router.GET("/api/users/:id", userHandler.GetUserProfile)
 	router.PUT("/api/users/:id", userHandler.UpdateUserProfile)
-	router.GET("/api/users/:id/likes", userHandler.GetUserLikeCount) // ユーザーの投稿レシピの合計いいね数を取得
+	router.POST("/api/users/:id/profile-image", userHandler.UploadProfileImage) // プロフィール画像アップロード用エンドポイント
+	router.GET("/api/users/:id/likes", userHandler.GetUserLikeCount)            // ユーザーの投稿レシピの合計いいね数を取得
 	router.GET("/api/users/:id/reviews", userHandler.GetUserRecipeAverageRating)
 	router.POST("/api/users/role", userHandler.SetUserRole)       // 管理者権限設定用のエンドポイント
 	router.GET("/api/user/recipes", recipeHandler.GetUserRecipes) // 特定のレシピ取得

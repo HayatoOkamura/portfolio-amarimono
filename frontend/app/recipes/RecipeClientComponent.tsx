@@ -73,7 +73,7 @@ const RecipeClientComponent = () => {
     query,
     {
       enabled: searchType === "name" && searchExecuted,
-      staleTime: process.env.NODE_ENV === "development" ? 10000 : 86400000,
+      staleTime: process.env.ENVIRONMENT === "development" ? 10000 : 86400000,
       refetchOnMount: false,
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,

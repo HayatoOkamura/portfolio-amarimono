@@ -15,6 +15,7 @@ import { useUserStore } from "@/app/stores/userStore";
 import MobileUserProfile from "./MobileUserProfile";
 import { FaCog } from "react-icons/fa";
 import { useAdmin } from "@/app/hooks/useAdmin";
+import { useAuth } from "@/app/hooks/useAuth";
 
 interface MobileMenuModalProps {
   isOpen: boolean;
@@ -22,9 +23,10 @@ interface MobileMenuModalProps {
 }
 
 const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose }) => {
-  const { user, signOut } = useUserStore();
+  const { user } = useUserStore();
+  const { logout } = useAuth();
   const pathname = usePathname();
-  const { isAdmin, isLoading } = useAdmin();
+  const { isAuthorized, isLoading } = useAdmin();
 
   const getActiveClass = (paths: string[]) =>
     paths.includes(pathname) ? styles["is-active"] : "";
@@ -32,8 +34,8 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose }) =>
   // デバッグログ
   useEffect(() => {
     console.log("MobileMenuModal - User:", user);
-    console.log("MobileMenuModal - isAdmin:", isAdmin);
-  }, [user, isAdmin]);
+    console.log("MobileMenuModal - isAuthorized:", isAuthorized);
+  }, [user, isAuthorized]);
 
   useEffect(() => {
     if (isOpen) {
@@ -82,7 +84,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose }) =>
               <span>お気に入り</span>
             </Link>
           </div>
-          {!isLoading && isAdmin && (
+          {!isLoading && isAuthorized && (
             <div className={`${styles.modal_content__nav_item} ${getActiveClass(["/admin"])}`}>
               <Link href="/admin/recipes">
                 <FaCog />
@@ -91,7 +93,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose }) =>
             </div>
           )}
           {user ? (
-            <div className={`${styles.modal_content__nav_item} ${styles["modal_content__nav_item--logout"]}`} onClick={signOut}>
+            <div className={`${styles.modal_content__nav_item} ${styles["modal_content__nav_item--logout"]}`} onClick={logout}>
               <IoLogOut />
               <span>ログアウト</span>
             </div>
