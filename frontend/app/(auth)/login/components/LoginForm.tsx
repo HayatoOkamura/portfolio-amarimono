@@ -32,25 +32,9 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
           throw { type: 'LOGIN_FAILED', message: "セッションの取得に失敗しました" } as AuthError;
         }
 
-        // ユーザー情報の同期
-        const syncResponse = await fetch('/api/auth/sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${data.session.access_token}`
-          },
-        });
-
-        if (!syncResponse.ok) {
-          const errorData = await syncResponse.json();
-          throw { type: 'LOGIN_FAILED', message: errorData.error || 'ユーザー情報の同期に失敗しました' } as AuthError;
-        }
-
-        // 成功時はTOPページにリダイレクト
+        // ログイン成功時は直接TOPページにリダイレクト
         setIsSuccess(true);
-        setTimeout(() => {
-          router.push("/");
-        }, 2000);
+        router.push("/");
       } else {
         // 登録処理
         const error = await register({ email, password });
@@ -58,6 +42,7 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
           throw error;
         }
         setIsSuccess(true);
+        // メール認証ページにリダイレクト
         router.push(`/verify-email?email=${encodeURIComponent(email)}`);
       }
     } catch (error) {

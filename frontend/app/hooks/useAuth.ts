@@ -201,11 +201,24 @@ export function useAuth() {
   const login = async ({ email, password }: { email: string; password: string }): Promise<AuthError | null> => {
     setIsLoggingIn(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
         return createAuthError('LOGIN_FAILED', error.message);
       }
+
+      if (!data.session) {
+        return createAuthError('LOGIN_FAILED', 'セッションの取得に失敗しました');
+      }
+
+      // ユーザー情報をストアに保存
+      setStoreUser({
+        id: data.user.id,
+        email: data.user.email || '',
+        email_confirmed_at: data.user.email_confirmed_at,
+        created_at: data.user.created_at,
+        updated_at: data.user.updated_at
+      });
       
       return null;
     } catch (error) {
@@ -223,7 +236,7 @@ export function useAuth() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/callback?email=${encodeURIComponent(email)}`,
+          emailRedirectTo: `${window.location.origin}/callback`,
         },
       });
 
@@ -239,7 +252,6 @@ export function useAuth() {
       }
 
       // メール認証ページにリダイレクト
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
       return null;
     } catch (error) {
       console.error('Registration error:', error);

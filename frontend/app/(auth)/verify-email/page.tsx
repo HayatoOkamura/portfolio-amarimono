@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import Loading from "@/app/components/ui/Loading/Loading";
 import styles from "./VerifyEmail.module.scss";
+import { useUserStore } from "@/app/stores/userStore";
 
 export default function VerifyEmailPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function VerifyEmailPage() {
   const [isVerified, setIsVerified] = useState<boolean>(false);
   const [cooldown, setCooldown] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const { setUser } = useUserStore();
 
   useEffect(() => {
     const getEmail = async () => {
@@ -54,13 +56,22 @@ export default function VerifyEmailPage() {
         if (error) throw error;
 
         if (session?.user?.email_confirmed_at) {
-          // メール認証が完了した場合、セッションをクリアしてログインページにリダイレクト
-          await supabase.auth.signOut();
+          // メール認証が完了した場合、ユーザー情報をストアに保存
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            email_confirmed_at: session.user.email_confirmed_at,
+            created_at: session.user.created_at,
+            updated_at: session.user.updated_at
+          });
+
           setIsVerified(true);
-          setSuccess("メール認証が完了しました。ログインページからログインしてください。");
+          setSuccess("メール認証が完了しました。TOPページに移動します。");
+          
+          // 認証完了後、TOPページにリダイレクト
           setTimeout(() => {
-            router.push("/login");
-          }, 3000);
+            router.push("/");
+          }, 2000);
         }
       } catch (error) {
         console.error("認証状態確認エラー:", error);
@@ -68,7 +79,7 @@ export default function VerifyEmailPage() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [router, searchParams]);
+  }, [router, searchParams, setUser]);
 
   // クールダウンタイマーの処理
   useEffect(() => {
