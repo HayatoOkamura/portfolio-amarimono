@@ -11,11 +11,9 @@ export const useIngredientDefaults = () => {
   return useQuery<IngredientDefault[]>({
     queryKey: ['ingredientDefaults'],
     queryFn: async () => {
-      console.log('Fetching ingredient defaults from cookie...');
       const response = await api.get<IngredientDefault[]>('/api/ingredient-defaults', {
         withCredentials: true
       });
-      console.log('Received defaults:', response.data);
       return response.data;
     },
   });
@@ -25,11 +23,9 @@ export const useIngredientDefaults = () => {
 export const useUpdateIngredientDefaults = () => {
   return useMutation({
     mutationFn: async (updates: IngredientDefault[]) => {
-      console.log('Updating ingredient defaults:', updates);
       const response = await api.put('/api/ingredient-defaults', updates, {
         withCredentials: true
       });
-      console.log('Update response:', response.data);
       return response.data;
     },
   });

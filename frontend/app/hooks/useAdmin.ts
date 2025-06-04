@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useAuthGuard } from './useAuthGuard';
+import { useState, useEffect } from 'react';
+import { useAuth } from './useAuth';
 import { backendUrl } from "@/app/utils/api";
 
 interface User {
@@ -10,9 +10,18 @@ interface User {
 }
 
 export const useAdmin = () => {
-  const { isAuthorized, user } = useAuthGuard(true);
+  const { user } = useAuth();
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (user && user.role === 'admin') {
+      setIsAuthorized(true);
+    } else {
+      setIsAuthorized(false);
+    }
+  }, [user]);
 
   const fetchUsers = async (): Promise<User[]> => {
     if (!isAuthorized) return [];

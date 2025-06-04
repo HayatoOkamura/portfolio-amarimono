@@ -16,15 +16,11 @@ export default function LoginPage() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement email login with new auth flow
-    console.log("Email login not implemented yet");
   };
 
   const handleGoogleLogin = async () => {
     try {
-      console.log("Starting Google login...");
       const redirectUrl = `${window.location.origin}/callback`;
-      console.log("Redirect URL:", redirectUrl);
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -43,8 +39,7 @@ export default function LoginPage() {
         alert(error.message);
         return;
       }
-
-      console.log("Google login response:", data);
+      
     } catch (error) {
       console.error("Unexpected error during Google login:", error);
       alert("ログイン中にエラーが発生しました");

@@ -6,6 +6,7 @@ import { backendUrl } from "../utils/api";
 
 interface IngredientStore {
   ingredients: Ingredient[];
+  selectedOrder: number[]; // 選択順序を管理する配列
   error: string | null;
   newIngredient: EditIngredient;
   setIngredients: (ingredients: Ingredient[]) => void;
@@ -23,6 +24,7 @@ const useIngredientStore = create<IngredientStore>()(
   persist(
     (set, get) => ({
       ingredients: [],
+      selectedOrder: [], // 選択順序を管理する配列
       error: null,
       newIngredient: {
         id: 0,
@@ -49,9 +51,25 @@ const useIngredientStore = create<IngredientStore>()(
         set({ newIngredient: ingredient });
       },
       addIngredient: (ingredient: Ingredient) => {
-        set((state) => ({
-          ingredients: [...state.ingredients, ingredient]
-        }));
+        set((state) => {
+          const existingIngredient = state.ingredients.find(ing => ing.id === ingredient.id);
+          if (existingIngredient) {
+            // 既存の具材を更新
+            const newIngredients = state.ingredients.map(ing =>
+              ing.id === ingredient.id ? { ...ing, quantity: ingredient.quantity } : ing
+            );
+            return { 
+              ingredients: newIngredients,
+              selectedOrder: [...state.selectedOrder, ingredient.id] // 選択順序に追加
+            };
+          } else {
+            // 新しい具材を追加
+            return { 
+              ingredients: [...state.ingredients, ingredient],
+              selectedOrder: [...state.selectedOrder, ingredient.id] // 選択順序に追加
+            };
+          }
+        });
       },
       deleteIngredient: (id: number) => {
         set((state) => ({
@@ -60,7 +78,8 @@ const useIngredientStore = create<IngredientStore>()(
       },
       removeIngredient: (id: number) => {
         set((state) => ({
-          ingredients: state.ingredients.filter(ing => ing.id !== id)
+          ingredients: state.ingredients.filter(ing => ing.id !== id),
+          selectedOrder: state.selectedOrder.filter(orderId => orderId !== id) // 選択順序から削除
         }));
       },
       fetchIngredients: () => {
@@ -72,6 +91,7 @@ const useIngredientStore = create<IngredientStore>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         ingredients: state.ingredients,
+        selectedOrder: state.selectedOrder, // 選択順序も永続化
       }),
     }
   )

@@ -86,8 +86,6 @@ const AdminIngredients = () => {
         nutrition: formData.get("nutrition") ? JSON.parse(formData.get("nutrition") as string) : undefined,
       };
 
-      console.log('Updating ingredient with data:', updatedIngredient);
-
       updateIngredient({
         id: editingIngredient.id,
         data: updatedIngredient

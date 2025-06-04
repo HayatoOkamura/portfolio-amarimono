@@ -12,10 +12,6 @@ const MobileUserProfile = () => {
   const { user } = useUserStore();
   const [imageError, setImageError] = useState(false);
 
-  useEffect(() => {
-    console.log("MobileUserProfile - User:", user);
-  }, [user]);
-
   return (
     <div className={styles.user_profile}>
       <div className={styles.user_profile__image}>

@@ -1,172 +1,166 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { backendUrl } from '@/app/utils/api'
+import { supabase } from '@/app/lib/api/supabase/supabaseClient'
+
+// デバッグログ用の関数
+const debugLog = (message: string, data?: any) => {
+  const timestamp = new Date().toISOString();
+  const requestId = Math.random().toString(36).substring(7);
+  console.log(`[${timestamp}] [${requestId}] 🔍 ${message}`, data ? JSON.stringify(data, null, 2) : '');
+  return requestId;
+};
 
 export async function POST(request: Request) {
+  const requestId = debugLog('Sync request started');
+  
   try {
-    console.log('Starting sync process...');
-    const cookieStore = cookies()
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!,
-      {
-        auth: {
-          persistSession: true,
-          storageKey: 'sb-auth-token',
-          storage: {
-            getItem: (key: string): string | null => {
-              try {
-                const cookie = cookieStore.get(key)?.value
-                console.log(`Getting cookie for key ${key}:`, cookie ? 'Found' : 'Not found');
-                return cookie || null
-              } catch (error) {
-                console.error('Error getting cookie:', error);
-                return null;
-              }
-            },
-            setItem: (key: string, value: string): void => {
-              try {
-                cookieStore.set(key, value, {
-                  path: '/',
-                  maxAge: 3600,
-                  secure: true,
-                  sameSite: 'lax',
-                  httpOnly: true,
-                })
-                console.log(`Setting cookie for key ${key}`);
-              } catch (error) {
-                console.error('Error setting cookie:', error);
-              }
-            },
-            removeItem: (key: string): void => {
-              try {
-                cookieStore.delete(key)
-                console.log(`Removing cookie for key ${key}`);
-              } catch (error) {
-                console.error('Error removing cookie:', error);
-              }
-            },
-          },
-        },
-      }
-    )
-
-    // セッションの取得
-    console.log('Fetching session...');
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    console.log('Session data:', JSON.stringify(session, null, 2));
-    console.log('Session error:', sessionError);
-
-    if (sessionError) {
-      console.error('Session error:', sessionError);
-      return NextResponse.json({ error: 'セッションの取得に失敗しました' }, { status: 401 })
+    // Authorizationヘッダーからアクセストークンを取得
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      debugLog('Invalid Authorization header', { authHeader, requestId });
+      return NextResponse.json({ error: '認証情報が不正です' }, { status: 401 });
+    }
+    const accessToken = authHeader.split(' ')[1];
+    
+    // Supabaseからユーザー情報を取得
+    debugLog('Fetching user from Supabase', { requestId });
+    const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(accessToken);
+    
+    if (userError || !authUser) {
+      debugLog('Supabase user fetch error', { error: userError, requestId });
+      return NextResponse.json({ 
+        error: 'ユーザー情報の取得に失敗しました',
+        details: userError?.message 
+      }, { status: 401 });
     }
 
-    if (!session) {
-      console.error('No session found');
-      return NextResponse.json({ error: '認証セッションが見つかりません' }, { status: 401 })
-    }
+    debugLog('User found in Supabase', { 
+      userId: authUser.id,
+      email: authUser.email,
+      requestId
+    });
 
     // メール認証が完了していない場合はエラーを返す
-    if (!session.user.email_confirmed_at) {
-      console.log('Email not confirmed');
-      return NextResponse.json({ error: 'メール認証が完了していません' }, { status: 403 })
+    if (!authUser.email_confirmed_at) {
+      debugLog('Email not confirmed', { userId: authUser.id, requestId });
+      return NextResponse.json({ error: 'メール認証が完了していません' }, { status: 403 });
     }
 
-    // ユーザー情報の取得
-    console.log('Fetching user data for ID:', session.user.id);
-    try {
-      const backendUrl = `${process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL}/api/users/${session.user.id}`;
-      
-      console.log('Environment variables:', {
-        BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL,
-        ENVIRONMENT: process.env.ENVIRONMENT
-      });
-      console.log('Request URL:', backendUrl);
+    // バックエンドからユーザー情報を取得
+    const apiUrl = `${backendUrl}/api/users/${authUser.id}`;
+    debugLog('Fetching user from backend', { url: apiUrl, requestId });
+    
+    const response = await fetch(apiUrl, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      signal: AbortSignal.timeout(5000),
+    });
 
-      // バックエンドAPIを使用してユーザー情報を取得
-      let response;
-      try {
-        console.log('Attempting to fetch from backend...');
-        response = await fetch(backendUrl, {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          // 明示的にタイムアウトを設定
-          signal: AbortSignal.timeout(5000),
-        });
-        console.log('Fetch successful, status:', response.status);
-      } catch (error) {
-        console.error('Fetch error:', error);
-        if (error instanceof Error) {
-          console.error('Error details:', {
-            message: error.message,
-            name: error.name,
-            stack: error.stack
-          });
-        }
-        throw new Error('Failed to connect to backend service');
-      }
+    debugLog('Backend response received', { 
+      status: response.status,
+      ok: response.ok,
+      requestId
+    });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        if (response.status === 404) {
-          // ユーザーが存在しない場合は新規作成
-          console.log('User not found, creating new user...');
-          const userData = {
-            id: session.user.id,
-            email: session.user.email || '',
-            age: 0,
-            gender: "未設定"
-          };
-
-          const createResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL}/api/users`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData),
-          });
-
-          if (!createResponse.ok) {
-            const error = await createResponse.json();
-            console.error('Error creating user:', error);
-            return NextResponse.json({ 
-              error: 'ユーザーの作成に失敗しました',
-              details: error
-            }, { status: 500 });
-          }
-
-          const newUser = await createResponse.json();
-          console.log('New user created:', JSON.stringify(newUser, null, 2));
-          return NextResponse.json(newUser);
-        }
-
-        const error = await response.json();
-        console.error('Error fetching user:', error);
-        return NextResponse.json({ 
-          error: 'ユーザー情報の取得に失敗しました',
-          details: error
-        }, { status: response.status });
-      }
-
+    // ユーザーが存在する場合はその情報を返す
+    if (response.ok) {
       const user = await response.json();
-      console.log('Existing user found:', JSON.stringify(user, null, 2));
+      debugLog('User retrieved successfully', { userId: user.id, requestId });
       return NextResponse.json(user);
-    } catch (error) {
-      console.error('Error in database operation:', error);
+    }
+
+    // 404エラーの場合（ユーザーが存在しない場合）は新規作成を試みる
+    if (response.status === 404) {
+      debugLog('User not found in backend, attempting creation', { requestId });
+      
+      const userData = {
+        id: authUser.id,
+        email: authUser.email || '',
+        username: '',
+        age: 0,
+        gender: "未設定"
+      };
+
+      debugLog('Creating new user', { userData, requestId });
+
+      const createResponse = await fetch(`${backendUrl}/api/users`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      debugLog('User creation response', {
+        status: createResponse.status,
+        ok: createResponse.ok,
+        requestId
+      });
+
+      if (createResponse.ok) {
+        const newUser = await createResponse.json();
+        debugLog('User created successfully', { userId: newUser.id, requestId });
+        return NextResponse.json(newUser);
+      }
+
+      // 重複エラーの場合は、ユーザーが既に作成されていると判断
+      const responseText = await createResponse.text();
+      debugLog('User creation failed', {
+        status: createResponse.status,
+        responseText,
+        requestId
+      });
+
+      if (createResponse.status === 500 && responseText.includes('duplicate key')) {
+        // 重複エラーの場合は、ユーザー情報を再取得
+        const retryResponse = await fetch(apiUrl, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (retryResponse.ok) {
+          const retryUser = await retryResponse.json();
+          debugLog('User retrieved after duplicate error', { userId: retryUser.id, requestId });
+          return NextResponse.json(retryUser);
+        }
+      }
+
       return NextResponse.json({ 
-        error: 'データベース操作中にエラーが発生しました',
-        details: error
+        error: 'ユーザーの作成に失敗しました',
+        details: responseText
       }, { status: 500 });
     }
+
+    // その他のエラーの場合
+    const errorText = await response.text();
+    debugLog('Backend error', {
+      status: response.status,
+      errorText,
+      requestId
+    });
+
+    return NextResponse.json({ 
+      error: 'ユーザー情報の取得に失敗しました',
+      details: errorText
+    }, { status: response.status });
+
   } catch (error) {
-    console.error('Error in sync:', error);
+    debugLog('Unexpected error in sync', {
+      error: error instanceof Error ? {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      } : error,
+      requestId
+    });
     return NextResponse.json({ 
       error: '予期せぬエラーが発生しました',
-      details: error
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 } 

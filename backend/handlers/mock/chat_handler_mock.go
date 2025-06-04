@@ -2,7 +2,6 @@ package mock
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,16 +19,8 @@ func ChatHandler(c *gin.Context) {
 	// リクエストボディのバインド
 	var recipeRequest RecipeRequest
 	if err := c.ShouldBindJSON(&recipeRequest); err != nil {
-		log.Printf("Request binding error: %v", err) // 詳細なエラーログ
-		log.Printf("Request body: %s", c.Request.Body) // リクエストボディを確認
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid request: %v", err)})
 		return
-	}
-
-	// ログに受け取ったデータを表示
-	log.Println("Received ingredients (mock):")
-	for ingredient, quantity := range recipeRequest.Ingredients {
-		log.Printf("- %s: %d個", ingredient, quantity)
 	}
 
 	// 動的なモックレスポンスの生成

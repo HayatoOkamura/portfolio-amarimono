@@ -211,13 +211,6 @@ const RecipeDetail = memo(
               )}
               <p className={styles.info_block__summary}>{recipe.summary}</p>
               <ul className={styles.nutrition_block}>
-                {(() => {
-                  console.log(
-                    "Recipe Detail - Nutrition Percentage:",
-                    recipe.nutritionPercentage
-                  );
-                  return null;
-                })()}
                 <li className={styles.nutrition_block__item}>
                   <div className={styles.nutrition_block__texts}>
                     <p className={styles.nutrition_block__title}>カロリー</p>

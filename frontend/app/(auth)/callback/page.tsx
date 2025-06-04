@@ -1,184 +1,181 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 import Loading from "@/app/components/ui/Loading/Loading";
 import styles from "./callback.module.scss";
+import { supabase } from "@/app/lib/api/supabase/supabaseClient";
+import { useUserStore } from "@/app/stores/userStore";
+
+// デバッグログ用の関数
+const debugLog = (message: string, data?: any) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] 🔍 ${message}`, data ? JSON.stringify(data, null, 2) : '');
+};
+
+// トークンの保存関数
+const saveTokens = (session: any) => {
+  debugLog('Saving tokens', { 
+    hasProviderToken: !!session?.provider_token,
+    hasRefreshToken: !!session?.provider_refresh_token 
+  });
+  
+  if (session) {
+    const { provider_token, provider_refresh_token } = session;
+    // セキュアなストレージに保存
+    document.cookie = `provider_token=${provider_token}; HttpOnly; Secure; SameSite=Lax`;
+    document.cookie = `provider_refresh_token=${provider_refresh_token}; HttpOnly; Secure; SameSite=Lax`;
+  }
+};
+
+// セッションの更新関数
+const refreshSession = async () => {
+  debugLog('Attempting to refresh session');
+  const { data, error } = await supabase.auth.refreshSession();
+  
+  if (error) {
+    debugLog('Error refreshing session', { error });
+    return null;
+  }
+
+  if (data?.session) {
+    debugLog('Session refreshed successfully');
+    saveTokens(data.session);
+    return data.session;
+  }
+  
+  debugLog('No session after refresh');
+  return null;
+};
 
 export default function Callback() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [error, setError] = useState<string>('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [syncAttempted, setSyncAttempted] = useState(false);
-  const hasInitialized = useRef(false);
+  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [error, setError] = useState<string>("");
+  const isCheckingRef = useRef(false);
+  const hasCompletedRef = useRef(false);
+  const { setUser } = useUserStore();
 
   useEffect(() => {
-    // 初期化済みの場合は実行しない
-    if (hasInitialized.current) {
-      return;
-    }
-    hasInitialized.current = true;
-
     const checkAuth = async () => {
-      // 既に処理済みの場合は実行しない
-      if (isProcessing || syncAttempted) {
-        console.log('🔍 Already processed, skipping...');
+      debugLog('Callback page mounted');
+      debugLog('Current URL', { url: window.location.href });
+
+      if (isCheckingRef.current || hasCompletedRef.current) {
+        debugLog('Already checking or completed');
         return;
       }
-
+      
       try {
-        setIsProcessing(true);
-        console.log('🔍 Starting auth check...');
+        isCheckingRef.current = true;
+        debugLog('Starting auth check');
 
-        // URLからパラメータを取得
-        const url = new URL(window.location.href);
-        const searchParams = new URLSearchParams(url.search);
-        const hashParams = new URLSearchParams(url.hash.substring(1));
+        // セッションの確認
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        debugLog('Session check result', {
+          hasSession: !!session,
+          hasError: !!sessionError,
+          error: sessionError?.message,
+          userId: session?.user?.id,
+          email: session?.user?.email
+        });
 
-        const token = hashParams.get('access_token');
-        const type = hashParams.get('type');
-        const email = searchParams.get('email');
-
-        console.log('🔍 URL:', window.location.href);
-        console.log('🔍 Token:', token);
-        console.log('🔍 Type:', type);
-        console.log('🔍 Email:', email);
-
-        if (!token || !email) {
-          setStatus('error');
-          setError('認証に必要な情報が不足しています');
+        if (sessionError || !session) {
+          debugLog('No valid session found', { error: sessionError });
+          router.push('/login');
           return;
         }
 
-        // クライアントサイドでのみSupabaseクライアントを初期化
-        const supabase = createClient(
-          process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!,
-          {
-            auth: {
-              persistSession: true,
-              storageKey: 'sb-auth-token',
-              storage: typeof window !== 'undefined' ? {
-                getItem: (key: string): string | null => {
-                  const cookie = document.cookie
-                    .split('; ')
-                    .find((row) => row.startsWith(`${key}=`));
-                  return cookie ? cookie.split('=')[1] : null;
-                },
-                setItem: (key: string, value: string): void => {
-                  document.cookie = `${key}=${value}; path=/; max-age=3600; secure; samesite=lax`;
-                },
-                removeItem: (key: string): void => {
-                  document.cookie = `${key}=; path=/; max-age=0; secure; samesite=lax`;
-                },
-              } : undefined,
-            },
-          }
-        );
-
-        // メール認証の確認
-        if (type === 'signup') {
-          // セッションの取得
-          console.log('🔍 Fetching session...');
-          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-          
-          console.log('🔍 Session result:', { session, sessionError });
-          
-          if (sessionError) {
-            console.error('🔍 Session error:', sessionError);
-            setStatus('error');
-            setError('セッションの取得に失敗しました');
-            return;
-          }
-
-          if (!session) {
-            console.error('🔍 No session found');
-            setStatus('error');
-            setError('認証セッションが見つかりません');
-            return;
-          }
-
-          // メール認証状態の確認
-          console.log('🔍 Email confirmation status:', session.user.email_confirmed_at);
-          if (!session.user.email_confirmed_at) {
-            setStatus('error');
-            setError('メール認証が完了していません');
-            return;
-          }
-
-          // セッションを確実に設定
-          try {
-            const { error: setSessionError } = await supabase.auth.setSession({
-              access_token: session.access_token,
-              refresh_token: session.refresh_token,
-            });
-
-            if (setSessionError) {
-              console.error('🔍 Error setting session:', setSessionError);
-              setStatus('error');
-              setError('セッションの設定に失敗しました');
-              return;
-            }
-
-            // ユーザー情報の同期（一度だけ実行）
-            if (!syncAttempted) {
-              console.log('🔍 Syncing user data...');
-              try {
-                setSyncAttempted(true);
-                const syncResponse = await fetch('/api/auth/sync', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                  },
-                });
-
-                console.log('🔍 Sync response status:', syncResponse.status);
-                if (!syncResponse.ok) {
-                  const errorData = await syncResponse.json();
-                  console.error('🔍 Sync error:', errorData);
-                  // 404エラーの場合は、ユーザーが既に作成されている可能性があるので成功として扱う
-                  if (syncResponse.status === 404) {
-                    console.log('🔍 User already exists, proceeding...');
-                    setStatus('success');
-                    return;
-                  }
-                  setStatus('error');
-                  setError(errorData.error || 'ユーザー情報の同期に失敗しました');
-                  return;
-                }
-
-                // 成功時は成功状態を設定
-                console.log('🔍 Authentication successful');
-                setStatus('success');
-              } catch (error) {
-                console.error('🔍 Sync error:', error);
-                setStatus('error');
-                setError('ユーザー情報の同期中にエラーが発生しました');
-              }
-            }
-          } catch (error) {
-            console.error('🔍 Session setting error:', error);
-            setStatus('error');
-            setError('セッションの設定中にエラーが発生しました');
-          }
-        }
+        await processSession(session);
       } catch (err) {
-        console.error('🔍 Auth check error:', err);
-        setStatus('error');
-        setError('予期せぬエラーが発生しました');
+        debugLog('Auth check error', { 
+          error: err instanceof Error ? {
+            message: err.message,
+            name: err.name,
+            stack: err.stack
+          } : err
+        });
+        setStatus("error");
+        setError(
+          err instanceof Error ? err.message : "予期せぬエラーが発生しました"
+        );
       } finally {
-        setIsProcessing(false);
+        isCheckingRef.current = false;
       }
     };
 
-    checkAuth();
-  }, []); // 依存配列を空にして、マウント時に1回だけ実行
+    const processSession = async (session: any) => {
+      // メール認証状態の確認
+      debugLog('Checking email confirmation', {
+        email: session.user.email,
+        confirmedAt: session.user.email_confirmed_at
+      });
 
-  if (status === 'loading') {
+      if (!session.user.email_confirmed_at) {
+        if (!session.user.email) {
+          debugLog('No email found in session');
+          throw new Error("メールアドレスが見つかりません");
+        }
+        debugLog('Redirecting to email verification');
+        router.push(
+          `/verify-email?email=${encodeURIComponent(session.user.email)}`
+        );
+        return;
+      }
+
+      // ユーザー情報の同期
+      debugLog('Starting user data sync');
+      const syncResponse = await fetch("/api/auth/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      debugLog('Sync response', {
+        status: syncResponse.status,
+        ok: syncResponse.ok
+      });
+
+      if (!syncResponse.ok) {
+        const syncError = await syncResponse.json();
+        debugLog('Sync error', { error: syncError });
+        throw new Error(
+          syncError.error || "ユーザー情報の同期に失敗しました"
+        );
+      }
+
+      // ユーザー情報をストアに保存
+      const userData = await syncResponse.json();
+      debugLog('User data received', { 
+        userId: userData.id,
+        hasEmail: !!userData.email
+      });
+
+      setUser({
+        id: session.user.id,
+        email: session.user.email || '',
+        email_confirmed_at: session.user.email_confirmed_at,
+        created_at: session.user.created_at,
+        updated_at: session.user.updated_at,
+        ...userData
+      });
+
+      hasCompletedRef.current = true;
+      setStatus("success");
+      debugLog('Auth flow completed successfully');
+    };
+
+    checkAuth();
+  }, [router, setUser]);
+
+  const handleProfileRedirect = () => {
+    router.push("/user/edit");
+  };
+
+  if (status === "loading") {
     return (
       <div className={styles.container}>
         <Loading />
@@ -189,12 +186,11 @@ export default function Callback() {
   return (
     <div className={styles.container}>
       <div className={styles.messageContainer}>
-        {status === 'success' ? (
+        {status === "success" ? (
           <>
-            <h1>認証に成功しました</h1>
-            <p>プロフィール設定ページに移動します</p>
+            <p>認証に成功しました</p>
             <div className={styles.buttonContainer}>
-              <button onClick={() => router.push('/user/edit?setup=true')} className={styles.button}>
+              <button onClick={handleProfileRedirect} className={styles.button}>
                 プロフィール設定へ
               </button>
             </div>
@@ -204,7 +200,10 @@ export default function Callback() {
             <h1>認証に失敗しました</h1>
             <p>{error}</p>
             <div className={styles.buttonContainer}>
-              <button onClick={() => router.push('/login')} className={styles.button}>
+              <button
+                onClick={() => router.push("/login")}
+                className={styles.button}
+              >
                 ログインページへ
               </button>
             </div>

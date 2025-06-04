@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { Modal } from '@/app/components/common/Modal/Modal';
-import { Ingredient } from '@/app/types/index';
+import { Ingredient, Unit } from '@/app/types/index';
 import styles from './IngredientSelectorModal.module.scss';
 import Image from 'next/image';
 import { imageBaseUrl } from '@/app/utils/api';
+import CategoryCard from '@/app/components/ui/Cards/CategoryCard/CategoryCard';
+import RecipeCreationIngredientCard from '@/app/components/ui/Cards/RecipeCreationIngredientCard/RecipeCreationIngredientCard';
 
 interface IngredientSelectorModalProps {
   isOpen: boolean;
   onClose: () => void;
   ingredients: Ingredient[];
-  selectedIngredients: { id: number; amount: number }[];
-  onSelect: (ingredients: { id: number; amount: number }[]) => void;
+  selectedIngredients: { id: number; amount: number; unit?: string }[];
+  onSelect: (ingredients: { id: number; amount: number; unit?: string }[]) => void;
 }
 
 export const IngredientSelectorModal = ({
@@ -35,152 +37,111 @@ export const IngredientSelectorModal = ({
     return matchesSearch && matchesGenre;
   });
 
-  const handleIngredientSelect = (ingredient: Ingredient) => {
-    const isSelected = selectedIngredients.some((si) => si.id === ingredient.id);
-    let newSelectedIngredients;
-
-    if (isSelected) {
-      newSelectedIngredients = selectedIngredients.filter(
-        (si) => si.id !== ingredient.id
-      );
-    } else {
-      // presenceタイプの材料の場合は数量を1に固定
-      const initialAmount = ingredient.unit.type === 'presence' ? 1 : 1;
-      newSelectedIngredients = [
-        ...selectedIngredients,
-        { id: ingredient.id, amount: initialAmount },
-      ];
-    }
-
-    onSelect(newSelectedIngredients);
-  };
-
-  const handleAmountChange = (id: number, amount: number) => {
+  const handleQuantityChange = (id: number, delta: number) => {
     const ingredient = ingredients.find(ing => ing.id === id);
     if (!ingredient) return;
 
-    // presenceタイプの材料の場合は数量調整を無効
-    if (ingredient.unit.type === 'presence') return;
+    const currentAmount = selectedIngredients.find(si => si.id === id)?.amount || 0;
+    const newAmount = Math.max(0, currentAmount + delta * ingredient.unit.step);
 
-    if (amount === 0) {
+    if (newAmount === 0) {
       // 数量が0になったら具材を削除
-      const newSelectedIngredients = selectedIngredients.filter(
-        (si) => si.id !== id
-      );
+      const newSelectedIngredients = selectedIngredients.filter(si => si.id !== id);
       onSelect(newSelectedIngredients);
     } else {
-      // 数量を更新
-      const newSelectedIngredients = selectedIngredients.map((si) =>
-        si.id === id ? { ...si, amount } : si
+      // 数量を更新または新規追加
+      const existingIngredient = selectedIngredients.find(si => si.id === id);
+      if (existingIngredient) {
+        const newSelectedIngredients = selectedIngredients.map(si =>
+          si.id === id ? { ...si, amount: newAmount } : si
+        );
+        onSelect(newSelectedIngredients);
+      } else {
+        onSelect([...selectedIngredients, { id, amount: newAmount, unit: ingredient.unit.name }]);
+      }
+    }
+  };
+
+  const handleUnitChange = (ingredientId: number, unit: string, callback?: () => void) => {
+
+    const ingredient = ingredients.find(ing => ing.id === ingredientId);
+    if (!ingredient) return;
+
+    const existingIngredient = selectedIngredients.find(ing => ing.id === ingredientId);
+    if (existingIngredient) {
+      // 既に選択されている具材の単位を更新し、数量も1にリセット
+      const updatedIngredients = selectedIngredients.map(ing =>
+        ing.id === ingredientId ? { ...ing, unit, amount: 1 } : ing
       );
-      onSelect(newSelectedIngredients);
+      onSelect(updatedIngredients);
+    } else {
+      // 選択されていない具材の場合、デフォルトの数量（1）で追加
+      onSelect([...selectedIngredients, { id: ingredientId, amount: 1, unit }]);
+    }
+
+    // コールバックが存在する場合は実行
+    if (callback) {
+      callback();
     }
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <div className={styles.modal__header}>
-        <h2 className={styles.modal__header__title}>材料を選択</h2>
-        <button onClick={onClose} className={styles.modal__header__close}>
+      <div className={styles.modal_block__header}>
+        <h2 className={styles.modal_block__header__title}>材料を選択</h2>
+        <button onClick={onClose} className={styles.modal_block__header__close}>
           ✕
         </button>
       </div>
-      <div className={styles.modal__search}>
+      <div className={styles.modal_block__search}>
         <input
           type="text"
           placeholder="材料を検索..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className={styles.modal__search__input}
+          className={styles.modal_block__search_input}
         />
-        <div className={styles.modal__genre}>
-          <button
-            className={`${styles.modal__genre__button} ${selectedGenre === null ? styles['modal__genre__button--active'] : ''}`}
-            onClick={() => setSelectedGenre(null)}
-          >
-            すべて
-          </button>
-          {genres.map((genre) => (
-            <button
-              key={genre.id}
-              className={`${styles.modal__genre__button} ${selectedGenre === genre.id ? styles['modal__genre__button--active'] : ''}`}
-              onClick={() => setSelectedGenre(genre.id)}
-            >
-              {genre.name}
-            </button>
-          ))}
+        <div className={styles.modal_block__genre}>
+          <h2 className={styles.modal_block__genre_title}>カテゴリー</h2>
+          <div className={styles.modal_block__genre_content}>
+            <CategoryCard
+              genre={{ id: 0, name: "すべて" }}
+              onClick={() => setSelectedGenre(null)}
+              isSelected={selectedGenre === null}
+            />
+            {genres.map((genre) => (
+              <CategoryCard
+                key={genre.id}
+                genre={genre}
+                onClick={() => setSelectedGenre(genre.id)}
+                isSelected={selectedGenre === genre.id}
+              />
+            ))}
+          </div>
         </div>
       </div>
-      <div className={styles.modal__list}>
-        {filteredIngredients.map((ingredient) => {
-          const isSelected = selectedIngredients.some(
-            (si) => si.id === ingredient.id
-          );
-          const selectedIngredient = selectedIngredients.find(
-            (si) => si.id === ingredient.id
-          );
+      <div className={styles.modal_block__ingredients}>
+        <h2 className={styles.modal_block__ingredients_title}>材料</h2>
+        <div className={styles.modal_block__ingredients_content}>
+          {filteredIngredients.map((ingredient) => {
+            const isSelected = selectedIngredients.some(si => si.id === ingredient.id);
+            const selectedIngredient = selectedIngredients.find(si => si.id === ingredient.id);
+            const quantity = selectedIngredient?.amount || 0;
+            const selectedUnit = selectedIngredient?.unit || ingredient.unit.name;
 
-          return (
-            <div
-              key={ingredient.id}
-              className={`${styles.modal_ingredient} ${
-                isSelected ? styles['modal_ingredient--selected'] : ''
-              }`}
-              onClick={() => handleIngredientSelect(ingredient)}
-            >
-              <div className={styles.modal_ingredient__image}>
-                <Image
-                  src={
-                    ingredient.imageUrl
-                      ? `${imageBaseUrl}/${ingredient.imageUrl}`
-                      : "/pic_recipe_default.webp"
-                  }
-                  alt={ingredient.name}
-                  width={80}
-                  height={80}
-                />
-              </div>
-              <div className={styles.modal_ingredient__info}>
-                <span className={styles.modal_ingredient__name}>{ingredient.name}</span>
-              </div>
-              {isSelected && (
-                <div className={styles.modal_ingredient__controls}>
-                  {ingredient.unit.type !== 'presence' && (
-                    <>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAmountChange(ingredient.id, (selectedIngredient?.amount || 0) + ingredient.unit.step);
-                        }}
-                        className={`${styles.modal_ingredient__button} ${styles['modal_ingredient__button--plus']}`}
-                        aria-label={`${ingredient.name}を増やす`}
-                      />
-                      <span className={styles.modal_ingredient__quantity}>
-                        {Number.isInteger(selectedIngredient?.amount)
-                          ? selectedIngredient?.amount
-                          : Number(selectedIngredient?.amount).toFixed(1)}
-                        {ingredient.unit.name}
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAmountChange(ingredient.id, Math.max(0, (selectedIngredient?.amount || 0) - ingredient.unit.step));
-                        }}
-                        className={`${styles.modal_ingredient__button} ${styles['modal_ingredient__button--minus']}`}
-                        aria-label={`${ingredient.name}を減らす`}
-                      />
-                    </>
-                  )}
-                  {ingredient.unit.type === 'presence' && (
-                    <span className={styles.modal_ingredient__quantity}>
-                      {ingredient.unit.name}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
+            return (
+              <RecipeCreationIngredientCard
+                key={ingredient.id}
+                ingredient={ingredient}
+                isSelected={isSelected}
+                quantity={quantity}
+                onQuantityChange={handleQuantityChange}
+                onUnitChange={handleUnitChange}
+                selectedUnit={selectedUnit}
+              />
+            );
+          })}
+        </div>
       </div>
     </Modal>
   );

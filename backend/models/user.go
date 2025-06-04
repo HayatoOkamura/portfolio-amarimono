@@ -1,7 +1,6 @@
 package models
 
 import (
-	"log"
 	"time"
 
 	"gorm.io/gorm"
@@ -36,7 +35,6 @@ func GetUserByID(db *gorm.DB, id string) (*User, error) {
 	var user User
 	err := db.First(&user, "id = ?", id).Error
 	if err != nil {
-		log.Printf("Error getting user by ID: %v", err)
 		return nil, err
 	}
 	return &user, nil

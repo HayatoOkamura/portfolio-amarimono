@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -46,21 +45,14 @@ func (h *AdminHandler) ListIngredients(c *gin.Context) {
 		return
 	}
 
-	// 取得したデータをログに出力
-	for _, ingredient := range ingredients {
-		log.Printf("🔍 Ingredient: %+v", ingredient)
-	}
-
 	c.JSON(http.StatusOK, ingredients)
 }
 
 // AddIngredient /admin/ingredients(POST) 具材を追加
 func (h *AdminHandler) AddIngredient(c *gin.Context) {
-	log.Println("⭐️=== AddIngredient Handler Start ===")
 	// 名前を受け取る
 	name := c.PostForm("name")
 	if name == "" {
-		log.Println("Error: Name is missing")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Name is required"})
 		return
 	}
@@ -70,7 +62,6 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	var nutrition models.NutritionInfo
 	if nutritionJSON != "" {
 		if err := json.Unmarshal([]byte(nutritionJSON), &nutrition); err != nil {
-			log.Printf("Error parsing nutrition data: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nutrition format"})
 			return
 		}
@@ -79,7 +70,6 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	// ジャンルIDを受け取る
 	genreID := c.PostForm("genre_id")
 	if genreID == "" {
-		log.Println("Error: Genre ID is missing")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Genre ID is required"})
 		return
 	}
@@ -87,7 +77,6 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	// ジャンルIDを数値に変換
 	genreIDInt, err := strconv.Atoi(genreID)
 	if err != nil {
-		log.Println("Error: Invalid genre ID format")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre ID format"})
 		return
 	}
@@ -95,7 +84,6 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	// ジャンルが存在するか確認
 	var genre models.IngredientGenre
 	if err := h.DB.Where("id = ?", genreIDInt).First(&genre).Error; err != nil {
-		log.Println("Error: Genre not found:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre"})
 		return
 	}
@@ -124,7 +112,6 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	// ファイルを受け取る
 	file, err := c.FormFile("image")
 	if err != nil {
-		log.Println("Error: Image file is missing:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Image file is required"})
 		return
 	}
@@ -145,14 +132,12 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	}
 
 	if count > 0 {
-		log.Println("Error: Ingredient already exists")
 		c.JSON(http.StatusConflict, gin.H{"error": "Ingredient already exists"})
 		return
 	}
 
 	// 新規具材を追加
 	if err := h.DB.Create(&ingredient).Error; err != nil {
-		log.Printf("Error creating ingredient: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add ingredient"})
 		return
 	}
@@ -160,7 +145,6 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	// 画像を保存
 	imagePath, err := utils.SaveImage(c, file, "ingredients", fmt.Sprintf("%d", ingredient.ID))
 	if err != nil {
-		log.Printf("Error saving image: %v", err)
 		// 画像の保存に失敗した場合は具材を削除
 		h.DB.Delete(&ingredient)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
@@ -169,8 +153,7 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 
 	// 画像のパスを更新
 	ingredient.ImageUrl = imagePath
-	if err := h.DB.Save(&ingredient).Error; err != nil {
-		log.Printf("Error updating ingredient with image path: %v", err)
+	if err := h.DB.Save(&ingredient).Error; err != nil {	
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update ingredient with image path"})
 		return
 	}
@@ -185,7 +168,6 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	// レスポンスにジャンル情報を含める
 	ingredient.Genre = ingredientGenre
 
-	log.Println("Ingredient added successfully:", ingredient)
 	c.JSON(http.StatusCreated, gin.H{"message": "Ingredient added successfully", "ingredient": ingredient})
 }
 
@@ -214,7 +196,6 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 	var nutrition models.NutritionInfo
 	if nutritionJSON != "" {
 		if err := json.Unmarshal([]byte(nutritionJSON), &nutrition); err != nil {
-			log.Printf("Error parsing nutrition data: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nutrition format"})
 			return
 		}
@@ -242,7 +223,6 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 
 	// 画像ファイルの処理（選択されていない場合はスキップ）
 	file, err := c.FormFile("image")
-	log.Println("file💩", file)
 	if err == nil { // 画像が選択された場合のみ処理
 		// SaveImage関数を使用して画像を保存
 		imagePath, err := utils.SaveImage(c, file, "ingredients", id)
@@ -255,7 +235,6 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 	} else {
 		// 画像が選択されていない場合は、既存のimageUrlを使用
 		imageUrl := c.PostForm("image_url")
-		log.Println("imageUrl💩", imageUrl)
 		if imageUrl != "" {
 			ingredient.ImageUrl = imageUrl
 		}
@@ -268,8 +247,6 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 	if nutritionJSON != "" {
 		ingredient.Nutrition = nutrition
 	}
-
-	log.Println("ingredient💩", ingredient)
 
 	// データベースを更新
 	if err := h.DB.Save(&ingredient).Error; err != nil {
@@ -306,7 +283,6 @@ func (h *AdminHandler) DeleteIngredient(c *gin.Context) {
 	// 画像が存在する場合は削除
 	if ingredient.ImageUrl != "" {
 		if err := utils.DeleteImage(ingredient.ImageUrl); err != nil {
-			log.Printf("Warning: Failed to delete image: %v", err)
 			// 画像の削除に失敗しても具材の削除は続行
 		}
 	}
@@ -330,16 +306,10 @@ func (h *AdminHandler) ListRecipes(c *gin.Context) {
 		FAQ string `gorm:"column:faq"`
 	}
 	if err := h.DB.Raw("SELECT id, faq FROM recipes").Scan(&rawFAQData).Error; err != nil {
-		log.Printf("❌ Error fetching raw FAQ data: %v", err)
 	} else {
-		for _, data := range rawFAQData {
-			log.Printf("📝 Recipe ID: %s, Raw FAQ data: %s", data.ID, data.FAQ)
-		}
 	}
 
 	if err := h.DB.Preload("Genre").Preload("Ingredients.Ingredient.Unit").Preload("Reviews").Find(&recipes).Error; err != nil {
-		log.Printf("❌ Error fetching recipes: %v", err)
-		log.Printf("❌ Error details: %+v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes", "details": err.Error()})
 		return
 	}
@@ -349,49 +319,39 @@ func (h *AdminHandler) ListRecipes(c *gin.Context) {
 
 // AddRecipe /admin/recipes(POST) レシピを追加
 func (h *AdminHandler) AddRecipe(c *gin.Context) {
-	log.Printf("🔍 AddRecipe handler called")
 
 	// フォームデータの取得
 	form, err := c.MultipartForm()
 	if err != nil {
-		log.Printf("❌ Error getting multipart form: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
 		return
 	}
 
 	// ユーザーIDの取得とログ
 	userID := form.Value["user_id"]
-	log.Printf("🔍 User ID from form: %v", userID)
 
 	// レシピ名の取得とログ
 	name := form.Value["name"]
-	log.Printf("🔍 Recipe name: %v", name)
 
 	// ジャンルIDの取得とログ
 	genreID := form.Value["genre_id"]
-	log.Printf("🔍 Genre ID: %v", genreID)
 
 	// 具材データの取得とログ
 	ingredientsJSON := form.Value["ingredients"]
-	log.Printf("🔍 Ingredients data: %v", ingredientsJSON)
 
 	// 手順データの取得とログ
 	instructionsJSON := form.Value["instructions"]
-	log.Printf("🔍 Instructions data: %v", instructionsJSON)
 
 	// 栄養素データの取得とログ
 	nutritionJSON := form.Value["nutrition"]
-	log.Printf("🔍 Nutrition data: %v", nutritionJSON)
 
 	// FAQデータの取得とログ
 	faqJSON := form.Value["faq"]
-	log.Printf("🔍 FAQ data: %v", faqJSON)
 
 	// データのパース
 	var instructions models.JSONBInstructions
 	if len(instructionsJSON) > 0 {
 		if err := json.Unmarshal([]byte(instructionsJSON[0]), &instructions); err != nil {
-			log.Printf("❌ Error parsing instructions: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instructions format"})
 			return
 		}
@@ -400,7 +360,6 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	var ingredients []models.RecipeIngredient
 	if len(ingredientsJSON) > 0 {
 		if err := json.Unmarshal([]byte(ingredientsJSON[0]), &ingredients); err != nil {
-			log.Printf("❌ Error parsing ingredients: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ingredients format"})
 			return
 		}
@@ -409,7 +368,6 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	var nutrition models.NutritionInfo
 	if len(nutritionJSON) > 0 {
 		if err := json.Unmarshal([]byte(nutritionJSON[0]), &nutrition); err != nil {
-			log.Printf("❌ Error parsing nutrition: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nutrition format"})
 			return
 		}
@@ -418,7 +376,6 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	var faq models.JSONBFaq
 	if len(faqJSON) > 0 {
 		if err := json.Unmarshal([]byte(faqJSON[0]), &faq); err != nil {
-			log.Printf("❌ Error parsing FAQ: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid FAQ format"})
 			return
 		}
@@ -444,7 +401,6 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	// トランザクションの開始
 	tx := h.DB.Begin()
 	if tx.Error != nil {
-		log.Printf("❌ Error starting transaction: %v", tx.Error)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
 		return
 	}
@@ -452,7 +408,6 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	// データベースへの保存
 	if err := tx.Create(&recipe).Error; err != nil {
 		tx.Rollback()
-		log.Printf("❌ Error creating recipe: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create recipe"})
 		return
 	}
@@ -460,11 +415,9 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	// 画像ファイルの取得とログ
 	files := form.File["image"]
 	if len(files) > 0 {
-		log.Printf("🔍 Image file received: %s", files[0].Filename)
 		// 画像を保存
 		imagePath, err := utils.SaveRecipeImage(c, files[0], recipe.ID.String(), false)
 		if err != nil {
-			log.Printf("❌ Error saving image: %v", err)
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
 			return
@@ -472,29 +425,24 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 		recipe.MainImage = imagePath
 		if err := tx.Save(&recipe).Error; err != nil {
 			tx.Rollback()
-			log.Printf("❌ Error updating recipe with image path: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update recipe with image path"})
 			return
 		}
 	} else {
-		log.Printf("⚠️ No image file received")
 	}
 
 	// 手順の画像ファイルの処理
 	for i := range instructions {
 		fileKey := fmt.Sprintf("instruction_image_%d", i)
 		if imageFile, err := c.FormFile(fileKey); err == nil {
-			log.Printf("🔍 Instruction image file received for step %d: %s", i, imageFile.Filename)
 			// 画像を保存
 			imagePath, err := utils.SaveRecipeImage(c, imageFile, recipe.ID.String(), true)
 			if err != nil {
-				log.Printf("❌ Error saving instruction image: %v", err)
 				tx.Rollback()
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save instruction image"})
 				return
 			}
 			instructions[i].ImageURL = imagePath
-			log.Printf("✅ Saved instruction image for step %d: %s", i, imagePath)
 		}
 	}
 
@@ -502,7 +450,6 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	recipe.Instructions = instructions
 	if err := tx.Save(&recipe).Error; err != nil {
 		tx.Rollback()
-		log.Printf("❌ Error updating recipe with instructions: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update recipe with instructions"})
 		return
 	}
@@ -510,12 +457,10 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	// トランザクションのコミット
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()
-		log.Printf("❌ Error committing transaction: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
 		return
 	}
 
-	log.Printf("✅ Recipe created successfully with ID: %s", recipe.ID)
 	c.JSON(http.StatusOK, gin.H{"recipe": recipe})
 }
 
@@ -523,7 +468,6 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 func parseInt(s string) int {
 	i, err := strconv.Atoi(s)
 	if err != nil {
-		log.Printf("⚠️ Error parsing integer: %v", err)
 		return 0
 	}
 	return i
@@ -532,7 +476,6 @@ func parseInt(s string) int {
 func parseUUID(s string) *uuid.UUID {
 	id, err := uuid.Parse(s)
 	if err != nil {
-		log.Printf("⚠️ Error parsing UUID: %v", err)
 		return nil
 	}
 	return &id
@@ -541,7 +484,6 @@ func parseUUID(s string) *uuid.UUID {
 func parseBool(s string) bool {
 	b, err := strconv.ParseBool(s)
 	if err != nil {
-		log.Printf("⚠️ Error parsing boolean: %v", err)
 		return false
 	}
 	return b
@@ -576,7 +518,6 @@ func (h *AdminHandler) DeleteRecipe(c *gin.Context) {
 	// メイン画像の削除
 	if recipe.MainImage != "" {
 		if err := utils.DeleteImage(recipe.MainImage); err != nil {
-			log.Printf("Warning: Failed to delete main image: %v", err)
 			// 画像の削除に失敗してもレシピの削除は続行
 		}
 	}
@@ -585,7 +526,6 @@ func (h *AdminHandler) DeleteRecipe(c *gin.Context) {
 	for _, instruction := range recipe.Instructions {
 		if instruction.ImageURL != "" {
 			if err := utils.DeleteImage(instruction.ImageURL); err != nil {
-				log.Printf("Warning: Failed to delete instruction image: %v", err)
 				// 画像の削除に失敗してもレシピの削除は続行
 			}
 		}
@@ -646,9 +586,6 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 
 	// is_draftの取得と設定
 	isDraft := c.PostForm("is_draft") == "true"
-	log.Printf("📝 Received is_draft value: %v", c.PostForm("is_draft"))
-	log.Printf("📝 Parsed isDraft value: %v", isDraft)
-	log.Printf("📝 isDraft is false: %v", !isDraft)
 	recipe.IsDraft = isDraft
 
 	// ジャンルが存在するか確認
@@ -702,7 +639,6 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instructions format"})
 			return
 		}
-		log.Printf("📝 Processing instructions: %+v", tempInstructions)
 		for i := range tempInstructions {
 			// 新しい画像ファイルの処理
 			fileKey := fmt.Sprintf("instruction_image_%d", i)
@@ -712,29 +648,24 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 					c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Instruction image %d size exceeds 10MB limit", i)})
 					return
 				}
-				log.Printf("📝 Found new image file for instruction %d: %s", i, imageFile.Filename)
 				imageURL, err := utils.SaveRecipeImage(c, imageFile, recipe.ID.String(), true)
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save instruction image"})
 					return
 				}
-				log.Printf("📝 Saved new image for instruction %d: %s", i, imageURL)
 				tempInstructions[i].ImageURL = imageURL
 			} else {
 				// 既存の画像URLの処理
 				imageURLKey := fmt.Sprintf("instruction_image_url_%d", i)
 				if existingImageURL := c.PostForm(imageURLKey); existingImageURL != "" {
-					log.Printf("📝 Processing existing image URL for instruction %d: %s", i, existingImageURL)
 					// SupabaseのURLから相対パスを抽出
 					re := regexp.MustCompile(`/storage/v1/object/public/images/(.+)`)
 					matches := re.FindStringSubmatch(existingImageURL)
 					if len(matches) > 1 {
 						tempInstructions[i].ImageURL = matches[1]
-						log.Printf("📝 Extracted relative path: %s", matches[1])
 					} else {
 						// URL形式でない場合はそのまま使用
 						tempInstructions[i].ImageURL = existingImageURL
-						log.Printf("📝 Using original URL: %s", existingImageURL)
 					}
 				}
 			}
@@ -755,7 +686,6 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 	// 栄養情報の標準値を取得
 	var standard models.NutritionStandard
 	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
-		log.Printf("Failed to fetch nutrition standard: %v", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
 		return
 	}
@@ -812,7 +742,6 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 	if faqJSON != "" {
 		var faqData models.JSONBFaq
 		if err := json.Unmarshal([]byte(faqJSON), &faqData); err != nil {
-			log.Printf("❌ Error parsing FAQ data: %v", err)
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid FAQ format"})
 			return
@@ -823,25 +752,21 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 	updates["nutrition"] = recipe.Nutrition
 	updates["is_draft"] = isDraft
 
-	log.Printf(" Updates map: %+v", updates)
 
 	// レシピの更新を実行
 	if err := tx.Model(&recipe).Updates(updates).Error; err != nil {
 		tx.Rollback()
-		log.Printf("❌ Error updating recipe: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update recipe"})
 		return
 	}
 
 	// ingredients の更新
 	ingredientsJSON := c.PostForm("ingredients")
-	log.Printf("📝 Raw ingredients JSON from request: %s", ingredientsJSON)
 
 	if ingredientsJSON != "" {
 		var tempIngredients []TempIngredient
 
 		if err := json.Unmarshal([]byte(ingredientsJSON), &tempIngredients); err != nil {
-			log.Printf("❌ Error parsing ingredients JSON: %v", err)
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ingredients format"})
 			return
@@ -849,7 +774,6 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 
 		// 既存のrecipe_ingredientsを削除
 		if err := tx.Where("recipe_id = ?", recipe.ID).Delete(&models.RecipeIngredient{}).Error; err != nil {
-			log.Printf("❌ Error deleting existing recipe ingredients: %v", err)
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete existing ingredients"})
 			return
@@ -871,7 +795,6 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 		// 具材データが空でない場合のみ更新を実行
 		if len(recipeIngredients) > 0 {
 			if err := tx.Create(&recipeIngredients).Error; err != nil {
-				log.Printf("❌ Error creating recipe ingredients: %v", err)
 				tx.Rollback()
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update ingredients"})
 				return
@@ -894,7 +817,6 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 
 	// 栄養情報の標準値を取得（既存のstandard変数を使用）
 	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
-		log.Printf("Failed to fetch nutrition standard: %v", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
 		return
 	}
@@ -912,8 +834,6 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 	updatedRecipe.NutritionPercentage = updatedNutritionPercentage
 
 	// 更新後のレシピのisDraft値を確認
-	log.Printf("📝 Final recipe isDraft value: %v", updatedRecipe.IsDraft)
-	log.Printf(" Updated recipe: %+v", updatedRecipe)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Recipe updated successfully", "recipe": updatedRecipe})
 }
@@ -961,11 +881,9 @@ func (h *AdminHandler) ListUnits(c *gin.Context) {
 
 // SaveDraftRecipe 下書きレシピを保存
 func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
-	log.Println("🔥 Starting SaveDraftRecipe")
 
 	// RedisClientのnilチェック
 	if h.RedisClient == nil {
-		log.Println("❌ Redis client is not initialized")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Redis client not initialized"})
 		return
 	}
@@ -973,11 +891,9 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 	// リクエストボディの内容を確認
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		log.Printf("❌ Error reading request body: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body", "details": err.Error()})
 		return
 	}
-	log.Printf("📦 Raw request body: %s", string(body))
 
 	// リクエストボディを元に戻す（後でShouldBindJSONで使用するため）
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
@@ -989,8 +905,6 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&draftRecipe); err != nil {
-		log.Printf("❌ Error binding JSON: %v", err)
-		log.Printf("❌ Request headers: %+v", c.Request.Header)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Invalid request format",
 			"details": err.Error(),
@@ -999,26 +913,22 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 	}
 
 	if draftRecipe.UserID == "" {
-		log.Println("❌ UserID is required")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "UserID is required"})
 		return
 	}
 
 	// nutritionデータの存在確認とログ出力
 	if nutrition, exists := draftRecipe.RecipeData["nutrition"]; exists {
-		log.Printf("📊 Nutrition data found: %+v", nutrition)
 		// nutritionデータが正しい形式であることを確認
 		if nutritionMap, ok := nutrition.(map[string]interface{}); ok {
 			requiredFields := []string{"calories", "carbohydrates", "fat", "protein", "salt"}
 			for _, field := range requiredFields {
 				if _, exists := nutritionMap[field]; !exists {
-					log.Printf("⚠️ Missing required nutrition field: %s", field)
 					// デフォルト値を設定
 					nutritionMap[field] = 0
 				}
 			}
 		} else {
-			log.Printf("⚠️ Nutrition data is not in the expected format: %+v", nutrition)
 			// デフォルトの栄養データを設定
 			draftRecipe.RecipeData["nutrition"] = map[string]interface{}{
 				"calories":      0,
@@ -1029,7 +939,6 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 			}
 		}
 	} else {
-		log.Println("⚠️ No nutrition data found in recipe data")
 		// デフォルトの栄養データを設定
 		draftRecipe.RecipeData["nutrition"] = map[string]interface{}{
 			"calories":      0,
@@ -1039,8 +948,6 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 			"salt":          0,
 		}
 	}
-
-	log.Printf("✅ Processed draft recipe: %+v", draftRecipe)
 
 	// トランザクション開始
 	tx := h.DB.Begin()
@@ -1064,7 +971,6 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 
 	// nutritionデータの設定
 	if nutrition, ok := draftRecipe.RecipeData["nutrition"].(map[string]interface{}); ok {
-		log.Printf("👑Received nutrition data: %+v", nutrition)
 		recipe.Nutrition = models.NutritionInfo{
 			Calories:      nutrition["calories"].(float64),
 			Carbohydrates: nutrition["carbohydrates"].(float64),
@@ -1072,12 +978,10 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 			Protein:       nutrition["protein"].(float64),
 			Salt:          nutrition["salt"].(float64),
 		}
-		log.Printf("👑Converted nutrition data: %+v", recipe.Nutrition)
 	}
 
 	// レシピIDが存在する場合は更新、存在しない場合は新規作成
 	if recipeID, exists := draftRecipe.RecipeData["id"].(string); exists && recipeID != "" {
-		log.Printf("📝 Updating existing recipe with ID: %s", recipeID)
 
 		// 更新用のデータを準備
 		updates := map[string]interface{}{
@@ -1095,24 +999,20 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 		// 既存のレシピを更新
 		if err := tx.Model(&models.Recipe{}).Where("id = ?", recipeID).Updates(updates).Error; err != nil {
 			tx.Rollback()
-			log.Printf("❌ Error updating recipe: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update recipe"})
 			return
 		}
 
 		// 更新後のレシピを取得
 		if err := tx.Where("id = ?", recipeID).First(&recipe).Error; err != nil {
-			tx.Rollback()
-			log.Printf("❌ Error fetching updated recipe: %v", err)
+			tx.Rollback()	
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated recipe"})
 			return
 		}
 	} else {
-		log.Println("📝 Creating new recipe")
 		// 新規レシピの作成
 		if err := tx.Create(&recipe).Error; err != nil {
 			tx.Rollback()
-			log.Printf("❌ Error creating new recipe: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create new recipe"})
 			return
 		}
@@ -1121,7 +1021,6 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 	// 既存のingredientsを削除
 	if err := tx.Where("recipe_id = ?", recipe.ID).Delete(&models.RecipeIngredient{}).Error; err != nil {
 		tx.Rollback()
-		log.Printf("❌ Error deleting existing ingredients: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete existing ingredients"})
 		return
 	}
@@ -1137,7 +1036,6 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 			}
 			if err := tx.Create(&recipeIngredient).Error; err != nil {
 				tx.Rollback()
-				log.Printf("❌ Error saving recipe ingredient: %v", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save recipe ingredients"})
 				return
 			}
@@ -1146,7 +1044,6 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 
 	// トランザクションのコミット
 	if err := tx.Commit().Error; err != nil {
-		log.Printf("❌ Error committing transaction: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
 		return
 	}
@@ -1155,56 +1052,45 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 	key := fmt.Sprintf("draft_recipe:%s", draftRecipe.UserID)
 	jsonData, err := json.Marshal(draftRecipe)
 	if err != nil {
-		log.Printf("❌ Error marshaling draft recipe: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to process draft recipe",
 			"details": err.Error(),
 		})
 		return
 	}
-	log.Printf("📦 Marshaled JSON data: %s", string(jsonData))
 
 	// Redisへの保存を試みる
 	ctx := context.Background()
 	err = h.RedisClient.Set(ctx, key, jsonData, 24*time.Hour).Err()
 	if err != nil {
-		log.Printf("❌ Error saving to Redis: %v", err)
-		log.Printf("❌ Redis key: %s", key)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to save draft recipe",
 			"details": err.Error(),
 		})
 		return
 	}
-	log.Printf("✅ Successfully saved draft recipe to Redis with key: %s", key)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Draft recipe saved successfully", "recipe": recipe})
 }
 
 // GetDraftRecipes は下書きレシピを取得するハンドラ
 func (h *AdminHandler) GetDraftRecipes(c *gin.Context) {
-	log.Println("🔥 Starting GetDraftRecipes")
 
 	// RedisClientのnilチェック
-	if h.RedisClient == nil {
-		log.Println("❌ Redis client is not initialized")
+	if h.RedisClient == nil {	
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Redis client not initialized"})
 		return
 	}
 
 	userId := c.Param("userId")
 	if userId == "" {
-		log.Println("❌ UserID is required")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "user ID is required"})
 		return
 	}
 
-	log.Printf("📦 Fetching draft recipe for user: %s", userId)
-
 	// Redisへの接続テスト
 	ctx := context.Background()
 	if err := h.RedisClient.Ping(ctx).Err(); err != nil {
-		log.Printf("❌ Redis connection error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to connect to Redis"})
 		return
 	}
@@ -1213,16 +1099,12 @@ func (h *AdminHandler) GetDraftRecipes(c *gin.Context) {
 	key := fmt.Sprintf("draft_recipe:%s", userId)
 	val, err := h.RedisClient.Get(ctx, key).Result()
 	if err == redis.Nil {
-		log.Printf("ℹ️ No draft recipe found for user: %s", userId)
 		c.JSON(http.StatusOK, gin.H{"draftRecipes": []interface{}{}})
 		return
 	} else if err != nil {
-		log.Printf("❌ Error getting draft recipe: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get draft recipes"})
 		return
 	}
-
-	log.Printf("✅ Found draft recipe: %s", val)
 
 	// JSONをパース
 	var draftRecipe struct {
@@ -1231,7 +1113,6 @@ func (h *AdminHandler) GetDraftRecipes(c *gin.Context) {
 		LastModifiedAt string                 `json:"lastModifiedAt"`
 	}
 	if err := json.Unmarshal([]byte(val), &draftRecipe); err != nil {
-		log.Printf("❌ Error parsing draft recipe: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse draft recipe"})
 		return
 	}
@@ -1240,7 +1121,6 @@ func (h *AdminHandler) GetDraftRecipes(c *gin.Context) {
 	response := gin.H{
 		"draftRecipes": []interface{}{draftRecipe},
 	}
-	log.Printf("✅ Sending response: %+v", response)
 	c.JSON(http.StatusOK, response)
 }
 
@@ -1263,25 +1143,17 @@ func (h *AdminHandler) GetRecipe(c *gin.Context) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Recipe not found"})
 		} else {
-			log.Printf("Error fetching recipe: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipe"})
 		}
 		return
 	}
 
-	// デバッグログ：レシピの栄養情報
-	log.Printf("Recipe nutrition: %+v", recipe.Nutrition)
-
 	// 栄養情報の標準値を取得
 	var standard models.NutritionStandard
-	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
-		log.Printf("Failed to fetch nutrition standard: %v", err)
+	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {	
 		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
 		return
 	}
-
-	// デバッグログ：標準値
-	log.Printf("Nutrition standard: %+v", standard)
 
 	// 栄養素の割合を計算
 	nutritionPercentage := map[string]float64{
@@ -1292,14 +1164,8 @@ func (h *AdminHandler) GetRecipe(c *gin.Context) {
 		"salt":          (float64(recipe.Nutrition.Salt) / standard.Salt) * 100,
 	}
 
-	// デバッグログ：計算された栄養素の割合
-	log.Printf("💩Calculated nutrition percentage: %+v", nutritionPercentage)
-
 	// Recipe structのNutritionPercentageフィールドに設定
 	recipe.NutritionPercentage = nutritionPercentage
-
-	// デバッグログ：最終的なレシピデータ
-	log.Printf("Final recipe data: %+v", recipe)
 
 	c.JSON(http.StatusOK, recipe)
 }

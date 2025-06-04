@@ -90,8 +90,6 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
     throw new Error("Recipe data is null or undefined");
   }
 
-  console.log("mapRecipe💩", recipe);
-
   const defaultNutrition = {
     calories: 0,
     carbohydrates: 0,
@@ -241,8 +239,6 @@ export const fetchRecipesService = async (): Promise<Recipe[]> => {
 
 // 具材からレシピを検索
 export const fetchRecipesAPI = async (ingredients: { id: number; quantity: number }[]) => {
-
-  console.log("fetchRecipesAPI", ingredients);
   if (ingredients.length === 0) {
     throw new Error("具材が選択されていません");
   }
@@ -273,7 +269,6 @@ export const fetchSearchRecipes = async (query: string): Promise<Recipe[]> => {
 // レシピIDで詳細を取得
 export const fetchRecipeByIdService = async (id: string) => {
   try {
-    console.log("fetchRecipeByIdService", id);
     const response = await api.get(`/admin/recipes/${id}`);
     
     if (!response.data) {
@@ -433,10 +428,8 @@ export const handleLikeService = async (
 
 // ユーザーのレシピ一覧を取得
 const fetchUserRecipes = async (userId: string) => {
-  console.log("fetchUserRecipes called with userId:", userId);
   try {
     const response = await api.get(`/api/user/recipes?userId=${userId}`);
-    console.log("fetchUserRecipes API response:", response.data);
     return mapRecipes(response.data.recipes);
   } catch (error) {
     console.error("Error in fetchUserRecipes:", error);
@@ -503,26 +496,20 @@ export const useFetchRecipesAPI = (
     refetchOnReconnect?: boolean;
   }
 ) => {
-  console.log('useFetchRecipesAPI called with:', { ingredients, options });
   
   return useQuery<Recipe[], Error>({
     queryKey: recipeKeys.list(JSON.stringify(ingredients)),
     queryFn: async () => {
-      console.log('queryFn executing with ingredients:', ingredients);
       const validIngredients = ingredients.filter(ing => {
-        console.log('Checking ingredient:', ing);
         return ing && ing.id && ing.quantity > 0;
       });
-      console.log('Valid ingredients:', validIngredients);
       
       if (validIngredients.length === 0) {
         throw new Error("具材が選択されていません");
       }
       
       try {
-        console.log('Calling fetchRecipesAPI with:', validIngredients);
         const response = await fetchRecipesAPI(validIngredients);
-        console.log('fetchRecipesAPI response:', response);
         return response;
       } catch (error) {
         console.error('Error fetching recipes:', error);

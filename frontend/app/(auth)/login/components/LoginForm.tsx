@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAuth, AuthError } from "@/app/hooks/useAuth";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import styles from "./LoginForm.module.scss";
 
 export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean; onToggleMode: () => void }) {
@@ -14,45 +14,6 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
   const [isSuccess, setIsSuccess] = useState(false);
   const { login, register, isLoggingIn, isRegistering } = useAuth();
 
-  // 認証用の本番環境のクライアントを作成
-  const prodSupabase = typeof window !== 'undefined' ? createClient(
-    process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!,
-    {
-      auth: {
-        persistSession: true,
-        storageKey: 'sb-auth-token',
-        storage: {
-          getItem: (key: string): string | null => {
-            try {
-              const cookie = document.cookie
-                .split('; ')
-                .find((row) => row.startsWith(`${key}=`));
-              return cookie ? cookie.split('=')[1] : null;
-            } catch (error) {
-              console.error('Error getting cookie:', error);
-              return null;
-            }
-          },
-          setItem: (key: string, value: string): void => {
-            try {
-              document.cookie = `${key}=${value}; path=/; max-age=3600; secure; samesite=lax`;
-            } catch (error) {
-              console.error('Error setting cookie:', error);
-            }
-          },
-          removeItem: (key: string): void => {
-            try {
-              document.cookie = `${key}=; path=/; max-age=0; secure; samesite=lax`;
-            } catch (error) {
-              console.error('Error removing cookie:', error);
-            }
-          },
-        },
-      },
-    }
-  ) : null;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
@@ -61,10 +22,7 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
     try {
       if (isLogin) {
         // ログイン処理
-        if (!prodSupabase) {
-          throw { type: 'LOGIN_FAILED', message: '認証クライアントの初期化に失敗しました' } as AuthError;
-        }
-        const { data, error } = await prodSupabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         
         if (error) {
           throw { type: 'LOGIN_FAILED', message: error.message } as AuthError;
@@ -79,6 +37,7 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${data.session.access_token}`
           },
         });
 
@@ -161,6 +120,7 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
       <button type="submit" disabled={isProcessing} className={styles.form_block__submit_button}>
         {isProcessing ? "処理中..." : isLogin ? "ログイン" : "登録"}
       </button>
+
       <div className={styles.form_block__toggle}>
         {isLogin ? (
           <p>

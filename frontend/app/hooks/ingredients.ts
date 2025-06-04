@@ -110,10 +110,6 @@ const updateIngredientService = async ({
       formData.append("image_url", data.imageUrl);
     }
 
-    console.log('Updating ingredient with ID:', id);
-    console.log('Request URL:', `/admin/ingredients/${id}`);
-    console.log('FormData contents:', Object.fromEntries(formData.entries()));
-
     const response = await api.patch(`/admin/ingredients/${id}`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",

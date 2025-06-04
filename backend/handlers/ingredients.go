@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -37,11 +36,9 @@ func (h *IngredientHandler) ListIngredients(c *gin.Context) {
 
 // AddIngredient 具材を追加
 func (h *IngredientHandler) AddIngredient(c *gin.Context) {
-	log.Println("⭐️=== AddIngredient Handler Start ===")
 	// 名前を受け取る
 	name := c.PostForm("name")
 	if name == "" {
-		log.Println("Error: Name is missing")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Name is required"})
 		return
 	}
@@ -49,7 +46,6 @@ func (h *IngredientHandler) AddIngredient(c *gin.Context) {
 	// ジャンルIDを受け取る
 	genreID := c.PostForm("genre_id")
 	if genreID == "" {
-		log.Println("Error: Genre ID is missing")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Genre ID is required"})
 		return
 	}
@@ -57,7 +53,6 @@ func (h *IngredientHandler) AddIngredient(c *gin.Context) {
 	// ジャンルIDを数値に変換
 	genreIDInt, err := strconv.Atoi(genreID)
 	if err != nil {
-		log.Println("Error: Invalid genre ID format")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre ID format"})
 		return
 	}
@@ -65,7 +60,6 @@ func (h *IngredientHandler) AddIngredient(c *gin.Context) {
 	// ジャンルが存在するか確認
 	var genre models.IngredientGenre
 	if err := h.DB.Where("id = ?", genreIDInt).First(&genre).Error; err != nil {
-		log.Println("Error: Genre not found:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre"})
 		return
 	}
@@ -96,7 +90,7 @@ func (h *IngredientHandler) AddIngredient(c *gin.Context) {
 	var nutritionInfo models.NutritionInfo
 	if nutrition != "" {
 		if err := json.Unmarshal([]byte(nutrition), &nutritionInfo); err != nil {
-			log.Printf("Error parsing nutrition data: %v", err)
+
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nutrition format"})
 			return
 		}
@@ -105,7 +99,6 @@ func (h *IngredientHandler) AddIngredient(c *gin.Context) {
 	// ファイルを受け取る
 	file, err := c.FormFile("image")
 	if err != nil {
-		log.Println("Error: Image file is missing:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Image file is required"})
 		return
 	}
@@ -125,14 +118,12 @@ func (h *IngredientHandler) AddIngredient(c *gin.Context) {
 	}
 
 	if count > 0 {
-		log.Println("Error: Ingredient already exists")
 		c.JSON(http.StatusConflict, gin.H{"error": "Ingredient already exists"})
 		return
 	}
 
 	// 新規具材を追加
 	if err := h.DB.Create(&ingredient).Error; err != nil {
-		log.Printf("Error creating ingredient: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add ingredient"})
 		return
 	}
@@ -140,7 +131,6 @@ func (h *IngredientHandler) AddIngredient(c *gin.Context) {
 	// 画像を保存
 	imagePath, err := utils.SaveImage(c, file, "ingredients", fmt.Sprintf("%d", ingredient.ID))
 	if err != nil {
-		log.Printf("Error saving image: %v", err)
 		// 画像の保存に失敗した場合は具材を削除
 		h.DB.Delete(&ingredient)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
@@ -150,7 +140,6 @@ func (h *IngredientHandler) AddIngredient(c *gin.Context) {
 	// 画像のパスを更新
 	ingredient.ImageUrl = imagePath
 	if err := h.DB.Save(&ingredient).Error; err != nil {
-		log.Printf("Error updating ingredient with image path: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update ingredient with image path"})
 		return
 	}
@@ -165,7 +154,6 @@ func (h *IngredientHandler) AddIngredient(c *gin.Context) {
 	// レスポンスにジャンル情報を含める
 	ingredient.Genre = ingredientGenre
 
-	log.Println("Ingredient added successfully:", ingredient)
 	c.JSON(http.StatusCreated, gin.H{"message": "Ingredient added successfully", "ingredient": ingredient})
 }
 
@@ -194,8 +182,7 @@ func (h *IngredientHandler) UpdateIngredient(c *gin.Context) {
 	nutritionJSON := c.PostForm("nutrition")
 	var nutrition models.NutritionInfo
 	if nutritionJSON != "" {
-		if err := json.Unmarshal([]byte(nutritionJSON), &nutrition); err != nil {
-			log.Printf("Error parsing nutrition data: %v", err)
+		if err := json.Unmarshal([]byte(nutritionJSON), &nutrition); err != nil {	
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nutrition format"})
 			return
 		}
@@ -223,7 +210,6 @@ func (h *IngredientHandler) UpdateIngredient(c *gin.Context) {
 
 	// 画像ファイルの処理（選択されていない場合はスキップ）
 	file, err := c.FormFile("image")
-	log.Println("file💩", file)
 	if err == nil { // 画像が選択された場合のみ処理
 		// SaveImage関数を使用して画像を保存
 		imagePath, err := utils.SaveImage(c, file, "ingredients", fmt.Sprintf("%d", ingredient.ID))
@@ -236,7 +222,6 @@ func (h *IngredientHandler) UpdateIngredient(c *gin.Context) {
 	} else {
 		// 画像が選択されていない場合は、既存のimageUrlを使用
 		imageUrl := c.PostForm("image_url")
-		log.Println("imageUrl💩", imageUrl)
 		if imageUrl != "" {
 			ingredient.ImageUrl = imageUrl
 		}
@@ -249,8 +234,6 @@ func (h *IngredientHandler) UpdateIngredient(c *gin.Context) {
 	if nutritionJSON != "" {
 		ingredient.Nutrition = nutrition
 	}
-
-	log.Println("ingredient💩", ingredient)
 
 	// データベースを更新
 	if err := h.DB.Save(&ingredient).Error; err != nil {
@@ -279,7 +262,6 @@ func (h *IngredientHandler) DeleteIngredient(c *gin.Context) {
 	// 画像が存在する場合は削除
 	if ingredient.ImageUrl != "" {
 		if err := utils.DeleteImage(ingredient.ImageUrl); err != nil {
-			log.Printf("Warning: Failed to delete image: %v", err)
 			// 画像の削除に失敗しても具材の削除は続行
 		}
 	}

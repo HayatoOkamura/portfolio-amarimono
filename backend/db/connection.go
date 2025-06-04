@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -61,8 +60,6 @@ func InitDB() (*DBConfig, error) {
 	if err := sqlDB.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %v", err)
 	}
-
-	log.Println("Successfully connected to database")
 
 	// Supabaseクライアントの初期化
 	supabaseURL := os.Getenv("SUPABASE_URL")

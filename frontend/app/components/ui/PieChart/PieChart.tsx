@@ -37,17 +37,6 @@ const ResponsivePieChart = ({ value, type }: { value: number; type: NutritionTyp
   const strokeDashoffset = circumference * (1 - normalizedValue / 100);
   const color = getNutritionColor(type);
 
-  // デバッグログ
-  console.log('PieChart Debug:', {
-    value,
-    type,
-    radius,
-    circumference,
-    normalizedValue,
-    strokeDashoffset,
-    color
-  });
-
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <svg 

@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/base64"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strings"
 
@@ -33,7 +32,6 @@ func (h *AuthHandler) GetUserRole(c *gin.Context) {
 	// Authorization ヘッダーからトークンを取得
 	authHeader := c.GetHeader("Authorization")
 
-	log.Println("🔥🔥🔥authHeader", authHeader)
 	if authHeader == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
@@ -57,13 +55,11 @@ func (h *AuthHandler) GetUserRole(c *gin.Context) {
 	claims := JWTClaims{}
 	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil {
-		log.Printf("Error decoding token: %v", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "無効なトークンです"})
 		return
 	}
 
 	if err := json.Unmarshal(payload, &claims); err != nil {
-		log.Printf("Error parsing claims: %v", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "無効なトークンです"})
 		return
 	}

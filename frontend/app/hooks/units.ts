@@ -6,7 +6,7 @@ export const useUnits = () => {
   return useQuery<Unit[]>({
     queryKey: ["units"],
     queryFn: async () => {
-      const response = await fetch(`${backendUrl}/units`);
+      const response = await fetch(`${backendUrl}/admin/units`);
       if (!response.ok) {
         throw new Error("Failed to fetch units");
       }

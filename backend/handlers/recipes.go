@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 
 	"portfolio-amarimono/models"
@@ -40,25 +39,15 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 
 	// 受信したリクエストボディをログに出力
 	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		log.Printf("Failed to read request body: %v", err)
+	if err != nil {	
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-	log.Printf("🔍 Backend: Received request body: %s", string(body))
 
 	// JSONデコードを試みる
 	if err := json.Unmarshal(body, &request); err != nil {
-		log.Printf("JSON Unmarshal error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format", "details": err.Error()})
 		return
-	}
-
-	// リクエストの内容をログ出力
-	log.Printf("🔍 Backend: Parsed request:")
-	log.Printf("  - Ingredients:")
-	for i, ing := range request {
-		log.Printf("    [%d] ID: %d, Quantity: %.2f", i, ing.IngredientID, ing.QuantityRequired)
 	}
 
 	// 選択された具材のマップを作成（IDをキーとして、数量を値として）
@@ -76,12 +65,9 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		Where("ingredient_id IN ?", ingredientIDs).
 		Group("recipe_id").
 		Pluck("recipe_id", &recipeIDs).Error; err != nil {
-		log.Printf("Failed to fetch recipe IDs: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query failed", "details": err.Error()})
 		return
 	}
-
-	log.Printf("🔍 Backend: Found recipe IDs: %v", recipeIDs)
 
 	// レシピと関連具材をロード（下書きを除外）
 	var recipes []models.Recipe
@@ -92,17 +78,13 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		Preload("Reviews").
 		Where("id IN ? AND is_draft = ?", recipeIDs, false).
 		Find(&recipes).Error; err != nil {
-		log.Printf("Failed to fetch recipes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query failed", "details": err.Error()})
 		return
 	}
 
-	log.Printf("🔍 Backend: Found %d potential recipes", len(recipes))
-
 	// 栄養情報の標準値を取得
 	var standard models.NutritionStandard
 	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
-		log.Printf("Failed to fetch nutrition standard: %v", err)
 		// 標準値が見つからない場合はデフォルト値を設定
 		standard = models.NutritionStandard{
 			AgeGroup:      "18-29",
@@ -122,16 +104,6 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		allIngredientsMatch := true
 		missingIngredients := make(map[int]float64)
 
-		log.Printf("🔍 Backend: Checking recipe: %s (ID: %s)", recipe.Name, recipe.ID)
-		log.Printf("  - Recipe ingredients:")
-		for _, recipeIng := range recipe.Ingredients {
-			log.Printf("    * %s (ID: %d, Unit: %s, Required: %.2f)",
-				recipeIng.Ingredient.Name,
-				recipeIng.IngredientID,
-				recipeIng.Ingredient.Unit.Name,
-				recipeIng.QuantityRequired)
-		}
-
 		// 選択された具材のマップを作成（調味料を除く）
 		selectedIngredientsMap := make(map[int]float64)
 		for _, ing := range request {
@@ -144,15 +116,13 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 			if recipeIng.Ingredient.Unit.Name == "presence" ||
 				recipeIng.Ingredient.Unit.Name == "適量" ||
 				recipeIng.Ingredient.Unit.Name == "少々" ||
-				recipeIng.Ingredient.Unit.Name == "ひとつまみ" {
-				log.Printf("    Skipping presence/seasoning ingredient: %s", recipeIng.Ingredient.Name)
+				recipeIng.Ingredient.Unit.Name == "ひとつまみ" {	
 				continue
 			}
 
 			// 選択された具材の中に、このレシピの具材が含まれているかチェック
 			selectedQuantity, exists := selectedIngredientsMap[recipeIng.IngredientID]
 			if !exists {
-				log.Printf("    Missing ingredient: %s", recipeIng.Ingredient.Name)
 				allIngredientsMatch = false
 				missingIngredients[recipeIng.IngredientID] = recipeIng.QuantityRequired
 				break
@@ -160,41 +130,17 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 
 			// 数量が十分かチェック
 			if selectedQuantity < recipeIng.QuantityRequired {
-				log.Printf("    Insufficient quantity for %s: Required %.2f, Selected %.2f",
-					recipeIng.Ingredient.Name,
-					recipeIng.QuantityRequired,
-					selectedQuantity)
 				allIngredientsMatch = false
 				missingIngredients[recipeIng.IngredientID] = recipeIng.QuantityRequired
 				break
 			}
 
-			log.Printf("    Found matching ingredient: %s (Required: %.2f, Selected: %.2f)",
-				recipeIng.Ingredient.Name,
-				recipeIng.QuantityRequired,
-				selectedQuantity)
-		}
-
-		log.Printf("  - All ingredients match: %v", allIngredientsMatch)
-		if !allIngredientsMatch {
-			log.Printf("  - Missing or insufficient ingredients:")
-			for id, required := range missingIngredients {
-				log.Printf("    * ID: %d, Required: %.2f", id, required)
-			}
 		}
 
 		// 全ての具材が一致し、かつ数量が十分な場合のみ結果に追加
 		if allIngredientsMatch {
 			result = append(result, recipe)
-			log.Printf("  ✅ Recipe added to results")
-		} else {
-			log.Printf("  ❌ Recipe not added to results")
 		}
-	}
-
-	log.Printf("🔍 Backend: Final filtered recipes count: %d", len(result))
-	for i, recipe := range result {
-		log.Printf("  [%d] Recipe: %s (ID: %s)", i, recipe.Name, recipe.ID)
 	}
 
 	c.JSON(http.StatusOK, result)
@@ -219,7 +165,6 @@ func (h *RecipeHandler) SearchRecipesByName(c *gin.Context) {
 		Find(&recipes).Error
 
 	if err != nil {
-		log.Printf("検索クエリエラー: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "データベースエラー"})
 		return
 	}
@@ -227,7 +172,6 @@ func (h *RecipeHandler) SearchRecipesByName(c *gin.Context) {
 	// 栄養情報の標準値を取得
 	var standard models.NutritionStandard
 	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
-		log.Printf("Failed to fetch nutrition standard: %v", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
 		return
 	}
@@ -264,7 +208,6 @@ func (h *RecipeHandler) GetRecipeByID(c *gin.Context) {
 		Preload("Genre").
 		Preload("Reviews").
 		First(&recipe, "id = ?", id).Error; err != nil {
-		log.Printf("Error fetching recipe: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipe"})
 		return
 	}
@@ -299,9 +242,6 @@ func (h *RecipeHandler) GetRecipeByID(c *gin.Context) {
 	// Recipe structのNutritionPercentageフィールドに設定
 	recipe.NutritionPercentage = nutritionPercentage
 
-	// デバッグログを追加
-	log.Printf("Nutrition Percentage: %+v", nutritionPercentage)
-
 	// JSONレスポンスを返す
 	c.JSON(http.StatusOK, gin.H{
 		"recipe": recipe,
@@ -316,12 +256,9 @@ func (h *RecipeHandler) GetUserRecipes(c *gin.Context) {
 		return
 	}
 
-	log.Printf("Fetching recipes for user ID: %s", userIDStr)
-
 	// UUIDに変換
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		log.Printf("Invalid user ID format: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
 		return
 	}
@@ -334,17 +271,13 @@ func (h *RecipeHandler) GetUserRecipes(c *gin.Context) {
 		Preload("Ingredients.Ingredient.Unit").
 		Where("user_id = ?", userID).
 		Find(&recipes).Error; err != nil {
-		log.Printf("Failed to fetch recipes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
 		return
 	}
 
-	log.Printf("Found %d recipes for user", len(recipes))
-
 	// 栄養情報の標準値を取得
 	var standard models.NutritionStandard
 	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
-		log.Printf("Failed to fetch nutrition standard: %v", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
 		return
 	}
@@ -392,8 +325,7 @@ func (h *RecipeHandler) UpdateRecipe(c *gin.Context) {
 		return
 	}
 
-	if err := h.DB.Model(&models.Recipe{}).Where("id = ?", id).Updates(recipe).Error; err != nil {
-		log.Printf("Error updating recipe: %v", err)
+	if err := h.DB.Model(&models.Recipe{}).Where("id = ?", id).Updates(recipe).Error; err != nil {	
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update recipe"})
 		return
 	}
@@ -410,7 +342,6 @@ func (h *RecipeHandler) DeleteRecipe(c *gin.Context) {
 	}
 
 	if err := h.DB.Delete(&models.Recipe{}, "id = ?", id).Error; err != nil {
-		log.Printf("Error deleting recipe: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete recipe"})
 		return
 	}
@@ -434,7 +365,6 @@ func (h *RecipeHandler) GetRecipeByUserID(c *gin.Context) {
 		Preload("Reviews").
 		Where("user_id = ?", userID).
 		Find(&recipes).Error; err != nil {
-		log.Printf("Error fetching recipes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
 		return
 	}
@@ -458,7 +388,6 @@ func (h *RecipeHandler) GetRecipeByGenreID(c *gin.Context) {
 		Preload("Reviews").
 		Where("genre_id = ?", genreID).
 		Find(&recipes).Error; err != nil {
-		log.Printf("Error fetching recipes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
 		return
 	}
@@ -483,7 +412,6 @@ func (h *RecipeHandler) GetRecipeByIngredientID(c *gin.Context) {
 		Joins("JOIN recipe_ingredients ON recipes.id = recipe_ingredients.recipe_id").
 		Where("recipe_ingredients.ingredient_id = ?", ingredientID).
 		Find(&recipes).Error; err != nil {
-		log.Printf("Error fetching recipes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
 		return
 	}
@@ -507,7 +435,6 @@ func (h *RecipeHandler) GetRecipeByNutrition(c *gin.Context) {
 		Preload("Reviews").
 		Where("nutrition @> ?", nutrition).
 		Find(&recipes).Error; err != nil {
-		log.Printf("Error fetching recipes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
 		return
 	}
@@ -531,7 +458,6 @@ func (h *RecipeHandler) GetRecipeByCookingTime(c *gin.Context) {
 		Preload("Reviews").
 		Where("cooking_time <= ?", cookingTime).
 		Find(&recipes).Error; err != nil {
-		log.Printf("Error fetching recipes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
 		return
 	}
@@ -555,7 +481,6 @@ func (h *RecipeHandler) GetRecipeByCostEstimate(c *gin.Context) {
 		Preload("Reviews").
 		Where("cost_estimate <= ?", costEstimate).
 		Find(&recipes).Error; err != nil {
-		log.Printf("Error fetching recipes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recipes"})
 		return
 	}

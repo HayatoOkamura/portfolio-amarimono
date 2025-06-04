@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 	"portfolio-amarimono/models"
 
@@ -41,7 +40,6 @@ func (h *LikeHandler) ToggleUserLike(c *gin.Context) {
 	if result.RowsAffected > 0 {
 		// いいねが既に存在する場合は削除
 		if err := h.DB.Delete(&like).Error; err != nil {
-			log.Println("❌ Failed to delete like:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove like"})
 			return
 		}
@@ -50,7 +48,6 @@ func (h *LikeHandler) ToggleUserLike(c *gin.Context) {
 		// いいねがない場合は新規追加
 		newLike := models.Like{UserID: userID, RecipeID: recipeID}
 		if err := h.DB.Create(&newLike).Error; err != nil {
-			log.Println("❌ Failed to create like:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add like"})
 			return
 		}
@@ -61,7 +58,6 @@ func (h *LikeHandler) ToggleUserLike(c *gin.Context) {
 // GetUserLikes ユーザーのお気に入りレシピを取得するエンドポイント
 func (h *LikeHandler) GetUserLikes(c *gin.Context) {
 	userID := c.Param("user_id")
-	log.Println("🚨🚨🚨", userID)
 	// UUIDのバリデーション
 	if _, err := uuid.Parse(userID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
@@ -83,13 +79,11 @@ func (h *LikeHandler) GetUserLikes(c *gin.Context) {
 	for _, like := range likes {
 		// RecipeIDがUUIDかチェック
 		if _, err := uuid.Parse(like.RecipeID); err != nil {
-			log.Println("❌ Invalid Recipe ID:", like.RecipeID)
 			continue // 無効なRecipeIDはスキップ
 		}
 
 		var recipe models.Recipe
 		if err := h.DB.Preload("Genre").Preload("Ingredients").Preload("Ingredients.Ingredient.Unit").First(&recipe, "id = ?", like.RecipeID).Error; err != nil {
-			log.Println("⚠️ Failed to fetch recipe:", like.RecipeID, "Error:", err)
 			continue
 		}
 

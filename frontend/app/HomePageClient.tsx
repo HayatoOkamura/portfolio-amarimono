@@ -33,7 +33,6 @@ export default function HomePageClient({ initialIngredients }: HomePageClientPro
 
   useEffect(() => {
     if (isSuccess && data && isSearching) {
-      console.log('Fetch successful, recipes:', data);
       setProgress(100);
       setSearchType("ingredients");
       setSearchExecuted(true);
@@ -52,19 +51,9 @@ export default function HomePageClient({ initialIngredients }: HomePageClientPro
     
     setIsSearching(true);
     setProgress(0);
-    console.log('検索開始: 0%');
-    console.log('送信する具材データ:', ingredients);
     
-    try {
-      console.log('refetch開始');
+      try {
       const result = await refetch();
-      console.log('refetch完了:', {
-        isSuccess: result.isSuccess,
-        isError: result.isError,
-        error: result.error,
-        data: result.data,
-        status: result.status
-      });
       
       if (result.isError) {
         console.error('レシピの取得に失敗しました:', result.error);
@@ -80,12 +69,6 @@ export default function HomePageClient({ initialIngredients }: HomePageClientPro
         return;
       }
 
-      console.log('レシピデータ取得成功:', {
-        dataType: typeof result.data,
-        isArray: Array.isArray(result.data),
-        dataLength: Array.isArray(result.data) ? result.data.length : 'not an array',
-        data: result.data
-      });
     } catch (error) {
       console.error('Search error:', error);
       setIsSearching(false);

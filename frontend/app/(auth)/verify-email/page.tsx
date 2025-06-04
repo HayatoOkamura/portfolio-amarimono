@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import Loading from "@/app/components/ui/Loading/Loading";
 import styles from "./VerifyEmail.module.scss";
 
@@ -17,32 +17,6 @@ export default function VerifyEmailPage() {
   const [cooldown, setCooldown] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 認証用の本番環境のクライアントを作成
-  const prodSupabase = createClient(
-    process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!,
-    {
-      auth: {
-        persistSession: true,
-        storageKey: 'sb-auth-token',
-        storage: {
-          getItem: (key: string): string | null => {
-            const cookie = document.cookie
-              .split('; ')
-              .find((row) => row.startsWith(`${key}=`));
-            return cookie ? cookie.split('=')[1] : null;
-          },
-          setItem: (key: string, value: string): void => {
-            document.cookie = `${key}=${value}; path=/; max-age=3600; secure; samesite=lax`;
-          },
-          removeItem: (key: string): void => {
-            document.cookie = `${key}=; path=/; max-age=0; secure; samesite=lax`;
-          },
-        },
-      },
-    }
-  );
-
   useEffect(() => {
     const getEmail = async () => {
       try {
@@ -55,7 +29,7 @@ export default function VerifyEmailPage() {
         }
 
         // 2. URLパラメータにない場合はセッションから取得
-        const { data: { session } } = await prodSupabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.email) {
           setEmail(session.user.email);
           setIsLoading(false);
@@ -76,12 +50,12 @@ export default function VerifyEmailPage() {
     // 定期的に認証状態を確認
     const interval = setInterval(async () => {
       try {
-        const { data: { session }, error } = await prodSupabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw error;
 
         if (session?.user?.email_confirmed_at) {
           // メール認証が完了した場合、セッションをクリアしてログインページにリダイレクト
-          await prodSupabase.auth.signOut();
+          await supabase.auth.signOut();
           setIsVerified(true);
           setSuccess("メール認証が完了しました。ログインページからログインしてください。");
           setTimeout(() => {
@@ -130,7 +104,7 @@ export default function VerifyEmailPage() {
         return;
       }
 
-      const { data, error } = await prodSupabase.auth.resend({
+      const { data, error } = await supabase.auth.resend({
         type: 'signup',
         email: email,
         options: {

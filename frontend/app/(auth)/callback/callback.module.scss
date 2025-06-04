@@ -12,7 +12,7 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 2rem;
+  background-color: #f5f5f5;
 }
 
 .loadingContainer {
@@ -55,40 +55,37 @@
 }
 
 .messageContainer {
-  text-align: center;
-  max-width: 400px;
-  width: 100%;
+  background-color: white;
   padding: 2rem;
-  background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
 
   h1 {
-    font-size: 1.5rem;
     margin-bottom: 1rem;
     color: #333;
   }
 
   p {
-    margin-bottom: 1.5rem;
     color: #666;
+    margin-bottom: 1.5rem;
   }
 }
 
 .buttonContainer {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
+  margin-top: 1.5rem;
 }
 
 .button {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
   background-color: #0070f3;
   color: white;
-  font-size: 1rem;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
   cursor: pointer;
+  font-size: 1rem;
   transition: background-color 0.2s;
 
   &:hover {
@@ -109,5 +106,38 @@
 
   &:hover {
     opacity: .8;
+  }
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+
+  h2 {
+    color: #333;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    color: #666;
+    margin-bottom: 1.5rem;
   }
 } 

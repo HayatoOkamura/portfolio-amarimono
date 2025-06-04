@@ -92,13 +92,6 @@ export const calculateNutrition = (ingredients: IngredientWithNutrition[]): Nutr
       }
 
       const ratio = quantityInGrams / 100;
-      console.log(`計算: ${ing.name} (${ing.quantity}${ing.unit.name})`);
-      console.log(`- 変換後: ${quantityInGrams}g (比率: ${ratio})`);
-      console.log(`- カロリー: ${ing.nutrition.calories} * ${ratio} = ${ing.nutrition.calories * ratio}`);
-      console.log(`- タンパク質: ${ing.nutrition.protein} * ${ratio} = ${ing.nutrition.protein * ratio}`);
-      console.log(`- 脂質: ${ing.nutrition.fat} * ${ratio} = ${ing.nutrition.fat * ratio}`);
-      console.log(`- 炭水化物: ${ing.nutrition.carbohydrates} * ${ratio} = ${ing.nutrition.carbohydrates * ratio}`);
-      console.log(`- 塩分: ${ing.nutrition.salt} * ${ratio} = ${ing.nutrition.salt * ratio}`);
 
       nutrition.calories += Math.floor(ing.nutrition.calories * ratio);
       nutrition.protein += Number((ing.nutrition.protein * ratio).toFixed(1));
@@ -107,13 +100,6 @@ export const calculateNutrition = (ingredients: IngredientWithNutrition[]): Nutr
       nutrition.salt += Number((ing.nutrition.salt * ratio).toFixed(2));
     }
   });
-
-  console.log('最終的な栄養素の合計:');
-  console.log(`- カロリー: ${nutrition.calories} kcal`);
-  console.log(`- タンパク質: ${nutrition.protein} g`);
-  console.log(`- 脂質: ${nutrition.fat} g`);
-  console.log(`- 炭水化物: ${nutrition.carbohydrates} g`);
-  console.log(`- 塩分: ${nutrition.salt} g`);
 
   return nutrition;
 }; 

@@ -19,7 +19,7 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
   const [error, setError] = useState("");
   const { setGeneratedRecipes, setSearchType, setSearchExecuted } =
     useRecipeStore();
-  const { ingredients, setIngredients } = useIngredientStore();
+  const { ingredients, setIngredients, selectedOrder } = useIngredientStore();
   const { data: fetchedIngredients } = useIngredients();
 
   useEffect(() => {
@@ -67,14 +67,21 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
       return [...acc, current];
     }, []) as Ingredient[];
 
+  // 選択順序に基づいて具材をソート（新しい順に表示）
+  const sortedIngredients = [...selectedIngredients].sort((a, b) => {
+    const aIndex = selectedOrder.indexOf(a.id);
+    const bIndex = selectedOrder.indexOf(b.id);
+    return bIndex - aIndex; // 順序を逆にして新しい順に表示
+  });
+
   return (
     <section className={styles.container_block}>
       <div className={styles.container_block__inner}>
         <h2 className={styles.container_block__title}>選択した具材</h2>
         <div className={styles.container_block__contents}>
-          {selectedIngredients.length > 0 && (
+          {sortedIngredients.length > 0 && (
             <ul className={styles.ingredients_list}>
-              {selectedIngredients.map((ingredient: Ingredient) => (
+              {sortedIngredients.map((ingredient: Ingredient) => (
                 <li
                   key={ingredient.id}
                   className={styles.ingredients_list__item}

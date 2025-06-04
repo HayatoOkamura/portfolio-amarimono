@@ -4,7 +4,6 @@
   padding: 8px 8px 15px 8px;
   text-align: center;
   transition: all 0.2s ease;
-  cursor: pointer;
 
   &--selected {
     border: 3px solid #de616a;
@@ -75,5 +74,31 @@
     color: #666;
     font-size: 0.875rem;
     font-weight: 500;
+  }
+
+  &__unit_selector {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+  }
+
+  &__unit_select {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    min-width: 120px;
+
+    &:focus {
+      outline: none;
+      border-color: #666;
+    }
+
+    option {
+      padding: 4px;
+    }
   }
 } 

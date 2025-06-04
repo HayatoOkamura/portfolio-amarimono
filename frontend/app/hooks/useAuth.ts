@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/app/stores/userStore";
 import { backendUrl } from "@/app/utils/api";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 
 interface User {
   id: string;
@@ -22,45 +22,6 @@ export interface AuthError {
   message: string;
 }
 
-// 認証用の本番環境のクライアントを作成
-const prodSupabase = createClient(
-  process.env.NEXT_PUBLIC_PROD_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      persistSession: true,
-      storageKey: 'sb-auth-token',
-      storage: typeof window !== 'undefined' ? {
-        getItem: (key: string): string | null => {
-          try {
-            const cookie = document.cookie
-              .split('; ')
-              .find((row) => row.startsWith(`${key}=`));
-            return cookie ? cookie.split('=')[1] : null;
-          } catch (error) {
-            console.error('Error getting cookie:', error);
-            return null;
-          }
-        },
-        setItem: (key: string, value: string): void => {
-          try {
-            document.cookie = `${key}=${value}; path=/; max-age=3600; secure; samesite=lax`;
-          } catch (error) {
-            console.error('Error setting cookie:', error);
-          }
-        },
-        removeItem: (key: string): void => {
-          try {
-            document.cookie = `${key}=; path=/; max-age=0; secure; samesite=lax`;
-          } catch (error) {
-            console.error('Error removing cookie:', error);
-          }
-        },
-      } : undefined,
-    },
-  }
-);
-
 // バックエンドのユーザー情報を取得する関数
 const fetchUserDetails = async (userId: string, session: any) => {
   try {
@@ -68,14 +29,12 @@ const fetchUserDetails = async (userId: string, session: any) => {
     if (!response.ok) {
       if (response.status === 404) {
         // ユーザーが存在しない場合は新規作成
-        console.log('User not found, creating new user...');
         try {
           const newUser = await createBackendUser({
             id: userId,
             email: session.user.email,
             access_token: session.access_token
           });
-          console.log('New user created:', newUser);
           return {
             username: newUser.username || '',
             profileImage: newUser.profileImage || '',
@@ -85,7 +44,6 @@ const fetchUserDetails = async (userId: string, session: any) => {
           };
         } catch (createError) {
           // ユーザー作成に失敗した場合、既に存在する可能性があるので再度取得を試みる
-          console.log('Error creating user, attempting to fetch again...');
           const retryResponse = await fetch(`${backendUrl}/api/users/${userId}`);
           if (retryResponse.ok) {
             const retryData = await retryResponse.json();
@@ -111,7 +69,6 @@ const fetchUserDetails = async (userId: string, session: any) => {
       throw new Error("Failed to fetch user details");
     }
     const data = await response.json();
-    console.log("Backend user data:", data);
     
     return {
       username: data.username || '',
@@ -142,8 +99,6 @@ const createBackendUser = async (user: any) => {
     gender: "未設定"
   };
 
-  console.log("Sending user data to backend:", requestData);
-
   const response = await fetch(`${backendUrl}/api/users`, {
     method: "POST",
     headers: {
@@ -160,7 +115,6 @@ const createBackendUser = async (user: any) => {
   }
 
   const responseData = await response.json();
-  console.log("Received user data from backend:", responseData);
   return responseData;
 };
 
@@ -181,46 +135,38 @@ export function useAuth() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const { data: { session }, error: sessionError } = await prodSupabase.auth.getSession();
-        
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError || !session) {
-          throw new Error('Not authenticated');
+          setStoreUser(null);
+          setIsLoading(false);
+          return;
         }
 
-        const response = await fetch('/api/auth/user', {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch user');
-        }
-        const userData = await response.json();
-        if (userData) {
-          try {
-            const userDetails = await fetchUserDetails(userData.id, session);
-            const formattedUser: User = {
-              ...userData,
-              ...userDetails,
-              profileImage: userDetails.profileImage || null
-            };
-            setStoreUser(formattedUser);
-          } catch (error) {
-            console.error('Error in fetchUserDetails:', error);
-            const formattedUser: User = {
-              ...userData,
-              username: '',
-              profileImage: null,
-              age: 0,
-              gender: '未設定',
-              role: 'user'
-            };
-            setStoreUser(formattedUser);
-          }
+        // セッションからユーザー情報を取得
+        const userData = {
+          id: session.user.id,
+          email: session.user.email || '',
+          email_confirmed_at: session.user.email_confirmed_at,
+          created_at: session.user.created_at,
+          updated_at: session.user.updated_at
+        };
+
+        // バックエンドからユーザー詳細情報を取得
+        try {
+          const userDetails = await fetchUserDetails(userData.id, session);
+          
+          const formattedUser: User = {
+            ...userData,
+            ...userDetails,
+            profileImage: userDetails.profileImage || null
+          };
+          setStoreUser(formattedUser);
+        } catch (error) {
+          // エラーが発生しても基本的なユーザー情報は設定
+          setStoreUser(userData);
         }
       } catch (error) {
-        console.error('Error fetching user:', error);
+        console.error('🔍 Error fetching user:', error);
         setStoreUser(null);
       } finally {
         setIsLoading(false);
@@ -232,7 +178,7 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      const { error } = await prodSupabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
       if (error) throw error;
 
       // ローカルストレージのクリア
@@ -255,7 +201,7 @@ export function useAuth() {
   const login = async ({ email, password }: { email: string; password: string }): Promise<AuthError | null> => {
     setIsLoggingIn(true);
     try {
-      const { error } = await prodSupabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
         return createAuthError('LOGIN_FAILED', error.message);
@@ -273,7 +219,7 @@ export function useAuth() {
     setIsRegistering(true);
     try {
       // Supabaseでのユーザー登録
-      const { data, error } = await prodSupabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -303,12 +249,68 @@ export function useAuth() {
     }
   };
 
+  const signInWithGoogle = async (isLogin: boolean = true) => {
+    try {
+      console.log('🔍 Starting Google sign in process', { isLogin });
+      
+      if (isLogin) {
+        // ログイン時は直接認証を実行
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/`,
+          }
+        });
+
+        if (error) {
+          console.error('Error during Google sign in:', error);
+          return createAuthError('LOGIN_FAILED', error.message);
+        }
+
+        if (data?.url) {
+          console.log('🔍 Redirecting to:', data.url);
+          window.location.href = data.url;
+        } else {
+          console.error('No redirect URL provided');
+          return createAuthError('LOGIN_FAILED', '認証URLの取得に失敗しました');
+        }
+      } else {
+        // 新規登録時はコールバックページを経由
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/callback`,
+          }
+        });
+
+        if (error) {
+          console.error('Error during Google sign in:', error);
+          return createAuthError('LOGIN_FAILED', error.message);
+        }
+
+        if (data?.url) {
+          console.log('🔍 Redirecting to:', data.url);
+          window.location.href = data.url;
+        } else {
+          console.error('No redirect URL provided');
+          return createAuthError('LOGIN_FAILED', '認証URLの取得に失敗しました');
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Unexpected error during Google sign in:', error);
+      return createAuthError('UNKNOWN', 'Google認証中にエラーが発生しました');
+    }
+  };
+
   return {
     user: storeUser,
     isLoading,
     logout,
     login,
     register,
+    signInWithGoogle,
     isLoggingIn,
     isRegistering
   };

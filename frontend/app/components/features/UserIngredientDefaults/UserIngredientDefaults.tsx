@@ -5,7 +5,7 @@ import { Ingredient, Genre } from '@/app/types/index';
 import { useGenres } from '@/app/hooks/genres';
 import CategoryCard from '@/app/components/ui/Cards/CategoryCard/CategoryCard';
 import Loading from '@/app/components/ui/Loading/Loading';
-import IngredientCard from '@/app/components/ui/Cards/IngredientCard/IngredientCard';
+import IngredientCard from '@/app/components/ui/Cards/BaseIngredientCard/BaseIngredientCard';
 
 interface UserIngredientDefault {
   ingredient_id: number;
@@ -110,9 +110,9 @@ export const UserIngredientDefaults = () => {
                 <IngredientCard
                   key={ingredient.id}
                   ingredient={ingredient}
-                  currentQuantity={currentQuantity}
-                  isPresence={isPresence}
+                  quantity={currentQuantity}
                   onQuantityChange={handleQuantityChange}
+                  isSelected={currentQuantity > 0}
                 />
               );
             })}

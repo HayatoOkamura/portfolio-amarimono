@@ -58,14 +58,6 @@ export const CoachmarkOnboarding: React.FC<CoachmarkOnboardingProps> = ({ isOpen
 
   const handleJoyrideCallback = (data: CallBackProps) => {
     const { status, type, index, action } = data;
-    console.log('Joyride Callback:', {
-      status,
-      type,
-      index,
-      action,
-      currentStep: steps[index],
-      targetExists: typeof steps[index]?.target === 'string' ? document.querySelector(steps[index].target) !== null : false
-    });
 
     if ((status === STATUS.FINISHED || status === STATUS.SKIPPED) && index === steps.length - 1) {
       setShowInitialSettings(true);

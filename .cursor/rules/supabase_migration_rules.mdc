@@ -80,6 +80,10 @@ alwaysApply: true
 
 ### 開発環境
 ```bash
+# プロジェクトをリンク
+supabase link --project-ref qmrjsqeigdkizkrpiahs
+
+# マイグレーションを適用
 supabase db push
 ```
 

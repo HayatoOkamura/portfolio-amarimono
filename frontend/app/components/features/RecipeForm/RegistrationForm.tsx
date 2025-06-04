@@ -37,13 +37,6 @@ export const RegistrationForm = ({
   const [isSp, setIsSp] = useState(false);
   const [isIngredientModalOpen, setIsIngredientModalOpen] = useState(false);
 
-  // デバッグ用のuseEffect
-  useEffect(() => {
-    if (process.env.ENVIRONMENT === 'development') {
-      console.log('Form Data Updated:', formData);
-    }
-  }, [formData]);
-
   useEffect(() => {
     fetchRecipeGenres();
   }, [fetchRecipeGenres]);
@@ -104,16 +97,21 @@ export const RegistrationForm = ({
               ingredients={ingredientsData}
               selectedIngredients={formData.ingredients.map(ing => ({
                 id: ing.id,
-                amount: ing.quantity
+                amount: ing.quantity,
+                unit: ing.unit
               }))}
               onSelect={(ingredients) =>
                 updateFormData({
-                  ingredients: ingredients.map((ing) => ({
-                    id: ing.id,
-                    quantity: ing.amount,
-                    unitId: ingredientsData.find((i) => i.id === ing.id)?.unit.id || 0,
-                    name: ingredientsData.find((i) => i.id === ing.id)?.name || '',
-                  })),
+                  ingredients: ingredients.map((ing) => {
+                    const ingredientData = ingredientsData.find((i) => i.id === ing.id);
+                    return {
+                      id: ing.id,
+                      quantity: ing.amount,
+                      unitId: ingredientData?.unit.id || 0,
+                      name: ingredientData?.name || '',
+                      unit: ing.unit || ingredientData?.unit.name || ''
+                    };
+                  }),
                 })
               }
             />
@@ -125,6 +123,14 @@ export const RegistrationForm = ({
                 if (!ingredientData) return null;
 
                 const handleQuantityChange = (delta: number) => {
+                  const isQuantityAdjustable = (unitName: string) => {
+                    return ["大さじ", "小さじ", "滴"].includes(unitName);
+                  };
+
+                  if (!isQuantityAdjustable(ingredient.unit)) {
+                    return;
+                  }
+
                   const newQuantity = Math.max(0, ingredient.quantity + delta);
                   if (newQuantity === 0) {
                     // 数量が0になったら具材を削除
@@ -176,7 +182,7 @@ export const RegistrationForm = ({
                           {Number.isInteger(ingredient.quantity)
                             ? ingredient.quantity
                             : Number(ingredient.quantity).toFixed(1)}
-                          {ingredientData.unit.name}
+                          {ingredient.unit}
                         </span>
                         <button
                           onClick={() => handleQuantityChange(-ingredientData.unit.step)}
@@ -425,7 +431,6 @@ export const RegistrationForm = ({
                       const ingredient = ingredientsData?.find(
                         (i) => i.id === ing.id
                       );
-                      console.log('Found ingredient:', ingredient);
                       return {
                         id: ing.id,
                         name: ingredient?.name || "",
@@ -435,6 +440,7 @@ export const RegistrationForm = ({
                           name: "g",
                           description: "",
                           step: 1,
+                          type: "quantity"
                         },
                         nutrition: ingredient?.nutrition || {
                           calories: 0,
@@ -446,20 +452,16 @@ export const RegistrationForm = ({
                       };
                     }
                   );
-                  console.log('Ingredients with nutrition:', ingredientsWithNutrition);
 
                   const nutrition = calculateNutrition(
                     ingredientsWithNutrition
                   );
-                  console.log('Calculated Nutrition:', nutrition);
-                  console.log('Current Form Data:', formData);
                   updateFormData({
                     nutrition: {
                       ...formData.nutrition,
                       ...nutrition,
                     },
                   });
-                  console.log('Updated Form Data:', formData);
                 }}
                 className={styles.detail_block__calculate}
               >

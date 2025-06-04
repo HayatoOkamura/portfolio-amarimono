@@ -31,12 +31,6 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose }) =>
   const getActiveClass = (paths: string[]) =>
     paths.includes(pathname) ? styles["is-active"] : "";
 
-  // デバッグログ
-  useEffect(() => {
-    console.log("MobileMenuModal - User:", user);
-    console.log("MobileMenuModal - isAuthorized:", isAuthorized);
-  }, [user, isAuthorized]);
-
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";

@@ -93,13 +93,6 @@ const RecipeClientComponent = () => {
   const handleRecipeClick = (recipe: Recipe) => {
     if (recipe.id === persistedSelectedRecipe?.id) return;
 
-    console.log("Recipe Click Start:", {
-      currentRecipe: persistedSelectedRecipe,
-      nextRecipe: recipe,
-      isFadingOut,
-      rotate,
-    });
-
     // アニメーション開始
     setNextRecipe(recipe);
     setRotate(90);
@@ -156,12 +149,6 @@ const RecipeClientComponent = () => {
    * 回転アニメーション完了時のハンドラー
    */
   const handleRotateComplete = () => {
-    console.log("Rotation Complete:", {
-      currentRecipe: persistedSelectedRecipe,
-      nextRecipe,
-      isFadingOut,
-      rotate,
-    });
 
     if (nextRecipe) {
       setSelectedRecipe(nextRecipe);
@@ -170,16 +157,6 @@ const RecipeClientComponent = () => {
       setIsFadingOut(false);
     }
   };
-
-  // アニメーション状態の監視
-  useEffect(() => {
-    console.log("Animation State Changed:", {
-      currentRecipe: persistedSelectedRecipe,
-      nextRecipe,
-      isFadingOut,
-      rotate,
-    });
-  }, [persistedSelectedRecipe, nextRecipe, isFadingOut, rotate]);
 
   // ジャンルによるフィルタリングとソート
   const filteredRecipes =
@@ -513,13 +490,6 @@ const RecipeClientComponent = () => {
                   {/* 栄養情報 */}
                   {persistedSelectedRecipe.nutrition && (
                     <>
-                      {(() => {
-                        console.log(
-                          "Nutrition Percentage:",
-                          persistedSelectedRecipe.nutritionPercentage
-                        );
-                        return null;
-                      })()}
                       <ul className={styles.nutrition_block}>
                         <li className={styles.nutrition_block__item}>
                           <p className={styles.nutrition_block__title}>

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"math"
 	"net/http"
 	"portfolio-amarimono/models"
@@ -22,8 +21,6 @@ func NewRecommendationHandler(db *gorm.DB) *RecommendationHandler {
 // GetRecommendedRecipes ユーザーのいいね履歴をもとにおすすめレシピを取得
 func (h *RecommendationHandler) GetRecommendedRecipes(c *gin.Context) {
 	userID := c.Param("user_id")
-
-	log.Println("⭐️⭐️⭐️", userID)
 
 	if _, err := uuid.Parse(userID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
@@ -49,7 +46,6 @@ func (h *RecommendationHandler) GetRecommendedRecipes(c *gin.Context) {
 	for _, like := range likes {
 		var recipe models.Recipe
 		if err := h.DB.Preload("Genre").First(&recipe, "id = ?", like.RecipeID).Error; err != nil {
-			log.Println("⚠️ Failed to fetch recipe:", like.RecipeID, "Error:", err)
 			continue
 		}
 		recipes = append(recipes, recipe)
@@ -63,8 +59,6 @@ func (h *RecommendationHandler) GetRecommendedRecipes(c *gin.Context) {
 		return
 	}
 
-	log.Println("⭐️⭐️⭐️", recipes)
-
 	// 平均値の計算
 	avgCost := totalCost / float64(len(recipes))
 	avgCookingTime := totalCookingTime / float64(len(recipes))
@@ -76,9 +70,6 @@ func (h *RecommendationHandler) GetRecommendedRecipes(c *gin.Context) {
 		genreRatios[genre] = float64(count) / float64(totalLikes)
 	}
 
-	log.Println("⭐️⭐️", genreRatios)
-
-	log.Println("⭐️", avgCost*0.8, avgCost*1.2, avgCookingTime*0.8, avgCookingTime*1.2)
 	// おすすめレシピの取得
 	var recommendedRecipes []models.Recipe
 	query := h.DB.Preload("Genre").Where("cost_estimate BETWEEN ? AND ?", avgCost*0.8, avgCost*1.2).
@@ -89,15 +80,12 @@ func (h *RecommendationHandler) GetRecommendedRecipes(c *gin.Context) {
 		return
 	}
 
-	log.Println("⭐️⭐️⭐️⭐️", recommendedRecipes)
-
 	// ジャンルの割合に基づいてフィルタリング
 	finalRecommendations := []models.Recipe{}
 	genreLimit := make(map[string]int)
 	for genre, ratio := range genreRatios {
 		genreLimit[genre] = int(math.Max(1, math.Round(ratio*float64(len(recommendedRecipes)))))
 	}
-	log.Println("⭐️⭐️⭐️⭐️", genreLimit)
 
 	genreCountSelected := make(map[string]int)
 	for _, recipe := range recommendedRecipes {
@@ -107,6 +95,5 @@ func (h *RecommendationHandler) GetRecommendedRecipes(c *gin.Context) {
 		}
 	}
 
-	log.Println("⭐️⭐️⭐️⭐️", genreCountSelected)
 	c.JSON(http.StatusOK, finalRecommendations)
 }

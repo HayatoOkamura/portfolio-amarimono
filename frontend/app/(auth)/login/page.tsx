@@ -33,7 +33,7 @@ export default function LoginPage() {
           <h1 className={styles.auth_block__title}>
             {isLogin ? "ログイン" : "新規登録"}
           </h1>
-          <GoogleLogin />
+          <GoogleLogin isLogin={isLogin} />
           <div className={styles.auth_block__divider}>
             <span>または</span>
           </div>

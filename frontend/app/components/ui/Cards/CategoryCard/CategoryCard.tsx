@@ -15,8 +15,6 @@ type CategoryCardProps = {
 const CategoryCard: React.FC<CategoryCardProps> = ({ genre, onClick, isSelected }) => {
   // IDが1桁の場合は0を付加し、2桁の場合はそのまま使用
   const imageId = genre.id < 10 ? `0${genre.id}` : genre.id;
-
-  console.log(isSelected);
   
   return (
     <button

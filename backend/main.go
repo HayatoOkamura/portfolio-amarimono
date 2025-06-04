@@ -16,7 +16,6 @@ import (
 
 func main() {
 	log.SetOutput(os.Stdout)
-	log.Println("Starting application...")
 
 	// Ginをデバッグモードに設定
 	gin.SetMode(gin.DebugMode)
@@ -54,7 +53,6 @@ func main() {
 	if err := db.RunMigrations(sqlDB); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
-	log.Println("✅ Database migrations completed successfully")
 
 	// Redisクライアントの初期化
 	redisClient := redis.NewClient(&redis.Options{
@@ -69,9 +67,7 @@ func main() {
 	// Redis接続の確認
 	ctx := context.Background()
 	if err := redisClient.Ping(ctx).Err(); err != nil {
-		log.Printf("❌ Failed to connect to Redis: %v", err)
 	} else {
-		log.Println("✅ Successfully connected to Redis")
 	}
 
 	// ハンドラの初期化
@@ -109,7 +105,6 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	log.Printf("Server starting on port %s", port)
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

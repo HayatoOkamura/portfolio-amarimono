@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -26,36 +24,28 @@ func NewUserHandler(db *gorm.DB) *UserHandler {
 
 // CreateUser handles user creation
 func (h *UserHandler) CreateUser(c *gin.Context) {
-	fmt.Println("🔥CreateUser")
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
-		log.Printf("Error binding user data: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user data"})
 		return
 	}
 
 	// ユーザーIDの検証
 	if user.ID == "" {
-		log.Printf("Error: User ID is required")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
 		return
 	}
 
 	// メールアドレスの検証
 	if user.Email == "" {
-		log.Printf("Error: Email is required")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email is required"})
 		return
 	}
 
 	// 画像ファイルの処理
 	if file, err := c.FormFile("image"); err == nil {
-		log.Printf("📸 Image upload detected for user: %s", user.ID)
-		log.Printf("📸 Image details - Filename: %s, Size: %d bytes", file.Filename, file.Size)
-
 		// ファイルサイズのチェック（10MB制限）
 		if file.Size > 10*1024*1024 {
-			log.Printf("❌ Error: Image file size exceeds 10MB limit")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Image file size exceeds 10MB limit"})
 			return
 		}
@@ -63,11 +53,9 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		// 画像を保存
 		imagePath, err := utils.SaveImage(c, file, "users/"+user.ID, "")
 		if err != nil {
-			log.Printf("❌ Error saving image: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
 			return
 		}
-		log.Printf("✅ Image successfully uploaded to: %s", imagePath)
 		user.ProfileImage = &imagePath
 	} else {
 		// 画像が選択されていない場合は、既存のimageUrlを使用
@@ -75,7 +63,6 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		if imageUrl != "" {
 			user.ProfileImage = &imageUrl
 		}
-		log.Printf("ℹ️ No image file provided for user: %s", user.ID)
 	}
 
 	// 既存のユーザーを確認
@@ -84,16 +71,13 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			// ユーザーが存在しない場合は新規作成
 			if err := models.CreateUser(h.DB, &user); err != nil {
-				log.Printf("Error creating user: %v", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 				return
 			}
-			log.Printf("✅ User created successfully with ID: %s", user.ID)
 			c.JSON(http.StatusCreated, user)
 			return
 		}
 		// その他のエラーの場合
-		log.Printf("Error checking existing user: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check existing user"})
 		return
 	}
@@ -101,20 +85,16 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	// ユーザーが既に存在する場合は更新
 	user.CreatedAt = existingUser.CreatedAt // 作成日時は保持
 	if err := models.UpdateUser(h.DB, &user); err != nil {
-		log.Printf("Error updating user: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
 		return
 	}
 
-	log.Printf("✅ User updated successfully with ID: %s", user.ID)
 	c.JSON(http.StatusOK, user)
 }
 
 // GetUserProfile handles retrieving a user's profile
 func (h *UserHandler) GetUserProfile(c *gin.Context) {
-	fmt.Println("🔥GetUserProfile")
 	userID := c.Param("id")
-	log.Printf("GetUserProfile - Request received for user ID: %s", userID)
 
 	// ユーザー情報とrole情報を結合して取得
 	var user struct {
@@ -130,7 +110,6 @@ func (h *UserHandler) GetUserProfile(c *gin.Context) {
 		First(&user).Error
 
 	if err != nil {
-		log.Printf("GetUserProfile - Failed to retrieve user: %v", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
@@ -145,50 +124,37 @@ func (h *UserHandler) GetUserProfile(c *gin.Context) {
 
 // UpdateUserProfile handles updating a user's profile
 func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
-	fmt.Println("🔥UpdateUserProfile")
 	userID := c.Param("id")
-	log.Printf("📝 UpdateUserProfile - Request received for user ID: %s", userID)
 
 	// 既存のユーザーを取得
 	existingUser, err := models.GetUserByID(h.DB, userID)
-	if err != nil {
-		log.Printf("❌ Error getting existing user: %v", err)
+	if err != nil {	
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
-	log.Printf("📝 Existing user data: %+v", existingUser)
 
 	// 画像ファイルの処理
 	if file, err := c.FormFile("image"); err == nil {
-		log.Printf("📸 Image upload detected for user: %s", userID)
-		log.Printf("📸 Image details - Filename: %s, Size: %d bytes", file.Filename, file.Size)
-
 		// ファイルサイズのチェック（10MB制限）
 		if file.Size > 10*1024*1024 {
-			log.Printf("❌ Error: Image file size exceeds 10MB limit")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Image file size exceeds 10MB limit"})
 			return
 		}
 
 		// 既存の画像がある場合は削除
 		if existingUser.ProfileImage != nil && *existingUser.ProfileImage != "" && *existingUser.ProfileImage != "[object File]" {
-			log.Printf("🗑️ Deleting existing image: %s", *existingUser.ProfileImage)
 			if err := utils.DeleteImage(*existingUser.ProfileImage); err != nil {
-				log.Printf("⚠️ Warning: Failed to delete existing image: %v", err)
 				// 画像の削除に失敗しても処理は続行
 			} else {
-				log.Printf("✅ Successfully deleted existing image")
 			}
 		}
 
 		// 新しい画像を保存
 		imagePath, err := utils.SaveImage(c, file, "users/"+userID, "")
 		if err != nil {
-			log.Printf("❌ Error saving image: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
 			return
 		}
-		log.Printf("✅ Image successfully uploaded to: %s", imagePath)
 		existingUser.ProfileImage = &imagePath
 	} else {
 		// 画像が選択されていない場合は、既存のimageUrlを使用
@@ -196,7 +162,6 @@ func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
 		if imageUrl != "" && imageUrl != "[object File]" {
 			existingUser.ProfileImage = &imageUrl
 		}
-		log.Printf("ℹ️ No image file provided for user: %s", userID)
 	}
 
 	// FormDataから他のフィールドを取得
@@ -210,7 +175,6 @@ func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
 	if ageStr != "" {
 		ageInt, err := strconv.Atoi(ageStr)
 		if err != nil {
-			log.Printf("❌ Error converting age: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid age format"})
 			return
 		}
@@ -231,14 +195,11 @@ func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
 		existingUser.Gender = &gender
 	}
 
-	log.Printf("📝 Updating user with data: %+v", existingUser)
 	if err := models.UpdateUser(h.DB, existingUser); err != nil {
-		log.Printf("❌ Error updating user: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
 		return
 	}
 
-	log.Printf("✅ User updated successfully: %+v", existingUser)
 	c.JSON(http.StatusOK, existingUser)
 }
 
@@ -264,7 +225,6 @@ func (h *UserHandler) GetUserLikeCount(c *gin.Context) {
 		Count(&likeCount).Error
 
 	if err != nil {
-		log.Printf("Failed to count likes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve like count"})
 		return
 	}
@@ -285,7 +245,6 @@ func (h *UserHandler) GetUserRecipeAverageRating(c *gin.Context) {
 		Scan(&avgRating).Error
 
 	if err != nil {
-		log.Printf("Failed to get average rating: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve average rating"})
 		return
 	}

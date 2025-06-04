@@ -21,7 +21,8 @@
 }
 
 .modalContent {
-  background: white;
+  // background: white;
+  background: var(--primary-bg-color);
   padding: 2rem;
   width: 90%;
   height: 100%;
