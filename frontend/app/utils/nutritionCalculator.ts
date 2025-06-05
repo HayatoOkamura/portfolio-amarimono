@@ -14,6 +14,7 @@ interface IngredientWithNutrition {
   quantity: number;
   unit: Unit;
   nutrition: Nutrition;
+  gramEquivalent: number; // 100gに相当する量
 }
 
 export const calculateNutrition = (ingredients: IngredientWithNutrition[]): Nutrition => {
@@ -27,70 +28,8 @@ export const calculateNutrition = (ingredients: IngredientWithNutrition[]): Nutr
 
   ingredients.forEach((ing) => {
     if (ing.nutrition) {
-      // 単位に基づいて量をgに変換
-      let quantityInGrams = ing.quantity;
-      
-      // 単位に応じてgに変換
-      switch (ing.unit.name) {
-        // 個数系単位
-        case '個':
-        case '本':
-        case '房':
-        case '株':
-        case '袋':
-        case '缶':
-        case '匹':
-        case '尾':
-        case 'パック':
-          quantityInGrams = ing.quantity * 100;
-          break;
-        case '枚':
-          quantityInGrams = ing.quantity * 20;
-          break;
-        case '切れ':
-          quantityInGrams = ing.quantity * 50;
-          break;
-        
-        // 調味料系単位
-        case '小さじ':
-          quantityInGrams = ing.quantity * 5;
-          break;
-        case '大さじ':
-          quantityInGrams = ing.quantity * 15;
-          break;
-        case 'カップ':
-          quantityInGrams = ing.quantity * 200;
-          break;
-        
-        // 質量・容量単位
-        case 'kg':
-          quantityInGrams = ing.quantity * 1000;
-          break;
-        case 'ml':
-          quantityInGrams = ing.quantity;
-          break;
-        case 'L':
-          quantityInGrams = ing.quantity * 1000;
-          break;
-        
-        // その他
-        case '滴':
-          quantityInGrams = ing.quantity;
-          break;
-        case '適量':
-        case '少々':
-          quantityInGrams = 0;
-          break;
-        
-        // すでにgの場合はそのまま
-        case 'g':
-          quantityInGrams = ing.quantity;
-          break;
-        default:
-          console.warn(`未対応の単位: ${ing.unit.name}、gとして計算します`);
-          quantityInGrams = ing.quantity;
-      }
-
+      // 具材のgramEquivalentを使用して量をgに変換
+      const quantityInGrams = (ing.quantity * ing.gramEquivalent);
       const ratio = quantityInGrams / 100;
 
       nutrition.calories += Math.floor(ing.nutrition.calories * ratio);
@@ -102,4 +41,59 @@ export const calculateNutrition = (ingredients: IngredientWithNutrition[]): Nutr
   });
 
   return nutrition;
+};
+
+// 100gあたりの栄養素を、指定された単位と量に換算する
+export const calculateNutritionForQuantity = (
+  nutrition: Nutrition,
+  quantity: number,
+  unit: Unit,
+  gramEquivalent: number
+): Nutrition => {
+  // 単位が'presence'の場合は、そのまま返す
+  if (unit.type === 'presence') {
+    return nutrition;
+  }
+
+  // 換算係数を計算（例：卵1個が50gの場合、gramEquivalentは50）
+  const conversionFactor = (quantity * gramEquivalent) / 100;
+
+  return {
+    calories: Math.round(nutrition.calories * conversionFactor),
+    protein: Math.round(nutrition.protein * conversionFactor * 10) / 10,
+    fat: Math.round(nutrition.fat * conversionFactor * 10) / 10,
+    carbohydrates: Math.round(nutrition.carbohydrates * conversionFactor * 10) / 10,
+    salt: Math.round(nutrition.salt * conversionFactor * 100) / 100,
+  };
+};
+
+// 複数の具材の栄養素を合計する
+export const calculateTotalNutrition = (
+  ingredients: IngredientWithNutrition[]
+): Nutrition => {
+  return ingredients.reduce(
+    (total, ingredient) => {
+      const nutrition = calculateNutritionForQuantity(
+        ingredient.nutrition,
+        ingredient.quantity,
+        ingredient.unit,
+        ingredient.gramEquivalent
+      );
+
+      return {
+        calories: total.calories + nutrition.calories,
+        protein: total.protein + nutrition.protein,
+        fat: total.fat + nutrition.fat,
+        carbohydrates: total.carbohydrates + nutrition.carbohydrates,
+        salt: total.salt + nutrition.salt,
+      };
+    },
+    {
+      calories: 0,
+      protein: 0,
+      fat: 0,
+      carbohydrates: 0,
+      salt: 0,
+    }
+  );
 }; 

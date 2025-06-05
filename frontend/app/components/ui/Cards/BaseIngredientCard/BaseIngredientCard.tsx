@@ -56,7 +56,7 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
     const currentUnit = selectedUnit || ingredient.unit.name;
     const isCurrentUnitAdjustable = isQuantityAdjustable(currentUnit);
 
-    if (isPresenceType && !isRecipeCreation && !isCurrentUnitAdjustable) {
+    if (isPresenceType && !isRecipeCreation) {
       return (
         <div className={styles.card_block__controls}>
           <button
@@ -84,62 +84,42 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
     }
 
     return (
-      <>
-        <div className={styles.card_block__controls}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleQuantityUpdate(-1);
-            }}
-            disabled={
-              isPresenceType && !isCurrentUnitAdjustable
-                ? !isSelected
-                : quantity <= 0
-            }
-            className={`${styles.card_block__button} ${styles["card_block__button--minus"]}`}
-          >
-            -
-          </button>
-          {(!isPresenceType || isCurrentUnitAdjustable) && (
-            <span>
-              {Number.isInteger(quantity)
-                ? quantity
-                : Number(quantity).toFixed(1)}
-              {currentUnit}
-            </span>
-          )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleQuantityUpdate(1);
-            }}
-            disabled={
-              isPresenceType && !isCurrentUnitAdjustable ? isSelected : false
-            }
-            className={`${styles.card_block__button} ${styles["card_block__button--plus"]}`}
-          >
-            +
-          </button>
-        </div>
-        {isPresenceType && (
-          <div className={styles.card_block__unit_selector}>
-            <select
-              value={currentUnit}
-              onChange={handleUnitChange}
-              className={styles.card_block__unit_select}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {units
-                ?.filter((unit) => unit.type === "presence")
-                .map((unit) => (
-                  <option key={unit.id} value={unit.name}>
-                    {unit.name}
-                  </option>
-                ))}
-            </select>
-          </div>
+      <div className={styles.card_block__controls}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleQuantityUpdate(-1);
+          }}
+          disabled={
+            isPresenceType && !isCurrentUnitAdjustable
+              ? !isSelected
+              : quantity <= 0
+          }
+          className={`${styles.card_block__button} ${styles["card_block__button--minus"]}`}
+        >
+          -
+        </button>
+        {(!isPresenceType || isCurrentUnitAdjustable || isRecipeCreation) && (
+          <span>
+            {Number.isInteger(quantity)
+              ? quantity
+              : Number(quantity).toFixed(1)}
+            {currentUnit}
+          </span>
         )}
-      </>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleQuantityUpdate(1);
+          }}
+          disabled={
+            isPresenceType && !isCurrentUnitAdjustable ? isSelected : false
+          }
+          className={`${styles.card_block__button} ${styles["card_block__button--plus"]}`}
+        >
+          +
+        </button>
+      </div>
     );
   };
 

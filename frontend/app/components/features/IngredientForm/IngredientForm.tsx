@@ -23,6 +23,7 @@ interface IngredientFormProps {
       salt: number;
     };
     quantity?: number;
+    gramEquivalent?: number;
   };
   units: { id: number; name: string; step: number }[];
   genres: { id: number; name: string }[];
@@ -44,11 +45,19 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
   const [fat, setFat] = useState(initialData?.nutrition?.fat || 0);
   const [carbohydrates, setCarbohydrates] = useState(initialData?.nutrition?.carbohydrates || 0);
   const [salt, setSalt] = useState(initialData?.nutrition?.salt || 0);
+  const [gramEquivalent, setGramEquivalent] = useState(initialData?.gramEquivalent || 100);
   const [searchResults, setSearchResults] = useState<Array<{ key: string; name: string }>>([]);
   const [selectedFoodKey, setSelectedFoodKey] = useState<string>('');
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+
+  // 100gあたりの栄養素値を保持するstate
+  const [baseCalories, setBaseCalories] = useState(initialData?.nutrition?.calories || 0);
+  const [baseProtein, setBaseProtein] = useState(initialData?.nutrition?.protein || 0);
+  const [baseFat, setBaseFat] = useState(initialData?.nutrition?.fat || 0);
+  const [baseCarbohydrates, setBaseCarbohydrates] = useState(initialData?.nutrition?.carbohydrates || 0);
+  const [baseSalt, setBaseSalt] = useState(initialData?.nutrition?.salt || 0);
 
   const router = useRouter();
   const addIngredientMutation = useAddIngredient();
@@ -67,6 +76,11 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
         setFat(initialData.nutrition.fat);
         setCarbohydrates(initialData.nutrition.carbohydrates);
         setSalt(initialData.nutrition.salt);
+        setBaseCalories(initialData.nutrition.calories);
+        setBaseProtein(initialData.nutrition.protein);
+        setBaseFat(initialData.nutrition.fat);
+        setBaseCarbohydrates(initialData.nutrition.carbohydrates);
+        setBaseSalt(initialData.nutrition.salt);
       }
 
       const results = searchFoodData(initialData.name);
@@ -103,6 +117,11 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
       setFat(foodData.fat);
       setCarbohydrates(foodData.carbohydrates);
       setSalt(foodData.salt);
+      setBaseCalories(foodData.calories);
+      setBaseProtein(foodData.protein);
+      setBaseFat(foodData.fat);
+      setBaseCarbohydrates(foodData.carbohydrates);
+      setBaseSalt(foodData.salt);
     } catch (error) {
       console.error('Error fetching nutrition data:', error);
       setError("栄養素データの取得に失敗しました");
@@ -111,6 +130,28 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
 
   const handleImageChange = (newImage: File) => {
     setImage(newImage);
+  };
+
+  // 栄養素inputを直接編集した場合もbase値を更新
+  const handleCaloriesChange = (v: string) => {
+    setCalories(Number(v));
+    setBaseCalories(Number(v));
+  };
+  const handleProteinChange = (v: string) => {
+    setProtein(Number(v));
+    setBaseProtein(Number(v));
+  };
+  const handleFatChange = (v: string) => {
+    setFat(Number(v));
+    setBaseFat(Number(v));
+  };
+  const handleCarbohydratesChange = (v: string) => {
+    setCarbohydrates(Number(v));
+    setBaseCarbohydrates(Number(v));
+  };
+  const handleSaltChange = (v: string) => {
+    setSalt(Number(v));
+    setBaseSalt(Number(v));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,6 +169,10 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
       setError("ジャンルを選択してください");
       return;
     }
+    if (!gramEquivalent || gramEquivalent <= 0) {
+      setError("100gに相当する量を入力してください");
+      return;
+    }
 
     setIsSubmitting(true);
     setError("");
@@ -137,6 +182,7 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
       formData.append("name", name);
       formData.append("genre_id", selectedGenre);
       formData.append("unit_id", selectedUnit);
+      formData.append("gram_equivalent", gramEquivalent.toString());
       
       const nutrition = {
         calories,
@@ -233,6 +279,46 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
       </div>
 
       <div className={styles.field}>
+        <label htmlFor="gramEquivalent" className={styles.label}>
+          100gに相当する量
+        </label>
+        <div className={styles.inputGroup}>
+          <input
+            id="gramEquivalent"
+            type="text"
+            value={gramEquivalent || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              setGramEquivalent(value ? Number(value) : 0);
+            }}
+            className={styles.input}
+            placeholder="例：卵1個が50gの場合は50"
+            inputMode="decimal"
+          />
+          <button
+            type="button"
+            className={styles.nutritionButton}
+            onClick={() => {
+              if (!gramEquivalent) return;
+              setCalories(Number((baseCalories * (gramEquivalent / 100)).toFixed(1)));
+              setProtein(Number((baseProtein * (gramEquivalent / 100)).toFixed(2)));
+              setFat(Number((baseFat * (gramEquivalent / 100)).toFixed(2)));
+              setCarbohydrates(Number((baseCarbohydrates * (gramEquivalent / 100)).toFixed(2)));
+              setSalt(Number((baseSalt * (gramEquivalent / 100)).toFixed(2)));
+            }}
+          >
+            換算
+          </button>
+        </div>
+        <p className={styles.helpText}>
+          この具材の1単位が何グラムに相当するかを入力してください。<br />
+          例：卵1個が50gの場合は50、りんご1個が300gの場合は300
+          <br />
+          「換算」ボタンを押すと、100gあたりの栄養素値をこの量あたりの値に自動計算します。
+        </p>
+      </div>
+
+      <div className={styles.field}>
         <label htmlFor="genre" className={styles.label}>
           ジャンル
         </label>
@@ -269,7 +355,7 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
             id="calories"
             type="number"
             value={calories}
-            onChange={(e) => setCalories(Number(e.target.value))}
+            onChange={(e) => handleCaloriesChange(e.target.value)}
             className={styles.input}
             placeholder="カロリー (kcal)"
             readOnly={!!selectedFoodKey}
@@ -284,7 +370,7 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
             id="protein"
             type="number"
             value={protein}
-            onChange={(e) => setProtein(Number(e.target.value))}
+            onChange={(e) => handleProteinChange(e.target.value)}
             className={styles.input}
             placeholder="タンパク質 (g)"
             readOnly={!!selectedFoodKey}
@@ -299,7 +385,7 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
             id="fat"
             type="number"
             value={fat}
-            onChange={(e) => setFat(Number(e.target.value))}
+            onChange={(e) => handleFatChange(e.target.value)}
             className={styles.input}
             placeholder="脂質 (g)"
             readOnly={!!selectedFoodKey}
@@ -314,7 +400,7 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
             id="carbohydrates"
             type="number"
             value={carbohydrates}
-            onChange={(e) => setCarbohydrates(Number(e.target.value))}
+            onChange={(e) => handleCarbohydratesChange(e.target.value)}
             className={styles.input}
             placeholder="炭水化物 (g)"
             readOnly={!!selectedFoodKey}
@@ -329,7 +415,7 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
             id="salt"
             type="number"
             value={salt}
-            onChange={(e) => setSalt(Number(e.target.value))}
+            onChange={(e) => handleSaltChange(e.target.value)}
             className={styles.input}
             placeholder="塩分 (g)"
             readOnly={!!selectedFoodKey}

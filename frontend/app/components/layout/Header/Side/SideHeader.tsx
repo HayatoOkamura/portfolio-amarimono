@@ -11,6 +11,7 @@ import { FaListUl } from "react-icons/fa";
 import { BsPencilSquare } from "react-icons/bs";
 import { FaHeart } from "react-icons/fa";
 import { FaCog } from "react-icons/fa";
+import { CgSmartHomeRefrigerator } from "react-icons/cg";
 import { useUserStore } from "@/app/stores/userStore";
 import ClientAuthMenu from "./ClientAuthMenu";
 import { useAuth } from "@/app/hooks/useAuth";
@@ -19,7 +20,7 @@ const SideHeader = () => {
   const { user } = useUserStore();
   const pathname = usePathname();
   const { user: authUser, isLoading } = useAuth();
-  const isAdmin = authUser?.role === 'admin';
+  const isAdmin = authUser?.role === "admin";
 
   // 現在のパスがリンク先と一致すれば is-active を付与
   const getActiveClass = (paths: string[]) =>
@@ -51,7 +52,7 @@ const SideHeader = () => {
             </Link>
           </div>
           {user && (
-            <>
+            <div className={styles.header_block__group}>
               <div
                 className={`${styles.header_block__icon} ${getActiveClass([
                   "/user",
@@ -63,9 +64,9 @@ const SideHeader = () => {
                 </Link>
               </div>
               <div
-                className={`${styles.header_block__icon} ${getActiveClass([
-                  "/recipes/new",
-                ])}`}
+                className={`${styles.header_block__icon} ${
+                  styles["header_block__icon--child"]
+                } ${getActiveClass(["/recipes/new"])}`}
               >
                 <Link href="/recipes/new/">
                   <BsPencilSquare />
@@ -73,9 +74,9 @@ const SideHeader = () => {
                 </Link>
               </div>
               <div
-                className={`${styles.header_block__icon} ${getActiveClass([
-                  "/recipes/my",
-                ])}`}
+                className={`${styles.header_block__icon} ${
+                  styles["header_block__icon--child"]
+                } ${getActiveClass(["/recipes/my"])}`}
               >
                 <Link href="/recipes/my/">
                   <FaListUl />
@@ -83,16 +84,26 @@ const SideHeader = () => {
                 </Link>
               </div>
               <div
-                className={`${styles.header_block__icon} ${getActiveClass([
-                  "/favorite",
-                ])}`}
+                className={`${styles.header_block__icon} ${
+                  styles["header_block__icon--child"]
+                } ${getActiveClass(["/recipes/my"])}`}
+              >
+                <Link href="/user/settings/">
+                  <CgSmartHomeRefrigerator />
+                  <p className={styles.header_block__text}>具材の登録</p>
+                </Link>
+              </div>
+              <div
+                className={`${styles.header_block__icon} ${
+                  styles["header_block__icon--child"]
+                } ${getActiveClass(["/favorite"])}`}
               >
                 <Link href="/favorite/">
                   <FaHeart />
                   <p className={styles.header_block__text}>お気に入り</p>
                 </Link>
               </div>
-            </>
+            </div>
           )}
           {!isLoading && isAdmin && (
             <div

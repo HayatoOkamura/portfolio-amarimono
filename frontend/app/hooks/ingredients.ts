@@ -40,7 +40,8 @@ const mapIngredient = (ingredient: any): Ingredient => {
       fat: 0,
       protein: 0,
       salt: 0
-    }
+    },
+    gramEquivalent: ingredientData.gramEquivalent ?? ingredientData.gram_equivalent ?? 100
   };
   return mapped;
 };

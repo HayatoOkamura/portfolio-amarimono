@@ -1,0 +1,30 @@
+-- Clear development data
+-- This migration removes all development data from recipes, recipe_ingredients, and ingredients tables
+-- while maintaining the table structure and constraints.
+
+-- up
+BEGIN;
+
+-- Delete all data from user_ingredient_defaults first (due to foreign key constraints)
+DELETE FROM user_ingredient_defaults;
+
+-- Delete all data from recipe_ingredients (due to foreign key constraints)
+DELETE FROM recipe_ingredients;
+
+-- Delete all data from likes (due to foreign key constraints)
+DELETE FROM likes;
+
+-- Delete all data from reviews (due to foreign key constraints)
+DELETE FROM reviews;
+
+-- Delete all data from recipes
+DELETE FROM recipes;
+
+-- Delete all data from ingredients
+DELETE FROM ingredients;
+
+COMMIT;
+
+-- down
+-- No down migration needed as this is a data clearing operation
+-- The data cannot be restored through migration 

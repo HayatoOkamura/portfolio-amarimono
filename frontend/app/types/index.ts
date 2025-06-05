@@ -30,6 +30,7 @@ export interface Ingredient {
   quantity: number;
   unit: Unit;
   nutrition: Nutrition;
+  gramEquivalent: number;
 }
 
 export interface Instruction {

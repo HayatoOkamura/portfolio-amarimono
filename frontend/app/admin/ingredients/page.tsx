@@ -114,10 +114,10 @@ const AdminIngredients = () => {
       <div className={styles.header}>
         <h1 className={styles.title}>具材管理</h1>
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/admin")}
           className={styles.backButton}
         >
-          トップページに戻る
+          ダッシュボードに戻る
         </button>
       </div>
 

@@ -32,4 +32,36 @@
 
 .ingredient_card {
   // 既存のスタイル
+}
+
+.selected {
+  // ... existing code ...
+}
+
+.ingredient_card_block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  &__unit_selector {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  &__unit_select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--secondary-font-color);
+    border-radius: 4px;
+    background-color: white;
+    font-size: 0.875rem;
+    color: var(--primary-font-color);
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+      border-color: var(--primary-accent-color);
+    }
+  }
 } 

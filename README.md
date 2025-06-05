@@ -649,6 +649,28 @@ Amarimonoでは、以下の機能を持つ管理者権限を実装していま�
    - バックアップの管理
    - ログの確認
 
+### 管理者権限の付与方法
+
+SupabaseのSQL Editorで以下のコマンドを実行することで、特定のユーザーに管理者権限を付与できます：
+
+```sql
+-- 既存のユーザーロールを更新する場合
+UPDATE public.user_roles
+SET role = 'admin'
+WHERE user_id = 'ユーザーのUUID';
+
+-- ユーザーロールが存在しない場合は新規作成
+INSERT INTO public.user_roles (user_id, role)
+VALUES ('ユーザーのUUID', 'admin')
+ON CONFLICT (user_id) 
+DO UPDATE SET role = 'admin';
+```
+
+注意点：
+1. `ユーザーのUUID` の部分を、実際のユーザーのUUIDに置き換えてください
+2. コマンドは冪等性を持つように設計されており、何度実行しても同じ結果になります
+3. `ON CONFLICT` 句により、既存のユーザーロールがある場合は更新し、ない場合は新規作成します
+
 ### 管理者権限の実装
 
 #### 1. データベース設計

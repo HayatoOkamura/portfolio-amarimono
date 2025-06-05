@@ -449,6 +449,7 @@ export const RegistrationForm = ({
                           carbohydrates: 0,
                           salt: 0,
                         },
+                        gramEquivalent: ingredient?.gramEquivalent ?? 100
                       };
                     }
                   );

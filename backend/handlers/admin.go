@@ -153,7 +153,7 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 
 	// 画像のパスを更新
 	ingredient.ImageUrl = imagePath
-	if err := h.DB.Save(&ingredient).Error; err != nil {	
+	if err := h.DB.Save(&ingredient).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update ingredient with image path"})
 		return
 	}
@@ -269,14 +269,43 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 func (h *AdminHandler) DeleteIngredient(c *gin.Context) {
 	id := c.Param("id")
 
+	// トランザクションを開始
+	tx := h.DB.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
+		return
+	}
+
+	// エラーが発生した場合はロールバック
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
 	// 削除する具材を取得
 	var ingredient models.Ingredient
-	if err := h.DB.First(&ingredient, id).Error; err != nil {
+	if err := tx.First(&ingredient, id).Error; err != nil {
+		tx.Rollback()
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Ingredient not found"})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch ingredient"})
 		}
+		return
+	}
+
+	// 関連するrecipe_ingredientsを削除
+	if err := tx.Where("ingredient_id = ?", id).Delete(&models.RecipeIngredient{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete recipe ingredients"})
+		return
+	}
+
+	// 関連するuser_ingredient_defaultsを削除
+	if err := tx.Exec("DELETE FROM user_ingredient_defaults WHERE ingredient_id = ?", id).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user ingredient defaults"})
 		return
 	}
 
@@ -288,8 +317,16 @@ func (h *AdminHandler) DeleteIngredient(c *gin.Context) {
 	}
 
 	// 具材を削除
-	if err := h.DB.Delete(&ingredient).Error; err != nil {
+	if err := tx.Delete(&ingredient).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete ingredient"})
+		return
+	}
+
+	// トランザクションをコミット
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
 		return
 	}
 
@@ -752,7 +789,6 @@ func (h *AdminHandler) UpdateRecipe(c *gin.Context) {
 	updates["nutrition"] = recipe.Nutrition
 	updates["is_draft"] = isDraft
 
-
 	// レシピの更新を実行
 	if err := tx.Model(&recipe).Updates(updates).Error; err != nil {
 		tx.Rollback()
@@ -1005,7 +1041,7 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 
 		// 更新後のレシピを取得
 		if err := tx.Where("id = ?", recipeID).First(&recipe).Error; err != nil {
-			tx.Rollback()	
+			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated recipe"})
 			return
 		}
@@ -1077,7 +1113,7 @@ func (h *AdminHandler) SaveDraftRecipe(c *gin.Context) {
 func (h *AdminHandler) GetDraftRecipes(c *gin.Context) {
 
 	// RedisClientのnilチェック
-	if h.RedisClient == nil {	
+	if h.RedisClient == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Redis client not initialized"})
 		return
 	}
@@ -1150,7 +1186,7 @@ func (h *AdminHandler) GetRecipe(c *gin.Context) {
 
 	// 栄養情報の標準値を取得
 	var standard models.NutritionStandard
-	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {	
+	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
 		return
 	}
