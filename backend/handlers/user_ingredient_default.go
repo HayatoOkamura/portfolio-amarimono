@@ -101,9 +101,9 @@ func (h *UserIngredientDefaultHandler) UpdateIngredientDefaults(c *gin.Context) 
 
 // GetUserIngredientDefaults は認証済みユーザーの具材初期設定を取得します
 func (h *UserIngredientDefaultHandler) GetUserIngredientDefaults(c *gin.Context) {
-	userID := c.GetString("user_id")
+	userID := c.Query("user_id")
 	if userID == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
 		return
 	}
 
@@ -124,9 +124,9 @@ func (h *UserIngredientDefaultHandler) GetUserIngredientDefaults(c *gin.Context)
 
 // UpdateUserIngredientDefault は認証済みユーザーの具材初期設定を更新します
 func (h *UserIngredientDefaultHandler) UpdateUserIngredientDefault(c *gin.Context) {
-	userID := c.GetString("user_id")
+	userID := c.Query("user_id")
 	if userID == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
 		return
 	}
 

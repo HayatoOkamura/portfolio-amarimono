@@ -46,7 +46,7 @@ func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, like
 	router.GET("/api/ingredient-defaults", userIngredientDefaultHandler.GetIngredientDefaults)        // 具材の初期設定を取得
 	router.PUT("/api/ingredient-defaults", userIngredientDefaultHandler.UpdateIngredientDefaults)     // 具材の初期設定を更新
 
-	// ユーザー固有の具材設定（認証必須）
+	// ユーザー固有の具材設定（認証不要）
 	router.GET("/api/user/ingredient-defaults", userIngredientDefaultHandler.GetUserIngredientDefaults)   // ユーザーの初期設定具材を取得
 	router.PUT("/api/user/ingredient-defaults", userIngredientDefaultHandler.UpdateUserIngredientDefault) // ユーザーの初期設定具材を更新
 

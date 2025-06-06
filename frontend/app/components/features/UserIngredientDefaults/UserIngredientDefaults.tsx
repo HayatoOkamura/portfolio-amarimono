@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
-import { useUserIngredientDefaults, useUpdateUserIngredientDefault, useIngredientsByCategory } from '@/app/hooks/ingredients';
+import { useState, useEffect, useRef } from 'react';
+import { useUserIngredientDefaults, useUpdateUserIngredientDefaults } from '@/app/hooks/userIngredientDefaults';
+import { useIngredients } from '@/app/hooks/ingredients';
 import styles from './UserIngredientDefaults.module.scss';
 import { Ingredient, Genre } from '@/app/types/index';
 import { useGenres } from '@/app/hooks/genres';
 import CategoryCard from '@/app/components/ui/Cards/CategoryCard/CategoryCard';
 import Loading from '@/app/components/ui/Loading/Loading';
-import IngredientCard from '@/app/components/ui/Cards/BaseIngredientCard/BaseIngredientCard';
+import SearchIngredientCard from '@/app/components/ui/Cards/SearchIngredientCard/SearchIngredientCard';
+import useIngredientStore from '@/app/stores/ingredientStore';
+import toast from 'react-hot-toast';
 
 interface UserIngredientDefault {
   ingredient_id: number;
@@ -13,66 +16,92 @@ interface UserIngredientDefault {
 }
 
 export const UserIngredientDefaults = () => {
-  const [selectedCategory, setSelectedCategory] = useState<number>(0); // デフォルトで「すべて」を選択
-  const [height, setHeight] = useState("auto");
+  const [selectedCategory, setSelectedCategory] = useState<number>(0);
+  const [isSaving, setIsSaving] = useState(false);
   const { data: defaults, isLoading: isLoadingDefaults } = useUserIngredientDefaults();
-  const { data: ingredients, isLoading: isLoadingIngredients } = useIngredientsByCategory(selectedCategory);
+  const { data: ingredients, isLoading: isLoadingIngredients } = useIngredients({
+    staleTime: process.env.ENVIRONMENT === "development" ? 10000 : 86400000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
   const { data: genres, isLoading: isLoadingGenres } = useGenres();
-  const { mutate: updateDefault } = useUpdateUserIngredientDefault();
+  const { mutate: updateDefaults } = useUpdateUserIngredientDefaults();
+  const { ingredients: selectedIngredients, addIngredient, removeIngredient } = useIngredientStore();
+  const isInitialMount = useRef(true);
 
-  // 一時的な選択状態を管理
-  const [tempSelections, setTempSelections] = useState<{ [key: number]: number }>({});
-
+  // デバッグ用のログ
   useEffect(() => {
-    // 初期設定を一時的な選択状態に反映
-    if (defaults) {
-      const initialSelections = defaults.reduce((acc: { [key: number]: number }, default_: UserIngredientDefault) => {
-        acc[default_.ingredient_id] = default_.default_quantity;
-        return acc;
-      }, {} as { [key: number]: number });
-      setTempSelections(initialSelections);
+    console.log('Selected Category:', selectedCategory);
+    console.log('Ingredients:', ingredients);
+    console.log('Loading States:', {
+      isLoadingDefaults,
+      isLoadingIngredients,
+      isLoadingGenres
+    });
+  }, [selectedCategory, ingredients, isLoadingDefaults, isLoadingIngredients, isLoadingGenres]);
+
+  // 初期設定の反映
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
     }
-  }, [defaults]);
 
-  useEffect(() => {
-    const updateHeight = () => {
-      if (isLoadingIngredients || isLoadingGenres) return;
-
-      const element = document.getElementById("ingredient-list");
-      if (element) {
-        const topOffset = element.getBoundingClientRect().top;
-        setHeight(`${window.innerHeight - topOffset - 20}px`);
+    const applyDefaults = () => {
+      if (defaults) {
+        defaults.forEach((default_) => {
+          const ingredient = ingredients?.find(ing => ing.id === default_.ingredient_id);
+          if (ingredient) {
+            addIngredient({
+              ...ingredient,
+              quantity: default_.default_quantity,
+            });
+          }
+        });
       }
     };
 
-    window.addEventListener("resize", updateHeight);
-    updateHeight();
-
-    return () => window.removeEventListener("resize", updateHeight);
-  }, [isLoadingIngredients, isLoadingGenres]);
-
-  const handleQuantityChange = (ingredientId: number, delta: number) => {
-    setTempSelections(prev => ({
-      ...prev,
-      [ingredientId]: Math.max(0, (prev[ingredientId] || 0) + delta)
-    }));
-  };
+    if (!isLoadingDefaults && !isLoadingIngredients && ingredients) {
+      applyDefaults();
+    }
+  }, [defaults, ingredients, isLoadingDefaults, isLoadingIngredients, addIngredient]);
 
   const handleSave = async () => {
-    const updates = Object.entries(tempSelections).map(([ingredientId, quantity]) => ({
-      ingredient_id: Number(ingredientId),
-      default_quantity: quantity
-    }));
+    try {
+      setIsSaving(true);
+      const updates = selectedIngredients.map(ingredient => ({
+        ingredient_id: ingredient.id,
+        default_quantity: ingredient.quantity
+      }));
 
-    await updateDefault(updates);
+      await updateDefaults(updates);
+      toast.success('具材の初期設定を保存しました');
+    } catch (error) {
+      console.error('Error saving ingredient defaults:', error);
+      toast.error('具材の初期設定の保存に失敗しました');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  if (isLoadingDefaults || isLoadingIngredients || isLoadingGenres) {
+  // Loading表示の条件を修正
+  if (isLoadingDefaults || isLoadingGenres) {
     return <div className={styles.container}><Loading /></div>;
   }
 
-  // 「すべて」カテゴリを追加
   const allGenres = [{ id: 0, name: "すべて" }, ...(genres || [])];
+
+  // フィルタリングロジックのデバッグ
+  console.log('Filtering ingredients for category:', selectedCategory);
+  const filteredIngredients = selectedCategory === 0
+    ? ingredients
+    : ingredients?.filter((ing) => {
+        console.log('Checking ingredient:', ing.name, 'Genre ID:', ing.genre.id, 'Selected Category:', selectedCategory);
+        return ing.genre.id === selectedCategory;
+      });
+
+  console.log('Filtered Ingredients:', filteredIngredients);
 
   return (
     <div className={styles.container}>
@@ -94,39 +123,31 @@ export const UserIngredientDefaults = () => {
 
       <section className={styles.ingredient_block}>
         <h2 className={styles.ingredient_block__title}>具材一覧</h2>
-        <div
-          className={styles.ingredient_block__wrapper}
-          id="ingredient-list"
-          style={{ height }}
-        >
+        <div className={styles.ingredient_block__wrapper}>
           <div className={styles.ingredient_block__contents}>
-            {ingredients?.map((ingredient: Ingredient) => {
-              if (!ingredient || !ingredient.unit) return null;
-              
-              const currentQuantity = tempSelections[ingredient.id] || 0;
-              const isPresence = ingredient.unit.name === 'presence';
-              
-              return (
-                <IngredientCard
-                  key={ingredient.id}
-                  ingredient={ingredient}
-                  quantity={currentQuantity}
-                  onQuantityChange={handleQuantityChange}
-                  isSelected={currentQuantity > 0}
-                />
-              );
-            })}
+            {filteredIngredients?.map((ingredient: Ingredient) => (
+              <SearchIngredientCard
+                key={ingredient.id}
+                ingredient={ingredient}
+              />
+            ))}
           </div>
         </div>
       </section>
 
       <div className={styles.save_block}>
-        <button
-          className={styles.save_block__button}
-          onClick={handleSave}
-        >
-          設定を保存
-        </button>
+        {isSaving ? (
+          <div className={styles.loading_container}>
+            <Loading />
+          </div>
+        ) : (
+          <button
+            className={styles.save_block__button}
+            onClick={handleSave}
+          >
+            設定を保存
+          </button>
+        )}
       </div>
     </div>
   );

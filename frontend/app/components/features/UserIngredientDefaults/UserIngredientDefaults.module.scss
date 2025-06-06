@@ -37,6 +37,8 @@
   &__wrapper {
     overflow-y: auto;
     border-radius: 8px;
+    max-height: 80vh;
+    height: 100%;
   }
 
   &__contents {
@@ -132,4 +134,14 @@
       background: #45a049;
     }
   }
+}
+
+.loading_container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 48px;
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto;
 } 

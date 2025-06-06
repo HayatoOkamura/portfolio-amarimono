@@ -63,7 +63,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
               "/",
             ])}`}
           >
-            <Link href="/">
+            <Link href="/" onClick={onClose}>
               <ImSpoonKnife />
               <span>具材から探す</span>
             </Link>
@@ -75,7 +75,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
                   "/user",
                 ])}`}
               >
-                <Link href="/user/">
+                <Link href="/user/" onClick={onClose}>
                   <FaUserCircle />
                   <span>マイページ</span>
                 </Link>
@@ -85,7 +85,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
                   "/recipes/new",
                 ])}`}
               >
-                <Link href="/recipes/new/">
+                <Link href="/recipes/new/" onClick={onClose}>
                   <BsPencilSquare />
                   <span>レシピ登録</span>
                 </Link>
@@ -95,7 +95,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
                   "/recipes/my",
                 ])}`}
               >
-                <Link href="/recipes/my/">
+                <Link href="/recipes/my/" onClick={onClose}>
                   <FaListUl />
                   <span>レシピ一覧</span>
                 </Link>
@@ -105,7 +105,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
                   "/user/settings",
                 ])}`}
               >
-                <Link href="/user/settings/">
+                <Link href="/user/settings/" onClick={onClose}>
                   <CgSmartHomeRefrigerator />
                   <span>具材の登録</span>
                 </Link>
@@ -115,7 +115,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
                   "/favorite",
                 ])}`}
               >
-                <Link href="/favorite/">
+                <Link href="/favorite/" onClick={onClose}>
                   <FaHeart />
                   <span>お気に入り</span>
                 </Link>
@@ -128,7 +128,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
                 "/admin",
               ])}`}
             >
-              <Link href="/admin/recipes">
+              <Link href="/admin/recipes" onClick={onClose}>
                 <FaCog />
                 <span>管理画面</span>
               </Link>
@@ -137,7 +137,10 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
           {user ? (
             <div
               className={`${styles.modal_content__nav_item} ${styles["modal_content__nav_item--logout"]}`}
-              onClick={logout}
+              onClick={() => {
+                logout();
+                onClose();
+              }}
             >
               <IoLogOut />
               <span>ログアウト</span>
@@ -148,7 +151,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
                 "/login",
               ])}`}
             >
-              <Link href="/login/">
+              <Link href="/login/" onClick={onClose}>
                 <IoLogIn />
                 <span>ログイン</span>
               </Link>

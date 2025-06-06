@@ -9,6 +9,9 @@ import CategoryCard from "../../ui/Cards/CategoryCard/CategoryCard";
 import Loading from "../../ui/Loading/Loading";
 import { Ingredient } from "@/app/types/index";
 import { useRouter } from "next/navigation";
+import { useUserIngredientDefaults } from "@/app/hooks/userIngredientDefaults";
+import { useAuth } from "@/app/hooks/useAuth";
+import useIngredientStore from "@/app/stores/ingredientStore";
 
 interface IngredientSelectorProps {
   initialIngredients: Ingredient[];
@@ -20,21 +23,73 @@ const IngredientSelector = ({
   onSearch,
 }: IngredientSelectorProps) => {
   const router = useRouter();
+  const { user } = useAuth();
+  const { data: userDefaults } = useUserIngredientDefaults();
+  const { addIngredient } = useIngredientStore();
+
   const {
     data: ingredients = initialIngredients,
     isLoading: isIngredientsLoading,
   } = useIngredients({
     initialData: initialIngredients,
-    staleTime: process.env.ENVIRONMENT === "development" ? 10000 : 86400000, // 開発環境:10秒、本番環境:24時間
-    refetchOnMount: false, // マウント時の自動再フェッチを無効化
-    refetchOnWindowFocus: false, // ウィンドウフォーカス時の自動再フェッチを無効化
-    refetchOnReconnect: false, // 再接続時の自動再フェッチを無効化
+    staleTime: process.env.ENVIRONMENT === "development" ? 10000 : 86400000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const { ingredientGenres, fetchIngredientGenres } = useGenreStore();
   const [selectedGenre, setSelectedGenre] = useState<string>("すべて");
   const [height, setHeight] = useState("auto");
   const [isGenresLoading, setIsGenresLoading] = useState(true);
+
+  // 初期設定の反映
+  useEffect(() => {
+    const applyDefaults = () => {
+      if (user && userDefaults) {
+        // 認証済みユーザーの場合
+        userDefaults.forEach((default_) => {
+          const ingredient = ingredients?.find(ing => ing.id === default_.ingredient_id);
+          if (ingredient) {
+            addIngredient({
+              ...ingredient,
+              quantity: default_.default_quantity,
+            });
+          }
+        });
+      } else {
+        // 未認証ユーザーの場合
+        const getCookie = (name: string) => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop()?.split(';').shift();
+          return null;
+        };
+
+        const cookieData = getCookie('ingredient_defaults');
+        if (cookieData) {
+          try {
+            const defaultIngredients = JSON.parse(decodeURIComponent(cookieData));
+            defaultIngredients.forEach((default_: { ingredient_id: number; default_quantity: number }) => {
+              const ingredient = ingredients?.find(ing => ing.id === default_.ingredient_id);
+              if (ingredient) {
+                addIngredient({
+                  ...ingredient,
+                  quantity: default_.default_quantity,
+                });
+              }
+            });
+          } catch (error) {
+            console.error('Error parsing cookie data:', error);
+          }
+        }
+      }
+    };
+
+    if (!isIngredientsLoading && ingredients) {
+      applyDefaults();
+    }
+  }, [user, userDefaults, ingredients, isIngredientsLoading, addIngredient]);
 
   useEffect(() => {
     const loadGenres = async () => {
@@ -47,11 +102,9 @@ const IngredientSelector = ({
 
   useEffect(() => {
     const updateHeight = () => {
-      // ローディング中は高さの計算を行わない
       if (isIngredientsLoading || isGenresLoading) return;
 
       const element = document.getElementById("target");
-
       if (element) {
         const topOffset = element.getBoundingClientRect().top;
         setHeight(`${window.innerHeight - topOffset - 20}px`);
@@ -59,10 +112,10 @@ const IngredientSelector = ({
     };
 
     window.addEventListener("resize", updateHeight);
-    updateHeight(); // 初回設定
+    updateHeight();
 
     return () => window.removeEventListener("resize", updateHeight);
-  }, [isIngredientsLoading, isGenresLoading]); // 依存配列にローディング状態を追加
+  }, [isIngredientsLoading, isGenresLoading]);
 
   const genres = [{ id: 0, name: "すべて" }, ...ingredientGenres];
 

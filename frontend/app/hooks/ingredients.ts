@@ -241,19 +241,19 @@ export const useUpdateUserIngredientDefault = () => {
 };
 
 // カテゴリ別の具材を取得するフック
-export const useIngredientsByCategory = (categoryId: number) => {
-  return useQuery<Ingredient[]>({
-    queryKey: ['ingredients', categoryId],
-    queryFn: async () => {
-      // カテゴリIDが0（すべて）の場合は、すべての具材を取得
-      if (categoryId === 0) {
-        const response = await api.get<any[]>('/admin/ingredients');
-        return mapIngredients(response.data);
-      }
-      // それ以外の場合は、カテゴリ別の具材を取得
-      const response = await api.get<any[]>(`/api/ingredients/by-category?category_id=${categoryId}`);
-      return mapIngredients(response.data);
-    },
-  });
-};
+// export const useIngredientsByCategory = (categoryId: number) => {
+//   return useQuery<Ingredient[]>({
+//     queryKey: ['ingredients', categoryId],
+//     queryFn: async () => {
+//       // カテゴリIDが0（すべて）の場合は、すべての具材を取得
+//       if (categoryId === 0) {
+//         const response = await api.get<any[]>('/admin/ingredients');
+//         return mapIngredients(response.data);
+//       }
+//       // それ以外の場合は、カテゴリ別の具材を取得
+//       const response = await api.get<any[]>(`/api/ingredients/by-category?category_id=${categoryId}`);
+//       return mapIngredients(response.data);
+//     },
+//   });
+// };
 

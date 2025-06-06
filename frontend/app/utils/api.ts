@@ -1,4 +1,5 @@
 import axios from "axios";
+import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 
 // クライアントサイドとサーバーサイドで異なるURLを使用
 export const backendUrl = typeof window !== 'undefined'
@@ -16,6 +17,15 @@ export const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+});
+
+// リクエストインターセプターの設定
+api.interceptors.request.use(async (config) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    config.headers.Authorization = `Bearer ${session.access_token}`;
+  }
+  return config;
 });
 
 // レスポンスインターセプターの設定

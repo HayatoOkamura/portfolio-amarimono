@@ -86,7 +86,7 @@ const SideHeader = () => {
               <div
                 className={`${styles.header_block__icon} ${
                   styles["header_block__icon--child"]
-                } ${getActiveClass(["/recipes/my"])}`}
+                } ${getActiveClass(["/user/settings"])}`}
               >
                 <Link href="/user/settings/">
                   <CgSmartHomeRefrigerator />
