@@ -32,14 +32,18 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
 }) => {
   const { data: units } = useUnits();
   const isPresenceType = ingredient.unit.type === "presence";
-  const isQuantityAdjustable = (unitName: string) => {
-    return ["大さじ", "小さじ", "滴"].includes(unitName);
-  };
+  const isQuantityTypeWithStep1 = ingredient.unit.type === "quantity" && ingredient.unit.step === 1;
 
   const handleQuantityUpdate = (delta: number) => {
     if (!onQuantityChange) return;
-    // presenceタイプの具材でも数量変更を許可
     onQuantityChange(ingredient.id, delta);
+  };
+
+  const formatQuantity = (qty: number) => {
+    if (!isRecipeCreation || !isQuantityTypeWithStep1) {
+      return Number.isInteger(qty) ? qty : Number(qty).toFixed(1);
+    }
+    return Number.isInteger(qty) ? qty : Number(qty).toFixed(1);
   };
 
   const handleUnitChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -54,7 +58,7 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
 
   const renderQuantityControls = () => {
     const currentUnit = selectedUnit || ingredient.unit.name;
-    const isCurrentUnitAdjustable = isQuantityAdjustable(currentUnit);
+    const isCurrentUnitAdjustable = ["大さじ", "小さじ", "滴"].includes(currentUnit);
 
     if (isPresenceType && !isRecipeCreation) {
       return (
@@ -101,9 +105,7 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
         </button>
         {(!isPresenceType || isCurrentUnitAdjustable || isRecipeCreation) && (
           <span>
-            {Number.isInteger(quantity)
-              ? quantity
-              : Number(quantity).toFixed(1)}
+            {formatQuantity(quantity)}
             {currentUnit}
           </span>
         )}
@@ -142,8 +144,10 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
           height={100}
         />
       </div>
-      <p className={styles.card_block__name}>{ingredient.name}</p>
-      {renderQuantityControls()}
+      <div className={styles.card_block__contents}>
+        <p className={styles.card_block__name}>{ingredient.name}</p>
+        {renderQuantityControls()}
+      </div>
     </li>
   );
 };

@@ -94,12 +94,17 @@ export const UserIngredientDefaults = () => {
 
   // フィルタリングロジックのデバッグ
   console.log('Filtering ingredients for category:', selectedCategory);
-  const filteredIngredients = selectedCategory === 0
-    ? ingredients
-    : ingredients?.filter((ing) => {
-        console.log('Checking ingredient:', ing.name, 'Genre ID:', ing.genre.id, 'Selected Category:', selectedCategory);
-        return ing.genre.id === selectedCategory;
-      });
+  const filteredIngredients =
+    selectedCategory === 0
+      ? ingredients ? [...ingredients].sort((a, b) => {
+          // まずgenre_idでソート
+          if (a.genre.id !== b.genre.id) {
+            return a.genre.id - b.genre.id;
+          }
+          // 同じジャンル内ではidでソート
+          return a.id - b.id;
+        }) : []
+      : ingredients?.filter((ing) => ing.genre.id === selectedCategory) || [];
 
   console.log('Filtered Ingredients:', filteredIngredients);
 

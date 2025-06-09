@@ -1,26 +1,27 @@
 .card_block {
   background: white;
   border-radius: 12px;
-  padding: 8px 8px 15px 8px;
   text-align: center;
   transition: all 0.2s ease;
 
   &--selected {
     border: 3px solid #de616a;
-    background: #f8ecec;
   }
 
   &__image {
     width: 100%;
     display: block;
     position: relative;
-    margin-bottom: 10px;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 1 / 1;
     img {
-      border-radius: 5px;
+      border-radius: 12px 12px 0 0;
       object-fit: cover;
       width: 100%;
     }
+  }
+
+  &__contents {
+    padding: 10px 8px 15px 8px;
   }
 
   &__name {
@@ -101,4 +102,4 @@
       padding: 4px;
     }
   }
-} 
+}

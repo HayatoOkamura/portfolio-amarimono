@@ -40,15 +40,14 @@
 
     + .header_block__icon {
       margin-top: 10px;
+      &--foot {
+        margin-top: auto;
+      }
     }
   }
 
   &__icon {
     width: 100%;
-    transition:
-      background 0.5s,
-      color 0.5s;
-    border-radius: 5px;
 
     &--child {
       a {
@@ -66,7 +65,14 @@
       justify-content: flex-start;
       gap: 10px;
       padding: 12px;
-      letter-spacing: .02em;
+      letter-spacing: 0.02em;
+      transition: background 0.5s, color 0.5s;
+      border-radius: 5px;
+
+      &:hover {
+        background: var(--secondary-bg-color);
+        color: var(--primary-accent-color);
+      }
     }
 
     svg {
@@ -74,15 +80,10 @@
     }
 
     &.is-active {
-      background: var(--secondary-bg-color);
       a {
+        background: var(--secondary-bg-color);
         color: var(--primary-accent-color);
       }
-    }
-
-    &:hover {
-      background: var(--secondary-bg-color);
-      color: var(--primary-accent-color);
     }
   }
 

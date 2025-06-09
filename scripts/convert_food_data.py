@@ -82,7 +82,7 @@ def convert_food_data():
         
         logger.info(f"Reading Excel file: {input_file}")
         # ヘッダー行を指定せずに読み込み
-        df = pd.read_excel(input_file, sheet_name='表全体', header=None)
+        df = pd.read_excel(input_file, sheet_name='本表', header=None)
         
         # データの検証
         if not validate_data(df):

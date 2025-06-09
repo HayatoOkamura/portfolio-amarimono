@@ -121,7 +121,14 @@ const IngredientSelector = ({
 
   const filteredIngredients =
     selectedGenre === "すべて"
-      ? ingredients
+      ? [...ingredients].sort((a, b) => {
+          // まずgenre_idでソート
+          if (a.genre.id !== b.genre.id) {
+            return a.genre.id - b.genre.id;
+          }
+          // 同じジャンル内ではidでソート
+          return a.id - b.id;
+        })
       : ingredients.filter((ing) => ing.genre.name === selectedGenre);
 
   if (isIngredientsLoading || isGenresLoading) {
@@ -158,7 +165,10 @@ const IngredientSelector = ({
           className={styles.ingredient_block__overlay}
           data-onboarding="ingredient-selector"
         ></div>
-        <h2 className={styles.ingredient_block__title}>具材一覧</h2>
+        <div className={styles.ingredient_block__head}>
+          <h2 className={styles.ingredient_block__title}>具材一覧</h2>
+          <p className={styles.ingredient_block__note}>※画像はイメージです</p>
+        </div>
         <div
           className={styles.ingredient_block__wrapper}
           id="target"

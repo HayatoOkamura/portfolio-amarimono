@@ -29,6 +29,14 @@ interface IngredientFormProps {
   genres: { id: number; name: string }[];
 }
 
+interface NutritionValues {
+  calories: string;
+  protein: string;
+  fat: string;
+  carbohydrates: string;
+  salt: string;
+}
+
 const IngredientForm: React.FC<IngredientFormProps> = ({
   onSubmit,
   onCancel,
@@ -38,120 +46,95 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
 }: IngredientFormProps) => {
   const [name, setName] = useState(initialData?.name || '');
   const [selectedUnit, setSelectedUnit] = useState(initialData?.unit?.id?.toString() || '');
-  const [selectedGenre, setSelectedGenre] = useState(initialData?.genre?.id?.toString() || '');
+  const [selectedGenre, setSelectedGenre] = useState<string>(initialData?.genre?.id?.toString() || '');
   const [image, setImage] = useState<File | undefined>(undefined);
-  const [calories, setCalories] = useState(initialData?.nutrition?.calories || 0);
-  const [protein, setProtein] = useState(initialData?.nutrition?.protein || 0);
-  const [fat, setFat] = useState(initialData?.nutrition?.fat || 0);
-  const [carbohydrates, setCarbohydrates] = useState(initialData?.nutrition?.carbohydrates || 0);
-  const [salt, setSalt] = useState(initialData?.nutrition?.salt || 0);
-  const [gramEquivalent, setGramEquivalent] = useState(initialData?.gramEquivalent || 100);
+  const [gramEquivalent, setGramEquivalent] = useState<number>(initialData?.gramEquivalent || 100);
   const [searchResults, setSearchResults] = useState<Array<{ key: string; name: string }>>([]);
-  const [selectedFoodKey, setSelectedFoodKey] = useState<string>('');
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFoodKey, setSelectedFoodKey] = useState<string | null>(null);
+  const [error, setError] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  // 100gあたりの栄養素値を保持するstate
-  const [baseCalories, setBaseCalories] = useState(initialData?.nutrition?.calories || 0);
-  const [baseProtein, setBaseProtein] = useState(initialData?.nutrition?.protein || 0);
-  const [baseFat, setBaseFat] = useState(initialData?.nutrition?.fat || 0);
-  const [baseCarbohydrates, setBaseCarbohydrates] = useState(initialData?.nutrition?.carbohydrates || 0);
-  const [baseSalt, setBaseSalt] = useState(initialData?.nutrition?.salt || 0);
+  // 栄養素の状態をまとめて管理
+  const [nutrition, setNutrition] = useState<NutritionValues>({
+    calories: initialData?.nutrition?.calories?.toString() || '',
+    protein: initialData?.nutrition?.protein?.toString() || '',
+    fat: initialData?.nutrition?.fat?.toString() || '',
+    carbohydrates: initialData?.nutrition?.carbohydrates?.toString() || '',
+    salt: initialData?.nutrition?.salt?.toString() || '',
+  });
 
-  const router = useRouter();
-  const addIngredientMutation = useAddIngredient();
-  const updateIngredientMutation = useUpdateIngredient();
+  const [baseNutrition, setBaseNutrition] = useState<NutritionValues>({
+    calories: initialData?.nutrition?.calories?.toString() || '',
+    protein: initialData?.nutrition?.protein?.toString() || '',
+    fat: initialData?.nutrition?.fat?.toString() || '',
+    carbohydrates: initialData?.nutrition?.carbohydrates?.toString() || '',
+    salt: initialData?.nutrition?.salt?.toString() || '',
+  });
 
-  // 初期データの設定
-  useEffect(() => {
-    if (initialData) {
-      setName(initialData.name);
-      setSelectedUnit(initialData.unit.id.toString());
-      setSelectedGenre(initialData.genre.id.toString());
-      
-      if (initialData.nutrition) {
-        setCalories(initialData.nutrition.calories);
-        setProtein(initialData.nutrition.protein);
-        setFat(initialData.nutrition.fat);
-        setCarbohydrates(initialData.nutrition.carbohydrates);
-        setSalt(initialData.nutrition.salt);
-        setBaseCalories(initialData.nutrition.calories);
-        setBaseProtein(initialData.nutrition.protein);
-        setBaseFat(initialData.nutrition.fat);
-        setBaseCarbohydrates(initialData.nutrition.carbohydrates);
-        setBaseSalt(initialData.nutrition.salt);
+  // 栄養素の入力ハンドラーを統一
+  const handleNutritionChange = (field: keyof NutritionValues, value: string) => {
+    // 小数点第2位までの数値を許可
+    if (value === "" || /^\d*\.?\d{0,2}$/.test(value)) {
+      setNutrition(prev => ({ ...prev, [field]: value }));
+      setBaseNutrition(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  // フォーカスが外れた時に数値をフォーマット
+  const handleNutritionBlur = (field: keyof NutritionValues) => {
+    const value = nutrition[field];
+    if (value !== "") {
+      const num = parseFloat(value);
+      if (!isNaN(num)) {
+        const formattedValue = num.toFixed(2);
+        setNutrition(prev => ({ ...prev, [field]: formattedValue }));
+        setBaseNutrition(prev => ({ ...prev, [field]: formattedValue }));
       }
+    }
+  };
 
-      const results = searchFoodData(initialData.name);
-      setSearchResults(results);
-      const exactMatch = results.find(food => food.name === initialData.name);
-      if (exactMatch) {
-        setSelectedFoodKey(exactMatch.key);
-      }
-    }
-  }, [initialData]);
-
-  const handleSearch = () => {
-    if (!name) {
-      setError("具材名を入力してください");
-      return;
-    }
-    setIsSearching(true);
-    const results = searchFoodData(name);
-    setSearchResults(results);
-    if (results.length === 0) {
-      setError("該当する具材が見つかりませんでした");
-    } else {
-      setError("");
-    }
-    setIsSearching(false);
+  // 栄養素データの更新を統一
+  const updateNutritionData = (foodData: any) => {
+    const newNutrition = {
+      calories: foodData.calories.toString(),
+      protein: foodData.protein.toString(),
+      fat: foodData.fat.toString(),
+      carbohydrates: foodData.carbohydrates.toString(),
+      salt: foodData.salt.toString(),
+    };
+    setNutrition(newNutrition);
+    setBaseNutrition(newNutrition);
   };
 
   const handleFoodSelect = (foodKey: string) => {
     setSelectedFoodKey(foodKey);
     try {
       const foodData = getNutritionData(foodKey);
-      setCalories(foodData.calories);
-      setProtein(foodData.protein);
-      setFat(foodData.fat);
-      setCarbohydrates(foodData.carbohydrates);
-      setSalt(foodData.salt);
-      setBaseCalories(foodData.calories);
-      setBaseProtein(foodData.protein);
-      setBaseFat(foodData.fat);
-      setBaseCarbohydrates(foodData.carbohydrates);
-      setBaseSalt(foodData.salt);
+      updateNutritionData(foodData);
     } catch (error) {
       console.error('Error fetching nutrition data:', error);
       setError("栄養素データの取得に失敗しました");
     }
   };
 
-  const handleImageChange = (newImage: File) => {
-    setImage(newImage);
+  const handleGramEquivalentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = Number(e.target.value);
+    setGramEquivalent(newValue);
+
+    // 100gあたりの栄養素値を計算
+    const ratio = newValue / 100;
+    const newNutrition = Object.entries(baseNutrition).reduce((acc, [key, value]) => {
+      const num = Number(value) || 0;
+      acc[key as keyof NutritionValues] = (num * ratio).toFixed(2);
+      return acc;
+    }, {} as NutritionValues);
+
+    setNutrition(newNutrition);
   };
 
-  // 栄養素inputを直接編集した場合もbase値を更新
-  const handleCaloriesChange = (v: string) => {
-    setCalories(Number(v));
-    setBaseCalories(Number(v));
-  };
-  const handleProteinChange = (v: string) => {
-    setProtein(Number(v));
-    setBaseProtein(Number(v));
-  };
-  const handleFatChange = (v: string) => {
-    setFat(Number(v));
-    setBaseFat(Number(v));
-  };
-  const handleCarbohydratesChange = (v: string) => {
-    setCarbohydrates(Number(v));
-    setBaseCarbohydrates(Number(v));
-  };
-  const handleSaltChange = (v: string) => {
-    setSalt(Number(v));
-    setBaseSalt(Number(v));
+  const handleImageChange = (newImage: File) => {
+    setImage(newImage);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -184,14 +167,14 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
       formData.append("unit_id", selectedUnit);
       formData.append("gram_equivalent", gramEquivalent.toString());
       
-      const nutrition = {
-        calories,
-        protein,
-        fat,
-        carbohydrates,
-        salt
+      const nutritionData = {
+        calories: Number(nutrition.calories) || 0,
+        protein: Number(nutrition.protein) || 0,
+        fat: Number(nutrition.fat) || 0,
+        carbohydrates: Number(nutrition.carbohydrates) || 0,
+        salt: Number(nutrition.salt) || 0
       };
-      formData.append("nutrition", JSON.stringify(nutrition));
+      formData.append("nutrition", JSON.stringify(nutritionData));
 
       if (image) {
         formData.append("image", image);
@@ -223,14 +206,25 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
               setName(e.target.value);
               setError("");
               setSearchResults([]);
-              setSelectedFoodKey("");
+              setSelectedFoodKey(null);
             }}
             className={styles.input}
             placeholder="具材の名前"
           />
           <button
             type="button"
-            onClick={handleSearch}
+            onClick={() => {
+              if (!name) return;
+              setIsSearching(true);
+              const results = searchFoodData(name);
+              setSearchResults(results);
+              if (results.length === 0) {
+                setError("該当する具材が見つかりませんでした");
+              } else {
+                setError("");
+              }
+              setIsSearching(false);
+            }}
             className={styles.nutritionButton}
             disabled={isSearching}
           >
@@ -287,10 +281,7 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
             id="gramEquivalent"
             type="text"
             value={gramEquivalent || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              setGramEquivalent(value ? Number(value) : 0);
-            }}
+            onChange={handleGramEquivalentChange}
             className={styles.input}
             placeholder="例：卵1個が50gの場合は50"
             inputMode="decimal"
@@ -300,11 +291,13 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
             className={styles.nutritionButton}
             onClick={() => {
               if (!gramEquivalent) return;
-              setCalories(Number((baseCalories * (gramEquivalent / 100)).toFixed(1)));
-              setProtein(Number((baseProtein * (gramEquivalent / 100)).toFixed(2)));
-              setFat(Number((baseFat * (gramEquivalent / 100)).toFixed(2)));
-              setCarbohydrates(Number((baseCarbohydrates * (gramEquivalent / 100)).toFixed(2)));
-              setSalt(Number((baseSalt * (gramEquivalent / 100)).toFixed(2)));
+              const ratio = gramEquivalent / 100;
+              const newNutrition = Object.entries(baseNutrition).reduce((acc, [key, value]) => {
+                const num = Number(value) || 0;
+                acc[key as keyof NutritionValues] = (num * ratio).toFixed(2);
+                return acc;
+              }, {} as NutritionValues);
+              setNutrition(newNutrition);
             }}
           >
             換算
@@ -337,89 +330,101 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
         </select>
       </div>
 
-      <div className={styles.field}>
-        <label className={styles.label}>画像</label>
-        <ImageUploader
-          imageUrl={typeof initialData?.imageUrl === 'string' ? initialData.imageUrl : undefined}
-          image={image}
-          onImageChange={handleImageChange}
-        />
-      </div>
-
-      <div className={styles.nutritionFields}>
+      <div className={styles.imageAndNutritionFields}>
         <div className={styles.field}>
-          <label htmlFor="calories" className={styles.label}>
-            カロリー (kcal)
-          </label>
-          <input
-            id="calories"
-            type="number"
-            value={calories}
-            onChange={(e) => handleCaloriesChange(e.target.value)}
-            className={styles.input}
-            placeholder="カロリー (kcal)"
-            readOnly={!!selectedFoodKey}
+          <label className={styles.label}>画像</label>
+          <ImageUploader
+            imageUrl={typeof initialData?.imageUrl === 'string' ? initialData.imageUrl : undefined}
+            image={image}
+            onImageChange={handleImageChange}
           />
         </div>
-
-        <div className={styles.field}>
-          <label htmlFor="protein" className={styles.label}>
-            タンパク質 (g)
-          </label>
-          <input
-            id="protein"
-            type="number"
-            value={protein}
-            onChange={(e) => handleProteinChange(e.target.value)}
-            className={styles.input}
-            placeholder="タンパク質 (g)"
-            readOnly={!!selectedFoodKey}
-          />
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor="fat" className={styles.label}>
-            脂質 (g)
-          </label>
-          <input
-            id="fat"
-            type="number"
-            value={fat}
-            onChange={(e) => handleFatChange(e.target.value)}
-            className={styles.input}
-            placeholder="脂質 (g)"
-            readOnly={!!selectedFoodKey}
-          />
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor="carbohydrates" className={styles.label}>
-            炭水化物 (g)
-          </label>
-          <input
-            id="carbohydrates"
-            type="number"
-            value={carbohydrates}
-            onChange={(e) => handleCarbohydratesChange(e.target.value)}
-            className={styles.input}
-            placeholder="炭水化物 (g)"
-            readOnly={!!selectedFoodKey}
-          />
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor="salt" className={styles.label}>
-            塩分 (g)
-          </label>
-          <input
-            id="salt"
-            type="number"
-            value={salt}
-            onChange={(e) => handleSaltChange(e.target.value)}
-            className={styles.input}
-            placeholder="塩分 (g)"
-            readOnly={!!selectedFoodKey}
-          />
+        <div className={styles.nutritionFields}>
+          <div className={styles.field}>
+            <label htmlFor="calories" className={styles.label}>
+              カロリー (kcal)
+            </label>
+            <input
+              id="calories"
+              type="text"
+              value={nutrition.calories}
+              onChange={(e) => handleNutritionChange('calories', e.target.value)}
+              onBlur={() => handleNutritionBlur('calories')}
+              className={styles.input}
+              placeholder="0"
+              readOnly={!!selectedFoodKey}
+              inputMode="decimal"
+              pattern="[0-9]*\.?[0-9]*"
+            />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="protein" className={styles.label}>
+              タンパク質 (g)
+            </label>
+            <input
+              id="protein"
+              type="text"
+              value={nutrition.protein}
+              onChange={(e) => handleNutritionChange('protein', e.target.value)}
+              onBlur={() => handleNutritionBlur('protein')}
+              className={styles.input}
+              placeholder="0"
+              readOnly={!!selectedFoodKey}
+              inputMode="decimal"
+              pattern="[0-9]*\.?[0-9]*"
+            />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="fat" className={styles.label}>
+              脂質 (g)
+            </label>
+            <input
+              id="fat"
+              type="text"
+              value={nutrition.fat}
+              onChange={(e) => handleNutritionChange('fat', e.target.value)}
+              onBlur={() => handleNutritionBlur('fat')}
+              className={styles.input}
+              placeholder="0"
+              readOnly={!!selectedFoodKey}
+              inputMode="decimal"
+              pattern="[0-9]*\.?[0-9]*"
+            />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="carbohydrates" className={styles.label}>
+              炭水化物 (g)
+            </label>
+            <input
+              id="carbohydrates"
+              type="text"
+              value={nutrition.carbohydrates}
+              onChange={(e) => handleNutritionChange('carbohydrates', e.target.value)}
+              onBlur={() => handleNutritionBlur('carbohydrates')}
+              className={styles.input}
+              placeholder="0"
+              readOnly={!!selectedFoodKey}
+              inputMode="decimal"
+              pattern="[0-9]*\.?[0-9]*"
+            />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="salt" className={styles.label}>
+              塩分 (g)
+            </label>
+            <input
+              id="salt"
+              type="text"
+              value={nutrition.salt}
+              onChange={(e) => handleNutritionChange('salt', e.target.value)}
+              onBlur={() => handleNutritionBlur('salt')}
+              className={styles.input}
+              placeholder="0"
+              readOnly={!!selectedFoodKey}
+              inputMode="decimal"
+              pattern="[0-9]*\.?[0-9]*"
+            />
+          </div>
         </div>
       </div>
 

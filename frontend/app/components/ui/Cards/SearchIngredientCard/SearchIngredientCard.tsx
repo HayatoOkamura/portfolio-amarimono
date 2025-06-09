@@ -54,7 +54,6 @@ const RecipeSearchIngredientCard: React.FC<RecipeSearchIngredientCardProps> = ({
   }, [ingredient.id, isPresenceType, isSelected, addIngredient]);
 
   const handleQuantityUpdate = (id: number, delta: number): void => {
-
     const newQuantity = Math.max(0, currentQuantity + delta * ingredient.unit.step);
     
     if (newQuantity > 0) {

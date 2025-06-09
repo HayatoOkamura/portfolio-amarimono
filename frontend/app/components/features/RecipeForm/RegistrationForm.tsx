@@ -36,6 +36,7 @@ export const RegistrationForm = ({
 
   const [isSp, setIsSp] = useState(false);
   const [isIngredientModalOpen, setIsIngredientModalOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     fetchRecipeGenres();
@@ -76,6 +77,39 @@ export const RegistrationForm = ({
     const updatedFaq = [...(formData.faq || [])];
     updatedFaq.splice(index, 1);
     updateFormData({ faq: updatedFaq });
+  };
+
+  const handleGenerateDescription = async () => {
+    if (!formData.name) {
+      alert("レシピ名を入力してください");
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const response = await fetch("/api/recipe/generate-description", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ recipeName: formData.name }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate description");
+      }
+
+      const data = await response.json();
+      updateFormData({
+        catchphrase: data.catchphrase,
+        summary: data.summary,
+      });
+    } catch (error) {
+      console.error("Error generating description:", error);
+      alert("説明の生成に失敗しました。もう一度お試しください。");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const ingredientsBlock = (
@@ -123,15 +157,10 @@ export const RegistrationForm = ({
                 if (!ingredientData) return null;
 
                 const handleQuantityChange = (delta: number) => {
-                  const isQuantityAdjustable = (unitName: string) => {
-                    return ["大さじ", "小さじ", "滴"].includes(unitName);
-                  };
+                  const isQuantityTypeWithStep1 = ingredientData.unit.type === "quantity" && ingredientData.unit.step === 1;
+                  const step = isQuantityTypeWithStep1 ? 0.25 : ingredientData.unit.step;
+                  const newQuantity = Math.max(0, ingredient.quantity + delta * step);
 
-                  if (!isQuantityAdjustable(ingredient.unit)) {
-                    return;
-                  }
-
-                  const newQuantity = Math.max(0, ingredient.quantity + delta);
                   if (newQuantity === 0) {
                     // 数量が0になったら具材を削除
                     const updatedIngredients = formData.ingredients.filter(
@@ -147,6 +176,15 @@ export const RegistrationForm = ({
                     );
                     updateFormData({ ingredients: updatedIngredients });
                   }
+                };
+
+                const formatQuantity = (qty: number) => {
+                  const isQuantityTypeWithStep1 = ingredientData.unit.type === "quantity" && ingredientData.unit.step === 1;
+                  if (!isQuantityTypeWithStep1) {
+                    return Number.isInteger(qty) ? qty : Number(qty).toFixed(1);
+                  }
+
+                  return Number.isInteger(qty) ? qty : Number(qty).toFixed(1);
                 };
 
                 return (
@@ -174,18 +212,16 @@ export const RegistrationForm = ({
                       </div>
                       <div className={styles.select_ingredient_block__controls}>
                         <button
-                          onClick={() => handleQuantityChange(ingredientData.unit.step)}
+                          onClick={() => handleQuantityChange(1)}
                           className={`${styles.select_ingredient_block__button} ${styles['select_ingredient_block__button--plus']}`}
                           aria-label={`${ingredientData.name}を増やす`}
                         />
                         <span className={styles.select_ingredient_block__quantity}>
-                          {Number.isInteger(ingredient.quantity)
-                            ? ingredient.quantity
-                            : Number(ingredient.quantity).toFixed(1)}
+                          {formatQuantity(ingredient.quantity)}
                           {ingredient.unit}
                         </span>
                         <button
-                          onClick={() => handleQuantityChange(-ingredientData.unit.step)}
+                          onClick={() => handleQuantityChange(-1)}
                           className={`${styles.select_ingredient_block__button} ${styles['select_ingredient_block__button--minus']}`}
                           aria-label={`${ingredientData.name}を減らす`}
                         />
@@ -296,7 +332,17 @@ export const RegistrationForm = ({
               />
             </div>
             <div className={styles.detail_block__item}>
-              <p className={styles.detail_block__label}>キャッチフレーズ</p>
+              <div className={styles.detail_block__header}>
+                <p className={styles.detail_block__label}>ひとこと紹介</p>
+                <button
+                  type="button"
+                  onClick={handleGenerateDescription}
+                  disabled={isGenerating}
+                  className={styles.generate_button}
+                >
+                  {isGenerating ? "生成中..." : "AIで生成"}
+                </button>
+              </div>
               <textarea
                 placeholder="栄養満点！野菜の甘みが引き立つ、家族みんなが喜ぶ絶品カレー"
                 value={formData.catchphrase}

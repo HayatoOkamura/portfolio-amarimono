@@ -32,7 +32,7 @@ alwaysApply: true
 ## 3. ファイル内容のルール
 
 - 1ファイルにつき1つのスキーマ変更を原則とします。
-- 変更内容には必ず **`-- up`** と **`-- down`** のコメントで区切りを入れ、ロールバックSQLも記載してください。
+- 変更内容には必ず **`-- up`**  のコメントで区切りを入れ、ロールバックSQLも記載してください。
   - 例:
     ```sql
     -- up
@@ -54,12 +54,9 @@ alwaysApply: true
 
 - ローカル開発環境では、以下のコマンドでマイグレーションを適用します。
   ```bash
-  supabase db reset
-  # または
-  supabase db push
+  supabase migration up
   ```
-- `supabase db reset` は全データをリセットし、全マイグレーションを再適用します。
-- `supabase db push` は差分のみを適用します。
+- `supabase migration up` は差分のみを適用します。
 
 ## 6. 本番環境への反映
 
@@ -80,11 +77,13 @@ alwaysApply: true
 
 ### 開発環境
 ```bash
-# プロジェクトをリンク
-supabase link --project-ref qmrjsqeigdkizkrpiahs
+# プロジェクトのステータスを確認
+supabase status
 
 # マイグレーションを適用
-supabase db push
+supabase migration up
+
+解決しないなら直接SQLを実行してください
 ```
 
 ### 本番環境

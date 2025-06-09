@@ -321,7 +321,7 @@ const RecipeClientComponent = () => {
                   </div>
                 </div>
               </motion.div>
-              {/* レシピ名とキャッチフレーズ */}
+              {/* レシピ名とひとこと紹介 */}
               <motion.div
                 className={styles.recipe_name}
                 variants={{

@@ -3,10 +3,10 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -14,67 +14,91 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	storage_go "github.com/supabase-community/storage-go"
-	"github.com/supabase-community/supabase-go"
+	supabase "github.com/supabase-community/supabase-go"
 )
 
 var log = logrus.New()
 
 // SaveImage は画像を保存し、URLを返す
-func SaveImage(c *gin.Context, file *multipart.FileHeader, path string, fileName string) (string, error) {	
+func SaveImage(c *gin.Context, file *multipart.FileHeader, path string, fileName string) (string, error) {
+	log.Printf("Starting SaveImage function with path: %s, fileName: %s", path, fileName)
 
 	// ファイルを開く
 	src, err := file.Open()
 	if err != nil {
+		log.Printf("Failed to open file: %v", err)
 		return "", fmt.Errorf("failed to open file: %v", err)
 	}
 	defer src.Close()
+	log.Printf("Successfully opened file: %s", file.Filename)
 
 	// ファイルの内容を読み込む
-	buf := make([]byte, file.Size)
-	if _, err := src.Read(buf); err != nil {
-		return "", fmt.Errorf("failed to read file: %v", err)
+	fileContent, err := io.ReadAll(src)
+	if err != nil {
+		log.Printf("Failed to read file content: %v", err)
+		return "", fmt.Errorf("failed to read file content: %v", err)
 	}
+	log.Printf("Successfully read file content, size: %d bytes", len(fileContent))
 
 	// ファイル名を生成
 	if fileName == "" {
 		ext := filepath.Ext(file.Filename)
 		fileName = fmt.Sprintf("%d_%s%s", time.Now().Unix(), uuid.New().String(), ext)
+		log.Printf("Generated new fileName: %s", fileName)
 	}
 
 	// ファイルパスを生成
 	filePath := filepath.Join(path, fileName)
 	filePath = strings.ReplaceAll(filePath, "\\", "/") // Windowsのパス区切り文字を修正
+	log.Printf("Generated filePath: %s", filePath)
 
-	// Supabaseクライアントの初期化
+	// Get Supabase credentials
 	supabaseURL := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
-	if supabaseURL == "" || supabaseKey == "" {
-		return "", fmt.Errorf("supabase environment variables are not properly set")
+
+	log.Printf("Supabase URL: %s", supabaseURL)
+	log.Printf("Supabase Key exists: %v", supabaseKey != "")
+
+	// For local development, update the URL
+	if os.Getenv("ENVIRONMENT") == "development" {
+		supabaseURL = "http://host.docker.internal:54321"
+		log.Printf("Updated Supabase URL for Docker: %s", supabaseURL)
 	}
 
-	// SupabaseのURLがlocalhostの場合、host.docker.internalに置き換え
-	if strings.Contains(supabaseURL, "localhost") {
-		supabaseURL = strings.Replace(supabaseURL, "localhost", "host.docker.internal", 1)
-	}
-
-	supabaseClient, err := supabase.NewClient(supabaseURL, supabaseKey, nil)
+	// Initialize Supabase client
+	client, err := supabase.NewClient(supabaseURL, supabaseKey, nil)
 	if err != nil {
+		log.Printf("Failed to initialize Supabase client: %v", err)
 		return "", fmt.Errorf("failed to initialize Supabase client: %v", err)
 	}
+	log.Printf("Successfully initialized Supabase client")
 
-	// Supabase Storageにアップロード
+	// Get file content type
 	contentType := file.Header.Get("Content-Type")
+	log.Printf("File content type: %s", contentType)
 
-	fileOptions := storage_go.FileOptions{
-		ContentType: &contentType,
+	// Try to delete existing file first
+	_, err = client.Storage.RemoveFile("images", []string{filePath})
+	if err != nil {
+		log.Printf("Warning: Failed to delete existing file: %v", err)
+		// Continue with upload even if deletion fails
 	}
 
-	_, err = supabaseClient.Storage.UploadFile("images", filePath, bytes.NewReader(buf), fileOptions)
+	// Create file options
+	upsert := true
+	fileOptions := storage_go.FileOptions{
+		ContentType: &contentType,
+		Upsert:      &upsert,
+	}
+
+	// Upload the file to Supabase Storage
+	_, err = client.Storage.UploadFile("images", filePath, bytes.NewReader(fileContent), fileOptions)
 	if err != nil {
+		log.Printf("Failed to upload to Supabase Storage: %v", err)
 		return "", fmt.Errorf("failed to upload to Supabase Storage: %v", err)
 	}
 
-	// 相対パスのみを返す
+	log.Printf("Successfully uploaded file to Supabase Storage")
 	return filePath, nil
 }
 
@@ -103,33 +127,54 @@ func SaveRecipeImage(c *gin.Context, file *multipart.FileHeader, recipeID string
 }
 
 // DeleteImage は画像を削除する
-func DeleteImage(imageURL string) error {
+func DeleteImage(url string) error {
+	logrus.Printf("Starting DeleteImage function with URL: %s", url)
 
-	// SupabaseのURLからパスを抽出
-	re := regexp.MustCompile(`/storage/v1/object/public/images/(.+)`)
-	matches := re.FindStringSubmatch(imageURL)
-	if len(matches) < 2 {	
-		return fmt.Errorf("invalid image URL format")
+	// Extract file path from URL
+	var filePath string
+	if strings.HasPrefix(url, "http") {
+		// If it's a full URL, extract the path after /object/public/
+		parts := strings.Split(url, "/object/public/")
+		if len(parts) != 2 {
+			logrus.Printf("Invalid image URL format: %s", url)
+			return fmt.Errorf("invalid image URL format")
+		}
+		filePath = parts[1]
+	} else {
+		// If it's just a path, use it directly
+		filePath = url
 	}
-	filePath := matches[1]
 
-	// Supabaseクライアントを初期化
+	logrus.Printf("Extracted file path: %s", filePath)
+
+	// Get Supabase credentials
 	supabaseURL := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
-	if supabaseURL == "" || supabaseKey == "" {
-		return fmt.Errorf("supabase environment variables are not set")
+
+	logrus.Printf("Supabase URL: %s", supabaseURL)
+	logrus.Printf("Supabase Key exists: %v", supabaseKey != "")
+
+	// For local development, update the URL
+	if os.Getenv("ENVIRONMENT") == "development" {
+		supabaseURL = "http://host.docker.internal:54321"
+		logrus.Printf("Updated Supabase URL for Docker: %s", supabaseURL)
 	}
 
-	supabaseClient, err := supabase.NewClient(supabaseURL, supabaseKey, nil)
+	// Initialize Supabase client
+	client, err := supabase.NewClient(supabaseURL, supabaseKey, nil)
 	if err != nil {
+		logrus.Printf("Failed to initialize Supabase client: %v", err)
 		return fmt.Errorf("failed to initialize Supabase client: %v", err)
 	}
+	logrus.Printf("Successfully initialized Supabase client")
 
-	// Supabase Storageから削除
-	_, err = supabaseClient.Storage.RemoveFile("images", []string{filePath})
+	// Delete the file from Supabase Storage
+	_, err = client.Storage.RemoveFile("images", []string{filePath})
 	if err != nil {
+		logrus.Printf("Failed to delete file from Supabase Storage: %v", err)
 		return fmt.Errorf("failed to delete from Supabase Storage: %v", err)
 	}
 
+	logrus.Printf("Successfully deleted file from Supabase Storage")
 	return nil
 }

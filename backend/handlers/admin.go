@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -143,16 +144,32 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 	}
 
 	// 画像を保存
-	imagePath, err := utils.SaveImage(c, file, "ingredients", fmt.Sprintf("%d", ingredient.ID))
-	if err != nil {
-		// 画像の保存に失敗した場合は具材を削除
-		h.DB.Delete(&ingredient)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
-		return
+	if err == nil { // 画像が選択された場合のみ処理
+		// 既存の画像がある場合は削除
+		if ingredient.ImageUrl != "" {
+			if err := utils.DeleteImage(ingredient.ImageUrl); err != nil {
+				// 画像の削除に失敗しても処理は続行
+				log.Printf("Failed to delete old image: %v", err)
+			}
+		}
+
+		// SaveImage関数を使用して画像を保存
+		imagePath, err := utils.SaveImage(c, file, "ingredients", fmt.Sprintf("%d", ingredient.ID))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
+			return
+		}
+		// 新しい画像のパスをセット
+		ingredient.ImageUrl = imagePath
+	} else {
+		// 画像が選択されていない場合は、既存のimageUrlを使用
+		imageUrl := c.PostForm("image_url")
+		if imageUrl != "" && imageUrl != "[object File]" {
+			ingredient.ImageUrl = imageUrl
+		}
 	}
 
 	// 画像のパスを更新
-	ingredient.ImageUrl = imagePath
 	if err := h.DB.Save(&ingredient).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update ingredient with image path"})
 		return
@@ -173,32 +190,40 @@ func (h *AdminHandler) AddIngredient(c *gin.Context) {
 
 func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 	id := c.Param("id")
+	log.Printf("Updating ingredient with ID: %s", id)
 
 	var ingredient models.Ingredient
 	if err := h.DB.First(&ingredient, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("Ingredient not found with ID: %s", id)
 			c.JSON(http.StatusNotFound, gin.H{"error": "Ingredient not found"})
 		} else {
+			log.Printf("Error fetching ingredient: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch ingredient"})
 		}
 		return
 	}
+	log.Printf("Found ingredient: %+v", ingredient)
 
 	// フォームデータの取得
 	name := c.PostForm("name")
 	if name == "" {
+		log.Printf("Name is required but empty")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Name is required"})
 		return
 	}
+	log.Printf("Updating name to: %s", name)
 
 	// 栄養素データを取得
 	nutritionJSON := c.PostForm("nutrition")
 	var nutrition models.NutritionInfo
 	if nutritionJSON != "" {
 		if err := json.Unmarshal([]byte(nutritionJSON), &nutrition); err != nil {
+			log.Printf("Invalid nutrition format: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nutrition format"})
 			return
 		}
+		log.Printf("Updated nutrition data: %+v", nutrition)
 	}
 
 	// genre を JSON 文字列として取得し、パース
@@ -207,9 +232,11 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 		ID int `json:"id"`
 	}
 	if err := json.Unmarshal([]byte(genreJSON), &genre); err != nil {
+		log.Printf("Invalid genre format: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre format"})
 		return
 	}
+	log.Printf("Updated genre ID: %d", genre.ID)
 
 	// unit を JSON 文字列として取得し、パース
 	unitJSON := c.PostForm("unit")
@@ -217,26 +244,42 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 		ID int `json:"id"`
 	}
 	if err := json.Unmarshal([]byte(unitJSON), &unit); err != nil {
+		log.Printf("Invalid unit format: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid unit format"})
 		return
 	}
+	log.Printf("Updated unit ID: %d", unit.ID)
 
 	// 画像ファイルの処理（選択されていない場合はスキップ）
 	file, err := c.FormFile("image")
 	if err == nil { // 画像が選択された場合のみ処理
+		log.Printf("Processing new image file: %s", file.Filename)
+
+		// 既存の画像がある場合は削除
+		if ingredient.ImageUrl != "" {
+			log.Printf("Deleting existing image: %s", ingredient.ImageUrl)
+			if err := utils.DeleteImage(ingredient.ImageUrl); err != nil {
+				log.Printf("Failed to delete old image: %v", err)
+			}
+		}
+
 		// SaveImage関数を使用して画像を保存
-		imagePath, err := utils.SaveImage(c, file, "ingredients", id)
+		imagePath, err := utils.SaveImage(c, file, "ingredients", fmt.Sprintf("%d", ingredient.ID))
 		if err != nil {
+			log.Printf("Failed to save image: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
 			return
 		}
-		// 新しい画像のパスをセット
+		log.Printf("Successfully saved new image at: %s", imagePath)
 		ingredient.ImageUrl = imagePath
 	} else {
 		// 画像が選択されていない場合は、既存のimageUrlを使用
 		imageUrl := c.PostForm("image_url")
-		if imageUrl != "" {
+		if imageUrl != "" && imageUrl != "[object File]" {
+			log.Printf("Using existing image URL: %s", imageUrl)
 			ingredient.ImageUrl = imageUrl
+		} else {
+			log.Printf("No new image provided and invalid image_url: %s", imageUrl)
 		}
 	}
 
@@ -249,7 +292,9 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 	}
 
 	// データベースを更新
+	log.Printf("Saving updated ingredient: %+v", ingredient)
 	if err := h.DB.Save(&ingredient).Error; err != nil {
+		log.Printf("Failed to update ingredient in database: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update ingredient"})
 		return
 	}
@@ -257,11 +302,13 @@ func (h *AdminHandler) UpdateIngredient(c *gin.Context) {
 	// ジャンル情報を取得してレスポンスに含める
 	var ingredientGenre models.IngredientGenre
 	if err := h.DB.Where("id = ?", genre.ID).First(&ingredientGenre).Error; err != nil {
+		log.Printf("Failed to fetch genre: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch genre"})
 		return
 	}
 	ingredient.Genre = ingredientGenre
 
+	log.Printf("Successfully updated ingredient: %+v", ingredient)
 	c.JSON(http.StatusOK, ingredient)
 }
 

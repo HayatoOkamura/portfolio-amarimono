@@ -42,7 +42,7 @@ export const IngredientSelectorModal = ({
     if (!ingredient) return;
 
     const currentAmount = selectedIngredients.find(si => si.id === id)?.amount || 0;
-    const newAmount = Math.max(0, currentAmount + delta * ingredient.unit.step);
+    const newAmount = Math.max(0, currentAmount + delta);
 
     if (newAmount === 0) {
       // 数量が0になったら具材を削除

@@ -55,7 +55,14 @@ const AdminIngredients = () => {
 
   const filteredIngredients =
     selectedGenre === "すべて"
-      ? ingredients
+      ? [...ingredients].sort((a, b) => {
+          // まずgenre_idでソート
+          if (a.genre.id !== b.genre.id) {
+            return a.genre.id - b.genre.id;
+          }
+          // 同じジャンル内ではidでソート
+          return a.id - b.id;
+        })
       : ingredients.filter((ing) => ing.genre.id === selectedGenre);
 
   const handleAddIngredient = (formData: FormData) => {

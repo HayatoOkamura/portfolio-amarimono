@@ -21,6 +21,19 @@
   margin-bottom: 1.5rem;
 }
 
+.imageAndNutritionFields {
+  display: flex;
+  gap: 1rem;
+  @include mq('tab') {
+    // flex-direction: column;
+  }
+
+  .field, .nutritionFields {
+    flex: 1;
+  }
+  
+}
+
 .helpText {
   font-size: 0.875rem;
   color: #6b7280;

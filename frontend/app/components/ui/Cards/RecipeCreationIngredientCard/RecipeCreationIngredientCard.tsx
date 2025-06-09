@@ -26,9 +26,18 @@ const RecipeCreationIngredientCard: React.FC<RecipeCreationIngredientCardProps> 
   const { data: units } = useUnits();
   const isPresenceType = ingredient.unit.type === "presence";
   const currentUnit = selectedUnit || ingredient.unit.name;
+  const isQuantityTypeWithStep1 = ingredient.unit.type === "quantity" && ingredient.unit.step === 1;
 
   const handleQuantityUpdate = (id: number, delta: number): void => {
-    onQuantityChange(id, delta);
+    let step;
+    if (isQuantityTypeWithStep1) {
+      step = 0.25; // stepが1の具材は0.25ずつ
+    } else if (ingredient.unit.step === 50) {
+      step = 10; // stepが50の具材は10ずつ
+    } else {
+      step = ingredient.unit.step; // その他の具材はstepの値そのまま
+    }
+    onQuantityChange(id, delta * step);
   };
 
   const handleUnitChange = (id: number, unit: string, callback?: () => void): void => {

@@ -41,6 +41,20 @@
       pointer-events: none;
     }
 
+    &__head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    &__note {
+      font-size: 0.75rem;
+      font-weight: 400;
+      line-height: 1.5;
+      letter-spacing: .03em;
+      color: var(--secondary-font-color);
+    }
+
     &__title {
       font-size: 1rem;
       font-weight: 700;
