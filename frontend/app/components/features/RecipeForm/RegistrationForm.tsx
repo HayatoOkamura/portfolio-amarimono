@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRecipeForm } from "./hooks/useRecipeForm";
 import { ImageUploader } from "./components/ImageUploader";
-import { IngredientInput } from "./components/IngredientInput";
 import { InstructionInput } from "./components/InstructionInput";
 import { RecipeFormProps } from "./types/recipeForm";
 import { useIngredients } from "@/app/hooks/ingredients";
@@ -12,10 +11,13 @@ import CostEstimateSlider from "@/app/components/ui/RegistarSlider/CostEstimate/
 import styles from "./RegistrationForm.module.scss";
 import { ResponsiveWrapper } from "../../common/ResponsiveWrapper";
 import { calculateNutrition } from "@/app/utils/nutritionCalculator";
-import { IngredientSelectorModal } from './components/IngredientSelectorModal';
-import IngredientCard from '@/app/components/ui/Cards/SearchIngredientCard/SearchIngredientCard';
-import Image from 'next/image';
-import { imageBaseUrl } from '@/app/utils/api';
+import { IngredientSelectorModal } from "./components/IngredientSelectorModal";
+import Image from "next/image";
+import { imageBaseUrl } from "@/app/utils/api";
+import { supabase } from "@/app/lib/api/supabase/supabaseClient";
+import toast from "react-hot-toast";
+import { useAIUsage } from "@/app/hooks/aiUsage";
+import { useRecipeDescription } from "@/app/hooks/useRecipeDescription";
 
 export const RegistrationForm = ({
   isAdmin = false,
@@ -33,10 +35,14 @@ export const RegistrationForm = ({
 
   const { data: ingredientsData } = useIngredients();
   const { recipeGenres, fetchRecipeGenres } = useGenreStore();
+  const { remainingUsage, incrementUsage } = useAIUsage();
+  const { generateDescription } = useRecipeDescription();
 
   const [isSp, setIsSp] = useState(false);
   const [isIngredientModalOpen, setIsIngredientModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     fetchRecipeGenres();
@@ -53,6 +59,16 @@ export const RegistrationForm = ({
     return () => {
       window.removeEventListener("resize", checkScreenSize);
     };
+  }, []);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+    checkAuth();
   }, []);
 
   const handleFaqChange = (
@@ -81,32 +97,26 @@ export const RegistrationForm = ({
 
   const handleGenerateDescription = async () => {
     if (!formData.name) {
-      alert("レシピ名を入力してください");
+      toast.error("レシピ名を入力してください");
       return;
     }
 
     setIsGenerating(true);
+    setError(null);
+
     try {
-      const response = await fetch("/api/recipe/generate-description", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ recipeName: formData.name }),
-      });
+      const data = await generateDescription(formData.name);
 
-      if (!response.ok) {
-        throw new Error("Failed to generate description");
-      }
-
-      const data = await response.json();
       updateFormData({
         catchphrase: data.catchphrase,
         summary: data.summary,
       });
+      toast.success("説明文を生成しました");
     } catch (error) {
-      console.error("Error generating description:", error);
-      alert("説明の生成に失敗しました。もう一度お試しください。");
+      console.error("エラー詳細:", error);
+      toast.error(
+        error instanceof Error ? error.message : "生成中にエラーが発生しました"
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -129,21 +139,23 @@ export const RegistrationForm = ({
               isOpen={isIngredientModalOpen}
               onClose={() => setIsIngredientModalOpen(false)}
               ingredients={ingredientsData}
-              selectedIngredients={formData.ingredients.map(ing => ({
+              selectedIngredients={formData.ingredients.map((ing) => ({
                 id: ing.id,
                 amount: ing.quantity,
-                unit: ing.unit
+                unit: ing.unit,
               }))}
               onSelect={(ingredients) =>
                 updateFormData({
                   ingredients: ingredients.map((ing) => {
-                    const ingredientData = ingredientsData.find((i) => i.id === ing.id);
+                    const ingredientData = ingredientsData.find(
+                      (i) => i.id === ing.id
+                    );
                     return {
                       id: ing.id,
                       quantity: ing.amount,
                       unitId: ingredientData?.unit.id || 0,
-                      name: ingredientData?.name || '',
-                      unit: ing.unit || ingredientData?.unit.name || ''
+                      name: ingredientData?.name || "",
+                      unit: ing.unit || ingredientData?.unit.name || "",
                     };
                   }),
                 })
@@ -157,9 +169,16 @@ export const RegistrationForm = ({
                 if (!ingredientData) return null;
 
                 const handleQuantityChange = (delta: number) => {
-                  const isQuantityTypeWithStep1 = ingredientData.unit.type === "quantity" && ingredientData.unit.step === 1;
-                  const step = isQuantityTypeWithStep1 ? 0.25 : ingredientData.unit.step;
-                  const newQuantity = Math.max(0, ingredient.quantity + delta * step);
+                  const isQuantityTypeWithStep1 =
+                    ingredientData.unit.type === "quantity" &&
+                    ingredientData.unit.step === 1;
+                  const step = isQuantityTypeWithStep1
+                    ? 0.25
+                    : ingredientData.unit.step;
+                  const newQuantity = Math.max(
+                    0,
+                    ingredient.quantity + delta * step
+                  );
 
                   if (newQuantity === 0) {
                     // 数量が0になったら具材を削除
@@ -179,7 +198,9 @@ export const RegistrationForm = ({
                 };
 
                 const formatQuantity = (qty: number) => {
-                  const isQuantityTypeWithStep1 = ingredientData.unit.type === "quantity" && ingredientData.unit.step === 1;
+                  const isQuantityTypeWithStep1 =
+                    ingredientData.unit.type === "quantity" &&
+                    ingredientData.unit.step === 1;
                   if (!isQuantityTypeWithStep1) {
                     return Number.isInteger(qty) ? qty : Number(qty).toFixed(1);
                   }
@@ -188,7 +209,10 @@ export const RegistrationForm = ({
                 };
 
                 return (
-                  <div key={ingredient.id} className={styles.select_ingredient_block}>
+                  <div
+                    key={ingredient.id}
+                    className={styles.select_ingredient_block}
+                  >
                     <div className={styles.select_ingredient_block__image}>
                       <Image
                         src={
@@ -213,16 +237,18 @@ export const RegistrationForm = ({
                       <div className={styles.select_ingredient_block__controls}>
                         <button
                           onClick={() => handleQuantityChange(1)}
-                          className={`${styles.select_ingredient_block__button} ${styles['select_ingredient_block__button--plus']}`}
+                          className={`${styles.select_ingredient_block__button} ${styles["select_ingredient_block__button--plus"]}`}
                           aria-label={`${ingredientData.name}を増やす`}
                         />
-                        <span className={styles.select_ingredient_block__quantity}>
+                        <span
+                          className={styles.select_ingredient_block__quantity}
+                        >
                           {formatQuantity(ingredient.quantity)}
                           {ingredient.unit}
                         </span>
                         <button
                           onClick={() => handleQuantityChange(-1)}
-                          className={`${styles.select_ingredient_block__button} ${styles['select_ingredient_block__button--minus']}`}
+                          className={`${styles.select_ingredient_block__button} ${styles["select_ingredient_block__button--minus"]}`}
                           aria-label={`${ingredientData.name}を減らす`}
                         />
                       </div>
@@ -294,8 +320,8 @@ export const RegistrationForm = ({
                 {isLoading
                   ? "保存中..."
                   : saveStatus === "saved"
-                    ? "保存完了"
-                    : "保存"}
+                  ? "保存完了"
+                  : "保存"}
               </button>
             </div>
             <div
@@ -334,14 +360,21 @@ export const RegistrationForm = ({
             <div className={styles.detail_block__item}>
               <div className={styles.detail_block__header}>
                 <p className={styles.detail_block__label}>ひとこと紹介</p>
-                <button
-                  type="button"
-                  onClick={handleGenerateDescription}
-                  disabled={isGenerating}
-                  className={styles.generate_button}
-                >
-                  {isGenerating ? "生成中..." : "AIで生成"}
-                </button>
+                <div className={styles.generate_button_container}>
+                  {remainingUsage !== null && (
+                    <span className={styles.remaining_usage}>
+                      残り{remainingUsage}回
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleGenerateDescription}
+                    disabled={isGenerating}
+                    className={styles.generate_button}
+                  >
+                    {isGenerating ? "生成中..." : "AIで生成"}
+                  </button>
+                </div>
               </div>
               <textarea
                 placeholder="栄養満点！野菜の甘みが引き立つ、家族みんなが喜ぶ絶品カレー"
@@ -486,7 +519,7 @@ export const RegistrationForm = ({
                           name: "g",
                           description: "",
                           step: 1,
-                          type: "quantity"
+                          type: "quantity",
                         },
                         nutrition: ingredient?.nutrition || {
                           calories: 0,
@@ -495,7 +528,7 @@ export const RegistrationForm = ({
                           carbohydrates: 0,
                           salt: 0,
                         },
-                        gramEquivalent: ingredient?.gramEquivalent ?? 100
+                        gramEquivalent: ingredient?.gramEquivalent ?? 100,
                       };
                     }
                   );
@@ -516,7 +549,9 @@ export const RegistrationForm = ({
               </button>
             </div>
 
-            <div className={`${styles.detail_block__item} ${styles["detail_block__item--faq"]}`}>
+            <div
+              className={`${styles.detail_block__item} ${styles["detail_block__item--faq"]}`}
+            >
               <p className={styles.detail_block__label}>よくある質問</p>
               {(formData.faq || []).map((faq, index) => (
                 <div key={index} className={styles.detail_block__faq}>

@@ -30,6 +30,7 @@ function MyRecipeDetailContent() {
         <RecipeDetail
           recipe={recipe}
           isLiked={isLiked}
+          isAdmin={true}
           showLoginModal={showLoginModal}
           showReviewModal={showReviewModal}
           reviewValue={reviewValue}

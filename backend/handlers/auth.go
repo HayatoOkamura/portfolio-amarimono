@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"portfolio-amarimono/models"
+
 	"github.com/gin-gonic/gin"
 	supa "github.com/supabase-community/supabase-go"
 	"gorm.io/gorm"
@@ -21,10 +23,6 @@ func NewAuthHandler(supabase *supa.Client, db *gorm.DB) *AuthHandler {
 		supabase: supabase,
 		db:       db,
 	}
-}
-
-type JWTClaims struct {
-	Sub string `json:"sub"`
 }
 
 // GetUserRole ユーザーのロール情報を取得するハンドラー
@@ -52,7 +50,7 @@ func (h *AuthHandler) GetUserRole(c *gin.Context) {
 	}
 
 	// Base64デコードしてJSONを解析
-	claims := JWTClaims{}
+	claims := models.JWTClaims{}
 	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "無効なトークンです"})

@@ -89,9 +89,10 @@ func main() {
 	}
 	userIngredientDefaultHandler := handlers.NewUserIngredientDefaultHandler(dbConn.DB)
 	uploadHandler := handlers.NewUploadHandler()
+	aiUsageHandler := handlers.NewAIUsageHandler(dbConn.DB)
 
 	// ルートの設定
-	routes.SetupRoutes(r, recipeHandler, likeHandler, userHandler, genreHandler, adminHandler, reviewHandler, recommendationHandler, userIngredientDefaultHandler, dbConn.DB)
+	routes.SetupRoutes(r, recipeHandler, likeHandler, userHandler, genreHandler, adminHandler, reviewHandler, recommendationHandler, userIngredientDefaultHandler, aiUsageHandler, dbConn.DB)
 	routes.SetupAuthRoutes(r, authHandler)
 
 	// 画像アップロード用のエンドポイント

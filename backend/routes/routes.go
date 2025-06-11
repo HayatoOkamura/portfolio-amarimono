@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, likeHandler *handlers.LikeHandler, userHandler *handlers.UserHandler, genreHandler *handlers.GenreHandler, adminHandler *handlers.AdminHandler, reviewHandler *handlers.ReviewHandler, recommendationHandler *handlers.RecommendationHandler, userIngredientDefaultHandler *handlers.UserIngredientDefaultHandler, db *gorm.DB) {
+func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, likeHandler *handlers.LikeHandler, userHandler *handlers.UserHandler, genreHandler *handlers.GenreHandler, adminHandler *handlers.AdminHandler, reviewHandler *handlers.ReviewHandler, recommendationHandler *handlers.RecommendationHandler, userIngredientDefaultHandler *handlers.UserIngredientDefaultHandler, aiUsageHandler *handlers.AIUsageHandler, db *gorm.DB) {
 	// いいね機能のエンドポイント
 	router.POST("/api/likes/:user_id/:recipe_id", likeHandler.ToggleUserLike) // レシピにいいねを追加
 	router.GET("/api/likes/:user_id", likeHandler.GetUserLikes)               // ユーザーのお気に入りレシピを取得
@@ -49,6 +49,15 @@ func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, like
 	// ユーザー固有の具材設定（認証不要）
 	router.GET("/api/user/ingredient-defaults", userIngredientDefaultHandler.GetUserIngredientDefaults)   // ユーザーの初期設定具材を取得
 	router.PUT("/api/user/ingredient-defaults", userIngredientDefaultHandler.UpdateUserIngredientDefault) // ユーザーの初期設定具材を更新
+
+	// 認証済みルートグループ
+	auth := router.Group("/api")
+	{
+		// AI使用回数管理のエンドポイント
+		auth.GET("/recipe/ai-usage", aiUsageHandler.GetAIUsage)
+		auth.POST("/recipe/ai-usage", aiUsageHandler.IncrementAIUsage)
+		auth.POST("/recipe/generate-description", aiUsageHandler.GenerateDescription)
+	}
 
 	// 管理画面用エンドポイント
 	admin := router.Group("/admin")
