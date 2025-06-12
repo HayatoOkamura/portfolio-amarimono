@@ -50,7 +50,7 @@ const FavoritesPage = () => {
             ))}
           </div>
         ) : (
-          <div>レシピが見つかりません</div>
+          <p className={styles.container_block__no_recipes}>お気に入りのレシピが見つかりません</p>
         )}
       </div>
     </PageLoading>

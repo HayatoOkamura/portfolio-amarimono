@@ -26,16 +26,26 @@ export const IngredientSelectorModal = ({
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
 
   // ジャンルの一覧を取得
-  const genres = Array.from(new Set(ingredients.map(ing => ing.genre.id)))
+  const genres = [{ id: 0, name: "すべて" }, ...Array.from(new Set(ingredients.map(ing => ing.genre.id)))
     .map(id => ingredients.find(ing => ing.genre.id === id)?.genre)
-    .filter((genre): genre is NonNullable<typeof genre> => genre !== undefined);
+    .filter((genre): genre is NonNullable<typeof genre> => genre !== undefined)
+    .sort((a, b) => a.id - b.id)];
 
   // 検索とジャンルでフィルタリング
-  const filteredIngredients = ingredients.filter((ingredient) => {
-    const matchesSearch = ingredient.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesGenre = selectedGenre === null || ingredient.genre.id === selectedGenre;
-    return matchesSearch && matchesGenre;
-  });
+  const filteredIngredients = ingredients
+    .filter((ingredient) => {
+      const matchesSearch = ingredient.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesGenre = selectedGenre === null || ingredient.genre.id === selectedGenre;
+      return matchesSearch && matchesGenre;
+    })
+    .sort((a, b) => {
+      // まずgenre_idでソート
+      if (a.genre.id !== b.genre.id) {
+        return a.genre.id - b.genre.id;
+      }
+      // 同じジャンル内ではidでソート
+      return a.id - b.id;
+    });
 
   const handleQuantityChange = (id: number, delta: number) => {
     const ingredient = ingredients.find(ing => ing.id === id);
@@ -104,17 +114,12 @@ export const IngredientSelectorModal = ({
         <div className={styles.modal_block__genre}>
           <h2 className={styles.modal_block__genre_title}>カテゴリー</h2>
           <div className={styles.modal_block__genre_content}>
-            <CategoryCard
-              genre={{ id: 0, name: "すべて" }}
-              onClick={() => setSelectedGenre(null)}
-              isSelected={selectedGenre === null}
-            />
             {genres.map((genre) => (
               <CategoryCard
                 key={genre.id}
                 genre={genre}
-                onClick={() => setSelectedGenre(genre.id)}
-                isSelected={selectedGenre === genre.id}
+                onClick={() => setSelectedGenre(genre.id === 0 ? null : genre.id)}
+                isSelected={selectedGenre === (genre.id === 0 ? null : genre.id)}
               />
             ))}
           </div>

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/hooks/useAuth';
 import { handleLikeService } from '@/app/hooks/recipes';
 import { useRecipe } from '@/app/hooks/recipes';
+import { useRecipeActions } from '@/app/hooks/useRecipeActions';
 import { useState } from 'react';
 import { PageLoading } from '@/app/components/ui/Loading/PageLoading';
 import { withAuth } from '@/app/components/auth/withAuth';
@@ -14,13 +15,15 @@ function MyRecipeDetailContent() {
   const router = useRouter();
   const { user } = useAuth();
   const { data: recipe, isLoading, error } = useRecipe(id as string);
+  const { handleDelete, handleTogglePublish } = useRecipeActions({ 
+    recipeId: id as string,
+    redirectPath: '/recipes/my'
+  });
   const [isLiked, setIsLiked] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewValue, setReviewValue] = useState(0);
   const [reviewText, setReviewText] = useState('');
-
-  // いいね状態の取得やレビュー送信などのロジックは必要に応じてここに記述
 
   if (error) return <div>Not found</div>;
 
@@ -75,6 +78,9 @@ function MyRecipeDetailContent() {
           onLogin={() => router.push('/login')}
           userId={user?.id}
           setShowLoginModal={setShowLoginModal}
+          onEdit={() => router.push(`/recipes/my/${recipe.id}/edit`)}
+          onPublish={handleTogglePublish}
+          onDelete={handleDelete}
         />
       )}
     </PageLoading>

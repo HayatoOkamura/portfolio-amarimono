@@ -14,11 +14,11 @@ interface IngredientWithNutrition {
   quantity: number;
   unit: Unit;
   nutrition: Nutrition;
-  gramEquivalent: number; // 100gに相当する量
+  gramEquivalent: number;
 }
 
-export const calculateNutrition = (ingredients: IngredientWithNutrition[]): Nutrition => {
-  const nutrition: Nutrition = {
+export const calculateNutrition = (ingredients: IngredientWithNutrition[]) => {
+  const initialNutrition = {
     calories: 0,
     protein: 0,
     fat: 0,
@@ -26,21 +26,35 @@ export const calculateNutrition = (ingredients: IngredientWithNutrition[]): Nutr
     salt: 0,
   };
 
-  ingredients.forEach((ing) => {
-    if (ing.nutrition) {
-      // 具材のgramEquivalentを使用して量をgに変換
-      const quantityInGrams = (ing.quantity * ing.gramEquivalent);
-      const ratio = quantityInGrams / 100;
-
-      nutrition.calories += Math.floor(ing.nutrition.calories * ratio);
-      nutrition.protein += Number((ing.nutrition.protein * ratio).toFixed(1));
-      nutrition.fat += Number((ing.nutrition.fat * ratio).toFixed(1));
-      nutrition.carbohydrates += Number((ing.nutrition.carbohydrates * ratio).toFixed(1));
-      nutrition.salt += Number((ing.nutrition.salt * ratio).toFixed(2));
+  const result = ingredients.reduce((acc, ingredient) => {
+    // 実際の重量を計算
+    let actualWeight = ingredient.quantity;
+    
+    // 単位が"g"以外の場合は、gramEquivalentを使用して重量を計算
+    if (ingredient.unit.name !== "g") {
+      actualWeight = ingredient.quantity * ingredient.gramEquivalent;
     }
-  });
 
-  return nutrition;
+    // 100gあたりの栄養素の値を実際の重量に基づいて計算
+    const weightRatio = actualWeight / 100;
+
+    return {
+      calories: acc.calories + ingredient.nutrition.calories * weightRatio,
+      protein: acc.protein + ingredient.nutrition.protein * weightRatio,
+      fat: acc.fat + ingredient.nutrition.fat * weightRatio,
+      carbohydrates: acc.carbohydrates + ingredient.nutrition.carbohydrates * weightRatio,
+      salt: acc.salt + ingredient.nutrition.salt * weightRatio,
+    };
+  }, initialNutrition);
+
+  // 結果を適切な小数点以下桁数に丸める
+  return {
+    calories: Math.round(result.calories),
+    protein: Number(result.protein.toFixed(1)),
+    fat: Number(result.fat.toFixed(1)),
+    carbohydrates: Number(result.carbohydrates.toFixed(1)),
+    salt: Number(result.salt.toFixed(2)),
+  };
 };
 
 // 100gあたりの栄養素を、指定された単位と量に換算する

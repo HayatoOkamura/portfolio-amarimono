@@ -55,10 +55,7 @@ const RecipeDetail = memo(
     onReviewTextChange,
     onReviewValueChange,
     onCloseReviewModal,
-    onCloseLoginModal,
     onLogin,
-    userId,
-    setShowLoginModal,
   }: RecipeDetailProps) => {
     const averageRating = calculateAverageRating(recipe.reviews || []);
 

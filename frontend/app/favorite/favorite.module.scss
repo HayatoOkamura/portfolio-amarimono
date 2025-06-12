@@ -1,10 +1,11 @@
 .container_block {
   position: relative;
+  padding: 32px;
 
   &__title {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #323232;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-font-color);
   }
 
   &__list {
@@ -16,5 +17,12 @@
   &__item {
     aspect-ratio: 2 / 3;
     cursor: pointer;
+  }
+
+  &__no_recipes {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--primary-font-color);
+    margin-top: 24px;
   }
 }

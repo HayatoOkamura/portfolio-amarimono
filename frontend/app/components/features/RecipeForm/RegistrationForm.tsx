@@ -172,8 +172,11 @@ export const RegistrationForm = ({
                   const isQuantityTypeWithStep1 =
                     ingredientData.unit.type === "quantity" &&
                     ingredientData.unit.step === 1;
+                  const isStep50 = ingredientData.unit.step === 50;
                   const step = isQuantityTypeWithStep1
                     ? 0.25
+                    : isStep50
+                    ? 10
                     : ingredientData.unit.step;
                   const newQuantity = Math.max(
                     0,
@@ -201,7 +204,8 @@ export const RegistrationForm = ({
                   const isQuantityTypeWithStep1 =
                     ingredientData.unit.type === "quantity" &&
                     ingredientData.unit.step === 1;
-                  if (!isQuantityTypeWithStep1) {
+                  const isStep50 = ingredientData.unit.step === 50;
+                  if (!isQuantityTypeWithStep1 && !isStep50) {
                     return Number.isInteger(qty) ? qty : Number(qty).toFixed(1);
                   }
 
@@ -478,10 +482,18 @@ export const RegistrationForm = ({
                             const value = e.target.value;
                             // 数値と小数点のみを許可
                             if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                              const numValue = value === "" ? 0 : Number(value);
+                              // 小数点以下を適切な桁数に丸める
+                              const roundedValue = key === "calories"
+                                ? Math.round(numValue)
+                                : key === "salt"
+                                ? Number(numValue.toFixed(2))
+                                : Number(numValue.toFixed(1));
+                              
                               updateFormData({
                                 nutrition: {
                                   ...formData.nutrition,
-                                  [key]: value === "" ? 0 : Number(value),
+                                  [key]: roundedValue,
                                 },
                               });
                             }
@@ -533,9 +545,14 @@ export const RegistrationForm = ({
                     }
                   );
 
+                  console.log("ingredientsWithNutrition🥦", ingredientsWithNutrition);
+
                   const nutrition = calculateNutrition(
                     ingredientsWithNutrition
                   );
+
+                  console.log("nutrition🥦", nutrition);
+
                   updateFormData({
                     nutrition: {
                       ...formData.nutrition,

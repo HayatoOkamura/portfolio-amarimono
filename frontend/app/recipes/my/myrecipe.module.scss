@@ -1,11 +1,14 @@
 .my_recipe_block {
+  padding: 32px;
 
   &__content {
+    margin-top: 24px;
   } 
 
   &__title {
     font-size: 2rem;
     font-weight: 700;
+    color: var(--primary-font-color);
   }
 
   &__grid {

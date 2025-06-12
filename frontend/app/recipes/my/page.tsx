@@ -25,27 +25,29 @@ const ListMyRecipeContent = () => {
   return (
     <PageLoading isLoading={isLoading}>
       <div className={styles.my_recipe_block}>
-        <div className={styles.my_recipe_block__content}>
+        <div className={styles.my_recipe_block__inner}>
           <h1 className={styles.my_recipe_block__title}>作成したレシピ</h1>
-          {error ? (
-            <div>Error: {error.message}</div>
-          ) : (
-            <div className={styles.my_recipe_block__grid}>
-              {recipes.length > 0 ? (
-                recipes.map((recipe: Recipe) => (
-                  <div key={recipe.id} onClick={() => handleRecipeClick(recipe.id)} className={styles.my_recipe_block__card}>
-                    <RecipeCard
-                      recipe={recipe}
-                      isFavoritePage={false}
-                      path="/recipes/"
-                    />
-                  </div>
-                ))
-              ) : (
-                <p>No recipes found.</p>
-              )}
-            </div>
-          )}
+          <div className={styles.my_recipe_block__content}>
+            {error ? (
+              <div>Error: {error.message}</div>
+            ) : (
+              <div className={styles.my_recipe_block__grid}>
+                {recipes.length > 0 ? (
+                  recipes.map((recipe: Recipe) => (
+                    <div key={recipe.id} onClick={() => handleRecipeClick(recipe.id)} className={styles.my_recipe_block__card}>
+                      <RecipeCard
+                        recipe={recipe}
+                        isFavoritePage={false}
+                        path="/recipes/"
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <p>No recipes found.</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </PageLoading>
