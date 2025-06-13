@@ -1,0 +1,191 @@
+[
+  {
+      "id": "1",
+      "name": "g",
+      "description": "グラム",
+      "step": "50",
+      "type": "quantity"
+  },
+  {
+      "id": "2",
+      "name": "ml",
+      "description": "ミリリットル",
+      "step": "50",
+      "type": "quantity"
+  },
+  {
+      "id": "3",
+      "name": "個",
+      "description": "個数",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "4",
+      "name": "大さじ",
+      "description": "15ml",
+      "step": "1",
+      "type": "presence"
+  },
+  {
+      "id": "5",
+      "name": "小さじ",
+      "description": "5ml",
+      "step": "1",
+      "type": "presence"
+  },
+  {
+      "id": "6",
+      "name": "適量",
+      "description": "適量",
+      "step": "1",
+      "type": "presence"
+  },
+  {
+      "id": "7",
+      "name": "本",
+      "description": "本数",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "8",
+      "name": "枚",
+      "description": "枚数",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "9",
+      "name": "房",
+      "description": "房数",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "10",
+      "name": "株",
+      "description": "株数",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "11",
+      "name": "袋",
+      "description": "袋数",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "12",
+      "name": "缶",
+      "description": "缶数",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "13",
+      "name": "匹",
+      "description": "匹数",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "14",
+      "name": "尾",
+      "description": "尾数",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "15",
+      "name": "パック",
+      "description": "パック数",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "16",
+      "name": "切れ",
+      "description": "切れ数",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "17",
+      "name": "カップ",
+      "description": "カップ1杯（約200ml）",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "18",
+      "name": "kg",
+      "description": "キログラム",
+      "step": "0.1",
+      "type": "quantity"
+  },
+  {
+      "id": "19",
+      "name": "L",
+      "description": "リットル",
+      "step": "0.1",
+      "type": "quantity"
+  },
+  {
+      "id": "20",
+      "name": "滴",
+      "description": "滴数",
+      "step": "1",
+      "type": "presence"
+  },
+  {
+      "id": "21",
+      "name": "少々",
+      "description": "少々",
+      "step": "1",
+      "type": "presence"
+  },
+  {
+      "id": "22",
+      "name": "ひとつまみ",
+      "description": "ひとつまみ",
+      "step": "1",
+      "type": "presence"
+  },
+  {
+      "id": "23",
+      "name": "束",
+      "description": "束数",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "24",
+      "name": "杯",
+      "description": "Standard Japanese cup measurement (200ml)",
+      "step": "0.5",
+      "type": "quantity"
+  },
+  {
+      "id": "28",
+      "name": "合",
+      "description": "1合（約180ml）",
+      "step": "0.5",
+      "type": "quantity"
+  },
+  {
+      "id": "29",
+      "name": "玉",
+      "description": "うどんの単位",
+      "step": "1",
+      "type": "quantity"
+  },
+  {
+      "id": "30",
+      "name": "丁",
+      "description": "豆腐の単位",
+      "step": "1",
+      "type": "quantity"
+  }
+]

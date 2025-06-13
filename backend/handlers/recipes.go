@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 
 	"portfolio-amarimono/models"
@@ -39,10 +40,11 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 
 	// 受信したリクエストボディをログに出力
 	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {	
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
+	log.Println("🥦 Request body:", string(body))
 
 	// JSONデコードを試みる
 	if err := json.Unmarshal(body, &request); err != nil {
@@ -57,6 +59,7 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		selectedIngredients[ing.IngredientID] = ing.QuantityRequired
 		ingredientIDs = append(ingredientIDs, ing.IngredientID)
 	}
+	log.Printf("🥦 Selected ingredients: %+v\n", selectedIngredients)
 
 	// サブクエリ：指定具材が含まれるレシピを取得（下書きを除外）
 	var recipeIDs []uuid.UUID
@@ -68,6 +71,7 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query failed", "details": err.Error()})
 		return
 	}
+	log.Printf("🥦 Found recipe IDs: %+v\n", recipeIDs)
 
 	// レシピと関連具材をロード（下書きを除外）
 	var recipes []models.Recipe
@@ -81,6 +85,7 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query failed", "details": err.Error()})
 		return
 	}
+	log.Printf("🥦 Found recipes count: %d\n", len(recipes))
 
 	// 栄養情報の標準値を取得
 	var standard models.NutritionStandard
@@ -110,13 +115,34 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 			selectedIngredientsMap[ing.IngredientID] = ing.QuantityRequired
 		}
 
+		log.Printf("🥦 Checking recipe %s (ID: %s)\n", recipe.Name, recipe.ID)
+
 		// レシピの各具材をチェック
 		for _, recipeIng := range recipe.Ingredients {
-			// presence単位またはseasoning単位の具材はスキップ
-			if recipeIng.Ingredient.Unit.Name == "presence" ||
-				recipeIng.Ingredient.Unit.Name == "適量" ||
+			log.Printf("🥦 Checking ingredient %s (ID: %d, Unit: %s, Type: %s, Required: %f)\n",
+				recipeIng.Ingredient.Name,
+				recipeIng.IngredientID,
+				recipeIng.Ingredient.Unit.Name,
+				recipeIng.Ingredient.Unit.Type,
+				recipeIng.QuantityRequired)
+
+			// presence単位の具材は数量チェックをスキップ
+			if recipeIng.Ingredient.Unit.Type == "presence" {
+				// presence単位の場合は、選択されているかどうかだけをチェック
+				_, exists := selectedIngredientsMap[recipeIng.IngredientID]
+				if !exists {
+					allIngredientsMatch = false
+					missingIngredients[recipeIng.IngredientID] = 1
+					log.Printf("🥦 Presence ingredient %d not found in selected ingredients\n", recipeIng.IngredientID)
+					break
+				}
+				continue
+			}
+
+			// 調味料はスキップ
+			if recipeIng.Ingredient.Unit.Name == "適量" ||
 				recipeIng.Ingredient.Unit.Name == "少々" ||
-				recipeIng.Ingredient.Unit.Name == "ひとつまみ" {	
+				recipeIng.Ingredient.Unit.Name == "ひとつまみ" {
 				continue
 			}
 
@@ -125,6 +151,7 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 			if !exists {
 				allIngredientsMatch = false
 				missingIngredients[recipeIng.IngredientID] = recipeIng.QuantityRequired
+				log.Printf("🥦 Required ingredient %d not found in selected ingredients\n", recipeIng.IngredientID)
 				break
 			}
 
@@ -132,17 +159,27 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 			if selectedQuantity < recipeIng.QuantityRequired {
 				allIngredientsMatch = false
 				missingIngredients[recipeIng.IngredientID] = recipeIng.QuantityRequired
+				log.Printf("🥦 Insufficient quantity for ingredient %d: required %f, selected %f\n",
+					recipeIng.IngredientID,
+					recipeIng.QuantityRequired,
+					selectedQuantity)
 				break
 			}
-
 		}
 
 		// 全ての具材が一致し、かつ数量が十分な場合のみ結果に追加
 		if allIngredientsMatch {
 			result = append(result, recipe)
+			log.Printf("🥦 Recipe %s (ID: %s) matched all criteria\n", recipe.Name, recipe.ID)
+		} else {
+			log.Printf("🥦 Recipe %s (ID: %s) did not match. Missing ingredients: %+v\n",
+				recipe.Name,
+				recipe.ID,
+				missingIngredients)
 		}
 	}
 
+	log.Printf("🥦 Final result count: %d\n", len(result))
 	c.JSON(http.StatusOK, result)
 }
 
@@ -325,7 +362,7 @@ func (h *RecipeHandler) UpdateRecipe(c *gin.Context) {
 		return
 	}
 
-	if err := h.DB.Model(&models.Recipe{}).Where("id = ?", id).Updates(recipe).Error; err != nil {	
+	if err := h.DB.Model(&models.Recipe{}).Where("id = ?", id).Updates(recipe).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update recipe"})
 		return
 	}

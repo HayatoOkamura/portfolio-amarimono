@@ -27,7 +27,7 @@ export default function HomePageClient({ initialIngredients }: HomePageClientPro
       quantity: ing.quantity
     })),
     {
-      enabled: true
+      enabled: false
     }
   );
 
@@ -44,6 +44,7 @@ export default function HomePageClient({ initialIngredients }: HomePageClientPro
   }, [isSuccess, data, isSearching, setProgress, setSearchType, setSearchExecuted, setRecipes, router]);
 
   const handleSearch = async () => {
+    
     if (ingredients.length === 0) {
       alert('具材を選択してください');
       return;

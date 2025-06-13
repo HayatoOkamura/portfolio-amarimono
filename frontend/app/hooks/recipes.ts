@@ -137,7 +137,8 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
         fat: 0,
         protein: 0,
         salt: 0
-      }
+      },
+      gramEquivalent: 0
     })),
     genre: genre,
     imageUrl: recipe.image_url || undefined,
@@ -206,7 +207,8 @@ export const mapRecipes = (data: ApiRecipe[]): Recipe[] => {
         fat: 0,
         protein: 0,
         salt: 0
-      }
+      },
+      gramEquivalent: 0
     })),
     cookingTime: recipe.cooking_time,
     reviews: (recipe.reviews || []).map((review) => ({
@@ -250,7 +252,13 @@ export const fetchRecipesAPI = async (ingredients: { id: number; quantity: numbe
 
   await new Promise(resolve => setTimeout(resolve, 500))
 
+  console.log("🥦", transformedIngredients);
+
   const response = await api.post("/api/recipes", transformedIngredients);
+
+  console.log("🥦 リクエストURL", api.defaults.baseURL);
+
+  console.log("🥦", response.data);
 
   return Array.isArray(response.data) ? mapRecipes(response.data) : [];
 };

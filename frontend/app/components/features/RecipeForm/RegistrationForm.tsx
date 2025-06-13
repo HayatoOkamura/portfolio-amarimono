@@ -545,13 +545,9 @@ export const RegistrationForm = ({
                     }
                   );
 
-                  console.log("ingredientsWithNutrition🥦", ingredientsWithNutrition);
-
                   const nutrition = calculateNutrition(
                     ingredientsWithNutrition
                   );
-
-                  console.log("nutrition🥦", nutrition);
 
                   updateFormData({
                     nutrition: {
