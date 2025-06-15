@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sashabaranov/go-openai"
 	"gorm.io/gorm"
 )
 
@@ -313,9 +316,84 @@ func (h *AIUsageHandler) GenerateDescription(c *gin.Context) {
 		return
 	}
 
-	// 説明文を生成（ここではダミーの説明文を返す）
-	catchphrase := "栄養満点！野菜の甘みが引き立つ、家族みんなが喜ぶ絶品" + requestBody.RecipeName
-	summary := requestBody.RecipeName + "は、新鮮な食材を使用し、丁寧に調理することで、素材の旨味を最大限に引き出した一品です。野菜の甘みとスパイスの香りが絶妙に調和し、一度食べたらやみつきになる味わいです。家族みんなで楽しめる、心も体も満たされる料理です。"
+	var catchphrase, summary string
+
+	if isDevelopment() {
+		// 開発環境ではモックデータを使用
+		if mockData, exists := mockDescriptions[requestBody.RecipeName]; exists {
+			catchphrase = mockData.Catchphrase
+			summary = mockData.Summary
+		} else {
+			catchphrase = "栄養満点！野菜の甘みが引き立つ、家族みんなが喜ぶ絶品" + requestBody.RecipeName
+			summary = requestBody.RecipeName + "は、新鮮な食材を使用し、丁寧に調理することで、素材の旨味を最大限に引き出した一品です。野菜の甘みとスパイスの香りが絶妙に調和し、一度食べたらやみつきになる味わいです。家族みんなで楽しめる、心も体も満たされる料理です。"
+		}
+	} else {
+		// 本番環境ではOpenAI APIを使用
+		client := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
+
+		systemPrompt := `あなたは料理の説明文を生成する専門家です。
+以下の条件で料理の説明文を生成してください：
+1. キャッチフレーズ（30文字以内）：料理の特徴を簡潔に表現
+2. 詳細な説明（150文字前後）：材料や調理法、味わいの特徴を具体的に説明
+
+出力形式：
+{
+  "catchphrase": "キャッチフレーズ",
+  "summary": "詳細な説明"
+}`
+
+		userPrompt := fmt.Sprintf("「%s」の説明文を生成してください。", requestBody.RecipeName)
+
+		resp, err := client.CreateChatCompletion(
+			context.Background(),
+			openai.ChatCompletionRequest{
+				Model: openai.GPT3Dot5Turbo,
+				Messages: []openai.ChatCompletionMessage{
+					{
+						Role:    openai.ChatMessageRoleSystem,
+						Content: systemPrompt,
+					},
+					{
+						Role:    openai.ChatMessageRoleUser,
+						Content: userPrompt,
+					},
+				},
+				MaxTokens:   150,
+				Temperature: 0.7,
+			},
+		)
+
+		if err != nil {
+			// APIエラー時はモックデータにフォールバック
+			if mockData, exists := mockDescriptions[requestBody.RecipeName]; exists {
+				catchphrase = mockData.Catchphrase
+				summary = mockData.Summary
+			} else {
+				catchphrase = "栄養満点！野菜の甘みが引き立つ、家族みんなが喜ぶ絶品" + requestBody.RecipeName
+				summary = requestBody.RecipeName + "は、新鮮な食材を使用し、丁寧に調理することで、素材の旨味を最大限に引き出した一品です。"
+			}
+		} else {
+			// レスポンスのパース
+			var result struct {
+				Catchphrase string `json:"catchphrase"`
+				Summary     string `json:"summary"`
+			}
+
+			if err := json.Unmarshal([]byte(resp.Choices[0].Message.Content), &result); err != nil {
+				// パースエラー時はモックデータにフォールバック
+				if mockData, exists := mockDescriptions[requestBody.RecipeName]; exists {
+					catchphrase = mockData.Catchphrase
+					summary = mockData.Summary
+				} else {
+					catchphrase = "栄養満点！野菜の甘みが引き立つ、家族みんなが喜ぶ絶品" + requestBody.RecipeName
+					summary = requestBody.RecipeName + "は、新鮮な食材を使用し、丁寧に調理することで、素材の旨味を最大限に引き出した一品です。"
+				}
+			} else {
+				catchphrase = result.Catchphrase
+				summary = result.Summary
+			}
+		}
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"catchphrase": catchphrase,

@@ -58,7 +58,10 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
 
   const renderQuantityControls = () => {
     const currentUnit = selectedUnit || ingredient.unit.name;
-    const isCurrentUnitAdjustable = ["大さじ", "小さじ", "滴"].includes(currentUnit);
+    const selectedUnitData = units?.find(u => u.name === currentUnit);
+    const isCurrentUnitAdjustable = !isPresenceType || 
+      (selectedUnitData?.type !== "presence") || 
+      ["大さじ", "小さじ", "滴"].includes(currentUnit);
 
     if (isPresenceType && !isRecipeCreation) {
       return (

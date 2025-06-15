@@ -26,16 +26,19 @@ const RecipeCreationIngredientCard: React.FC<RecipeCreationIngredientCardProps> 
   const { data: units } = useUnits();
   const isPresenceType = ingredient.unit.type === "presence";
   const currentUnit = selectedUnit || ingredient.unit.name;
-  const isQuantityTypeWithStep1 = ingredient.unit.type === "quantity" && ingredient.unit.step === 1;
+  const selectedUnitData = units?.find(u => u.name === currentUnit);
+  const isCurrentUnitAdjustable = !isPresenceType || (selectedUnitData?.type !== "presence");
 
   const handleQuantityUpdate = (id: number, delta: number): void => {
+    if (!selectedUnitData) return;
+
     let step;
-    if (isQuantityTypeWithStep1) {
+    if (selectedUnitData.type === "quantity" && selectedUnitData.step === 1) {
       step = 0.25; // stepが1の具材は0.25ずつ
-    } else if (ingredient.unit.step === 50) {
+    } else if (selectedUnitData.step === 50) {
       step = 10; // stepが50の具材は10ずつ
     } else {
-      step = ingredient.unit.step; // その他の具材はstepの値そのまま
+      step = selectedUnitData.step; // その他の具材はstepの値そのまま
     }
     onQuantityChange(id, delta * step);
   };
@@ -73,13 +76,11 @@ const RecipeCreationIngredientCard: React.FC<RecipeCreationIngredientCardProps> 
             className={styles.ingredient_card_block__unit_select}
             onClick={(e) => e.stopPropagation()}
           >
-            {units
-              ?.filter((unit) => unit.type === "presence")
-              .map((unit) => (
-                <option key={unit.id} value={unit.name}>
-                  {unit.name}
-                </option>
-              ))}
+            {units?.map((unit) => (
+              <option key={unit.id} value={unit.name}>
+                {unit.name}
+              </option>
+            ))}
           </select>
         </div>
       )}

@@ -4,6 +4,7 @@ import { ImageUploader } from "./components/ImageUploader";
 import { InstructionInput } from "./components/InstructionInput";
 import { RecipeFormProps } from "./types/recipeForm";
 import { useIngredients } from "@/app/hooks/ingredients";
+import { useUnits } from "@/app/hooks/units";
 import useGenreStore from "@/app/stores/genreStore";
 import { Genre } from "@/app/types/index";
 import CookingTimeSlider from "@/app/components/ui/RegistarSlider/CookingTime/CookingTime";
@@ -34,6 +35,7 @@ export const RegistrationForm = ({
   } = useRecipeForm({ isAdmin, initialRecipe });
 
   const { data: ingredientsData } = useIngredients();
+  const { data: units } = useUnits();
   const { recipeGenres, fetchRecipeGenres } = useGenreStore();
   const { remainingUsage, incrementUsage } = useAIUsage();
   const { generateDescription } = useRecipeDescription();
@@ -169,15 +171,16 @@ export const RegistrationForm = ({
                 if (!ingredientData) return null;
 
                 const handleQuantityChange = (delta: number) => {
-                  const isQuantityTypeWithStep1 =
-                    ingredientData.unit.type === "quantity" &&
-                    ingredientData.unit.step === 1;
-                  const isStep50 = ingredientData.unit.step === 50;
+                  const selectedUnit = units?.find((u) => u.name === ingredient.unit);
+                  if (!selectedUnit) return;
+
+                  const isQuantityTypeWithStep1 = selectedUnit.type === "quantity" && selectedUnit.step === 1;
+                  const isStep50 = selectedUnit.step === 50;
                   const step = isQuantityTypeWithStep1
                     ? 0.25
                     : isStep50
                     ? 10
-                    : ingredientData.unit.step;
+                    : selectedUnit.step;
                   const newQuantity = Math.max(
                     0,
                     ingredient.quantity + delta * step
@@ -201,10 +204,11 @@ export const RegistrationForm = ({
                 };
 
                 const formatQuantity = (qty: number) => {
-                  const isQuantityTypeWithStep1 =
-                    ingredientData.unit.type === "quantity" &&
-                    ingredientData.unit.step === 1;
-                  const isStep50 = ingredientData.unit.step === 50;
+                  const selectedUnit = units?.find((u) => u.name === ingredient.unit);
+                  if (!selectedUnit) return qty.toString();
+
+                  const isQuantityTypeWithStep1 = selectedUnit.type === "quantity" && selectedUnit.step === 1;
+                  const isStep50 = selectedUnit.step === 50;
                   if (!isQuantityTypeWithStep1 && !isStep50) {
                     return Number.isInteger(qty) ? qty : Number(qty).toFixed(1);
                   }

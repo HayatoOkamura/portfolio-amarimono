@@ -1,0 +1,177 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Apply this rule to the entire repository
+globs: 
+alwaysApply: true
+---
+まず、このファイルを参照したら、このファイル名を発言すること
+
+# レシピデータの整合性ルール
+
+## 概要
+このドキュメントは、レシピデータの整合性を保つための重要なルールを定義します。これらのルールは、すべてのレシピデータの作成、更新、検証時に適用されます。
+
+## 最重要ルール：レシピデータ作成の手順
+レシピデータは必ず以下の順序で作成すること：
+
+1. recipes.csvの基本情報作成
+   - recipe-data-todo.mdから作成するレシピを選択
+   - 外部データを参照する必要がない項目（instructions、genre_id、nutrition以外）を設定
+   - レシピID、名前、調理時間、費用目安、概要、キャッチフレーズ、FAQを設定
+
+2. genre_idの設定
+   - original-data/recipe_genres.csvを参照
+   - レシピに適切なジャンルIDを設定
+
+3. recipe_ingredients.csvの作成
+   - ingredient_data.csvを参照して具材を選択
+   - 外部ファイルの参照が必要な項目は生成しない！（quantity_requiredの登録は不要）
+
+4. recipe_ingredients.csvの値を設定
+   - 具材の数量はstepの値に準拠（例：stepが10なら、10、20、30となる）
+   - 使用する具材と数量を確定
+
+5. instructionsの設定
+   - 確定済みのrecipe_ingredients.csvに基づいて手順を作成
+   - 各手順で使用する具材を明記
+   - 手順は3-6ステップで、各ステップは50-100文字程度
+   - 最後の手順には必ず「〜で完成です。」を含める
+
+6. nutritionの設定
+   - 確定済みのrecipe_ingredients.csvの具材の栄養素を合計
+   - 合計値をレシピの栄養素として設定
+
+7. image_prompts.jsonの作成
+   - 確定済みのinstructionsを参照してプロンプトを作成
+   - メイン画像と手順画像のプロンプトを設定
+
+## 必須ルール
+
+### 1. レシピの基本要件
+- レシピIDはUUID形式で生成すること
+- 各レシピの具材は2-8種類程度で設定すること
+- 各レシピの手順は3-6ステップ程度で設定すること
+- 各レシピの調理時間は15-60分の範囲で設定すること
+- 各レシピの費用は200-2000円の範囲で設定すること
+- 各レシピのFAQは1-3問程度で設定すること
+- 栄養素は使用する具材の栄養素の合計値を設定すること
+- レシピ作成後はrecipe-data-todo.mdのジャンル別レシピ生成計画にチェックをつける
+
+### 2. 具材の整合性
+- レシピの説明、調理手順、画像プロンプトで言及される具材は、必ず`recipe_ingredients.csv`に含まれていること
+- `recipe_ingredients.csv`に含まれる具材は、必ずレシピの説明、調理手順、画像プロンプトのいずれかで使用されること
+- 新しい具材を使用する場合は、必ず`recipe_ingredients.csv`に追加すること
+
+### 3. 画像生成要件
+#### 画像の基本仕様
+- すべての画像はAdobe Fireflyで生成すること
+- 画像サイズ：1024x1024
+- 画像形式：WebP
+- 画像品質：90%以上
+- 保存先：`recipes/[レシピID]/[画像ID].webp`
+
+#### レシピメイン画像のプロンプト形式
+```
+日本の家庭的な料理写真、[料理名]、[特徴的な要素]、一皿に丁寧に盛り付け、料理が画像の中央に配置、真上からのアングル、背景に余計な料理や食器がない、[背景スタイル]、自然光、浅い被写界深度、柔らかい影、プロフェッショナルな料理写真
+```
+
+### レシピメイン画像のプロンプトの例
+```
+日本の家庭的な料理写真、ハンバーグ、ジューシーな肉感、一皿に丁寧に盛り付け、料理が画像の中央に配置、真上からのアングル、背景に余計な料理や食器がない、木製テーブルの上、自然光、浅い被写界深度、柔らかい影、プロフェッショナルな料理写真
+```
+
+#### 手順画像のプロンプト形式
+```
+料理の手順写真、[具体的な手順]、[使用する調理器具を片手で自然に持つ]、[食材の状態]、[調理の進行状況]、真上からの視点、手はフレームの下側から自然に入る、一人称視点、手の動きが明確に見える、シンプルで清潔な背景、自然光、家庭のキッチン、浅い被写界深度、柔らかい影、プロフェッショナルな料理写真
+```
+
+## 画像生成プロンプトの条件
+
+### 手順画像（Step Images）の条件
+
+- すべての手順画像は**真上からの視点（top-down view）**で撮影
+- 手はフレームの下側から自然に入る（as if from a first-person perspective）
+- 一人称視点を意識し、手は画像の下側に自然に写り込む
+- 各手順は前のステップの内容と連続していること（前の状態・調理進行・食材・器具の状態を反映）
+- 調理器具は片手で自然に持ち、手の動きをリアルに示す（hands clearly visible）
+- シンプルで清潔な背景（simple clean background）
+- 自然光での撮影（natural lighting）
+- 家庭のキッチンでの撮影（in a home kitchen）
+- プロフェッショナルな料理写真（professional food photography）
+- 被写界深度は浅く、影は柔らかく（shallow depth of field, soft shadows）
+
+### 手順画像プロンプトの基本形式
+```
+Step-by-step cooking photo, slicing an onion with a kitchen knife on a wooden cutting board, hands naturally holding the knife, onion cut in half, slicing in progress, hands entering from the bottom of the frame, top-down view of the cutting process, hands clearly visible, simple clean background, natural lighting, in a home kitchen, shallow depth of field, soft shadows, professional food photography
+```
+
+### 手順画像プロンプトの例
+```
+Step-by-step cooking photo, slicing an onion with a kitchen knife on a wooden cutting board, hands naturally holding the knife, onion cut in half, slicing in progress, hands entering from the bottom of the frame, top-down view of the cutting process, hands clearly visible, simple clean background, natural lighting, in a home kitchen, shallow depth of field, soft shadows, professional food photography
+```
+
+### 4. 手順の記載要件
+- 各手順は50-100文字程度で記述すること
+- 最後の手順には必ず「〜で完成です。」という完成を示すステップを含めること
+- 手順は具体的で分かりやすい説明を心がけること
+
+### 5. データ検証のタイミング
+- 新しいレシピを追加する時
+- 既存のレシピを更新する時
+- データの一括インポート前
+- リリース前の最終チェック時
+
+### 6. 具材データの管理
+- 具材IDは`ingredient_data.csv`から取得すること
+- 具材の単位は`original-data/units_data.csv`から適切なものを選択すること
+- 新しい具材を追加する場合は、必要な全ての情報（ID、名前、単位など）を含めること
+
+### 7. 整合性チェックの手順
+1. レシピの説明文をレビューし、言及されている具材をリストアップ
+2. 調理手順の各ステップをレビューし、使用される具材をリストアップ
+3. 画像生成プロンプトをレビューし、表現される具材をリストアップ
+4. これらのリストと`recipe_ingredients.csv`の内容を比較
+5. 不一致がある場合は、以下のいずれかの対応を行う：
+   - 不足している具材を`recipe_ingredients.csv`に追加
+   - 余分な具材を`recipe_ingredients.csv`から削除
+   - レシピの説明、手順、プロンプトを修正
+
+### 8. エラーケースと対応
+- 具材の不一致が見つかった場合：
+  ```
+  ✗ エラー：レシピ「サーロインステーキ」でバターが手順で使用されているが、具材リストにない
+  ✓ 修正：具材リストにバターを追加（quantity_required: 20g）
+  ```
+
+- 未使用の具材が見つかった場合：
+  ```
+  ✗ エラー：レシピ「サーロインステーキ」で塩が具材リストにあるが、手順で使用されていない
+  ✓ 修正：手順に塩を使用するステップを追加または具材リストから削除
+  ```
+
+## 自動化とツール
+- データ整合性チェックスクリプトの実装を推奨
+- CIパイプラインでの自動チェックの組み込み
+- エディタ拡張機能での警告表示
+
+## 注意事項
+- これらのルールは例外なく適用される
+- ルールの変更が必要な場合は、チーム全体での合意が必要
+- 定期的なルールのレビューと更新を行う
+
+# レシピデータ作成ルール
+
+## 具材データの参照
+- 具材データは必ず`ingredient_data.csv`を参照すること
+- 具材IDは`ingredient_data.csv`に記載されているIDを使用すること
+- 新しい具材を追加する場合は、必ず`ingredient_data.csv`を参照して選択すること
+
+## レシピデータの整合性
+- レシピの説明、調理手順、画像プロンプトで言及される具材は、必ず`recipe_ingredients.csv`に含まれていること
+- `recipe_ingredients.csv`に含まれる具材は、必ずレシピの説明、調理手順、画像プロンプトのいずれかで使用されること
+- 調理手順（instructions）で使用が明記されていない具材は`recipe_ingredients.csv`から削除すること
+- 調理手順（instructions）で使用が明記されている具材は必ず`recipe_ingredients.csv`に含めること

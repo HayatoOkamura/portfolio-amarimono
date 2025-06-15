@@ -2,10 +2,9 @@ import { useState } from 'react';
 import { Modal } from '@/app/components/common/Modal/Modal';
 import { Ingredient, Unit } from '@/app/types/index';
 import styles from './IngredientSelectorModal.module.scss';
-import Image from 'next/image';
-import { imageBaseUrl } from '@/app/utils/api';
 import CategoryCard from '@/app/components/ui/Cards/CategoryCard/CategoryCard';
 import RecipeCreationIngredientCard from '@/app/components/ui/Cards/RecipeCreationIngredientCard/RecipeCreationIngredientCard';
+import { useUnits } from '@/app/hooks/units';
 
 interface IngredientSelectorModalProps {
   isOpen: boolean;
@@ -24,6 +23,7 @@ export const IngredientSelectorModal = ({
 }: IngredientSelectorModalProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
+  const { data: units } = useUnits();
 
   // ジャンルの一覧を取得
   const genres = [{ id: 0, name: "すべて" }, ...Array.from(new Set(ingredients.map(ing => ing.genre.id)))
@@ -73,20 +73,23 @@ export const IngredientSelectorModal = ({
   };
 
   const handleUnitChange = (ingredientId: number, unit: string, callback?: () => void) => {
-
     const ingredient = ingredients.find(ing => ing.id === ingredientId);
     if (!ingredient) return;
 
+    // 選択された単位の情報を取得
+    const selectedUnit = units?.find(u => u.name === unit);
+    if (!selectedUnit) return;
+
     const existingIngredient = selectedIngredients.find(ing => ing.id === ingredientId);
     if (existingIngredient) {
-      // 既に選択されている具材の単位を更新し、数量も1にリセット
+      // 既に選択されている具材の単位を更新し、数量を新しい単位のstep値に設定
       const updatedIngredients = selectedIngredients.map(ing =>
-        ing.id === ingredientId ? { ...ing, unit, amount: 1 } : ing
+        ing.id === ingredientId ? { ...ing, unit, amount: selectedUnit.step } : ing
       );
       onSelect(updatedIngredients);
     } else {
-      // 選択されていない具材の場合、デフォルトの数量（1）で追加
-      onSelect([...selectedIngredients, { id: ingredientId, amount: 1, unit }]);
+      // 選択されていない具材の場合、新しい単位のstep値で追加
+      onSelect([...selectedIngredients, { id: ingredientId, amount: selectedUnit.step, unit }]);
     }
 
     // コールバックが存在する場合は実行
