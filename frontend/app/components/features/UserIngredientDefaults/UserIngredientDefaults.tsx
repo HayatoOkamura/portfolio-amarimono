@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useUserIngredientDefaults, useUpdateUserIngredientDefaults } from '@/app/hooks/userIngredientDefaults';
 import { useIngredients } from '@/app/hooks/ingredients';
 import styles from './UserIngredientDefaults.module.scss';
@@ -16,6 +17,7 @@ interface UserIngredientDefault {
 }
 
 export const UserIngredientDefaults = () => {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<number>(0);
   const [isSaving, setIsSaving] = useState(false);
   const { data: defaults, isLoading: isLoadingDefaults } = useUserIngredientDefaults();
@@ -77,6 +79,7 @@ export const UserIngredientDefaults = () => {
 
       await updateDefaults(updates);
       toast.success('具材の初期設定を保存しました');
+      router.push('/');
     } catch (error) {
       console.error('Error saving ingredient defaults:', error);
       toast.error('具材の初期設定の保存に失敗しました');
