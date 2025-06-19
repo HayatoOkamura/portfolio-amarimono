@@ -59,14 +59,14 @@ describe('unitConversion', () => {
       salt: 0.5
     };
 
-    it('同じ単位の場合は数量に応じて栄養素を調整する', () => {
+    it('同じ単位の場合は栄養素データをそのまま返す', () => {
       const result = convertNutritionToUnit(mockNutrition, '大さじ', '大さじ', 2);
-      // 大さじ2杯分の栄養素
-      expect(result.calories).toBe(200); // 100 * 2
-      expect(result.protein).toBe(20); // 10 * 2
-      expect(result.fat).toBe(10); // 5 * 2
-      expect(result.carbohydrates).toBe(30); // 15 * 2
-      expect(result.salt).toBe(1); // 0.5 * 2
+      // 同じ単位の場合は栄養素データをそのまま返す（数量計算は別途行う）
+      expect(result.calories).toBe(100);
+      expect(result.protein).toBe(10);
+      expect(result.fat).toBe(5);
+      expect(result.carbohydrates).toBe(15);
+      expect(result.salt).toBe(0.5);
     });
 
     it('大さじからgへの栄養素換算が正しく動作する', () => {

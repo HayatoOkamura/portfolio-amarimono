@@ -34,7 +34,7 @@ describe('nutritionCalculator', () => {
           id: 1,
           name: '卵',
           quantity: 2,
-          unit: mockUnit,
+          unit: { ...mockUnit, step: 1 },
           nutrition: mockNutrition,
           gramEquivalent: 50,
           selectedUnit: '個'
@@ -43,7 +43,7 @@ describe('nutritionCalculator', () => {
           id: 2,
           name: 'りんご',
           quantity: 1,
-          unit: mockUnit,
+          unit: { ...mockUnit, step: 1 },
           nutrition: mockNutrition,
           gramEquivalent: 300,
           selectedUnit: '個'
@@ -52,9 +52,9 @@ describe('nutritionCalculator', () => {
 
       const result = calculateNutrition(ingredients);
 
-      // 卵: 2個分の栄養素
-      // りんご: 1個分の栄養素
-      // 合計: 3個分
+      // 卵: 2個分の栄養素 (2/1 = 2倍)
+      // りんご: 1個分の栄養素 (1/1 = 1倍)
+      // 合計: 3倍
       expect(result.calories).toBe(300); // 100kcal × 3
       expect(result.protein).toBe(30); // 10g × 3
       expect(result.fat).toBe(15); // 5g × 3
@@ -68,7 +68,7 @@ describe('nutritionCalculator', () => {
           id: 1,
           name: '塩',
           quantity: 50, // 50g
-          unit: { ...mockUnit, name: '大さじ' },
+          unit: { ...mockUnit, name: '大さじ', step: 1 },
           nutrition: {
             calories: 0,
             protein: 0,
@@ -103,12 +103,46 @@ describe('nutritionCalculator', () => {
 
       const result = calculateNutrition(ingredients);
 
-      // 存在型単位でも、選択された単位に基づいて栄養素を計算
+      // 存在型単位の場合は栄養素データをそのまま返す
       expect(result.calories).toBe(100);
       expect(result.protein).toBe(10);
       expect(result.fat).toBe(5);
       expect(result.carbohydrates).toBe(15);
       expect(result.salt).toBe(0.5);
+    });
+
+    it('豚バラ肉の例：10g選択時の栄養素計算', () => {
+      const ingredients = [
+        {
+          id: 1,
+          name: '豚バラ肉',
+          quantity: 10, // 10g選択
+          unit: { ...mockUnit, name: 'g', step: 50 }, // 50gあたりの栄養素
+          nutrition: {
+            calories: 195, // 50gあたり195kcal
+            protein: 10.5, // 50gあたり10.5g
+            fat: 15.2, // 50gあたり15.2g
+            carbohydrates: 0, // 50gあたり0g
+            salt: 0.1 // 50gあたり0.1g
+          },
+          gramEquivalent: 50,
+          selectedUnit: 'g' // 単位変更なし
+        }
+      ];
+
+      const result = calculateNutrition(ingredients);
+
+      // 10g / 50g = 0.2倍
+      // 195kcal × 0.2 = 39kcal
+      // 10.5g × 0.2 = 2.1g
+      // 15.2g × 0.2 = 3.0g
+      // 0g × 0.2 = 0g
+      // 0.1g × 0.2 = 0.02g
+      expect(result.calories).toBe(39); // 195kcal × 0.2
+      expect(result.protein).toBe(2.1); // 10.5g × 0.2
+      expect(result.fat).toBe(3.0); // 15.2g × 0.2
+      expect(result.carbohydrates).toBe(0); // 0g × 0.2
+      expect(result.salt).toBe(0.02); // 0.1g × 0.2
     });
   });
 
@@ -117,11 +151,11 @@ describe('nutritionCalculator', () => {
       const result = calculateNutritionForQuantity(
         mockNutrition,
         2,
-        mockUnit,
+        { ...mockUnit, step: 1 },
         50
       );
 
-      // 2個分の栄養素
+      // 2個分の栄養素 (2/1 = 2倍)
       expect(result.calories).toBe(200); // 100kcal × 2
       expect(result.protein).toBe(20); // 10g × 2
       expect(result.fat).toBe(10); // 5g × 2
@@ -150,11 +184,11 @@ describe('nutritionCalculator', () => {
           salt: 0.123
         },
         1.5,
-        mockUnit,
+        { ...mockUnit, step: 1 },
         50
       );
 
-      // 1.5個分の栄養素
+      // 1.5個分の栄養素 (1.5/1 = 1.5倍)
       expect(result.calories).toBe(150); // 100kcal × 1.5
       expect(result.protein).toBe(15.2); // 10.123g × 1.5
       expect(result.fat).toBe(8.2); // 5.456g × 1.5
@@ -170,7 +204,7 @@ describe('nutritionCalculator', () => {
           id: 1,
           name: '卵',
           quantity: 1,
-          unit: mockUnit,
+          unit: { ...mockUnit, step: 1 },
           nutrition: mockNutrition,
           gramEquivalent: 50
         },
@@ -178,7 +212,7 @@ describe('nutritionCalculator', () => {
           id: 2,
           name: 'りんご',
           quantity: 1,
-          unit: mockUnit,
+          unit: { ...mockUnit, step: 1 },
           nutrition: mockNutrition,
           gramEquivalent: 300
         }
@@ -186,9 +220,9 @@ describe('nutritionCalculator', () => {
 
       const result = calculateTotalNutrition(ingredients);
 
-      // 卵: 1個分の栄養素
-      // りんご: 1個分の栄養素
-      // 合計: 2個分
+      // 卵: 1個分の栄養素 (1/1 = 1倍)
+      // りんご: 1個分の栄養素 (1/1 = 1倍)
+      // 合計: 2倍
       expect(result.calories).toBe(200); // 100kcal × 2
       expect(result.protein).toBe(20); // 10g × 2
       expect(result.fat).toBe(10); // 5g × 2

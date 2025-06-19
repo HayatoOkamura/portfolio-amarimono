@@ -31,6 +31,26 @@ export const calculateNutrition = (ingredients: IngredientWithNutrition[]) => {
   const result = ingredients.reduce((acc, ingredient) => {
     const currentUnit = ingredient.selectedUnit || ingredient.unit.name;
     
+    if (ingredient.unit.name === currentUnit) {
+      const quantityRatio = ingredient.quantity / ingredient.unit.step;
+      
+      const calculatedNutrition = {
+        calories: Math.round(ingredient.nutrition.calories * quantityRatio),
+        protein: Number((ingredient.nutrition.protein * quantityRatio).toFixed(1)),
+        fat: Number((ingredient.nutrition.fat * quantityRatio).toFixed(1)),
+        carbohydrates: Number((ingredient.nutrition.carbohydrates * quantityRatio).toFixed(1)),
+        salt: Number((ingredient.nutrition.salt * quantityRatio).toFixed(2)),
+      };
+
+      return {
+        calories: acc.calories + calculatedNutrition.calories,
+        protein: acc.protein + calculatedNutrition.protein,
+        fat: acc.fat + calculatedNutrition.fat,
+        carbohydrates: acc.carbohydrates + calculatedNutrition.carbohydrates,
+        salt: acc.salt + calculatedNutrition.salt,
+      };
+    }
+    
     const convertedNutrition = convertNutritionToUnit(
       ingredient.nutrition,
       ingredient.unit.name,
@@ -66,14 +86,17 @@ export const calculateNutritionForQuantity = (
     return nutrition;
   }
 
-  const conversionFactor = (quantity * gramEquivalent) / 100;
+  // 栄養素データは具材の単位のstepの量の栄養素が設定されている
+  // 例：豚バラ肉はgでstepが50なので、50gの栄養素が登録されている
+  // ユーザーが10gを選択しているなら、栄養素は10/50 = 0.2倍になる
+  const quantityRatio = quantity / unit.step;
 
   return {
-    calories: Math.round(nutrition.calories * conversionFactor),
-    protein: Math.round(nutrition.protein * conversionFactor * 10) / 10,
-    fat: Math.round(nutrition.fat * conversionFactor * 10) / 10,
-    carbohydrates: Math.round(nutrition.carbohydrates * conversionFactor * 10) / 10,
-    salt: Math.round(nutrition.salt * conversionFactor * 100) / 100,
+    calories: Math.round(nutrition.calories * quantityRatio),
+    protein: Math.round(nutrition.protein * quantityRatio * 10) / 10,
+    fat: Math.round(nutrition.fat * quantityRatio * 10) / 10,
+    carbohydrates: Math.round(nutrition.carbohydrates * quantityRatio * 10) / 10,
+    salt: Math.round(nutrition.salt * quantityRatio * 100) / 100,
   };
 };
 
@@ -86,7 +109,7 @@ export const calculateTotalNutrition = (
         ingredient.nutrition,
         ingredient.quantity,
         ingredient.unit,
-        ingredient.gramEquivalent
+        0 // gramEquivalentは使用しない
       );
 
       return {

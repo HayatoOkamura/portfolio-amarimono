@@ -115,15 +115,9 @@ export const convertNutritionToUnit = (
   toUnit: string,
   quantity: number
 ) => {
-  // 同じ単位の場合は、数量に応じて栄養素を調整
+  // 同じ単位の場合は、栄養素データをそのまま返す（数量計算は別途行う）
   if (fromUnit === toUnit) {
-    return {
-      calories: Math.round(nutrition.calories * quantity),
-      protein: Number((nutrition.protein * quantity).toFixed(1)),
-      fat: Number((nutrition.fat * quantity).toFixed(1)),
-      carbohydrates: Number((nutrition.carbohydrates * quantity).toFixed(1)),
-      salt: Number((nutrition.salt * quantity).toFixed(2)),
-    };
+    return nutrition;
   }
   
   // 単位換算係数を取得
