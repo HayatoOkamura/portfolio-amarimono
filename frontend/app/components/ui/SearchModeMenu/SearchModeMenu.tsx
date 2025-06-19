@@ -7,9 +7,10 @@ import { SearchMode } from "@/app/stores/ingredientStore";
 interface SearchModeMenuProps {
   currentMode: SearchMode;
   onModeChange: (mode: SearchMode) => void;
+  'data-onboarding'?: string;
 }
 
-const SearchModeMenu = ({ currentMode, onModeChange }: SearchModeMenuProps) => {
+const SearchModeMenu = ({ currentMode, onModeChange, ...props }: SearchModeMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -57,7 +58,7 @@ const SearchModeMenu = ({ currentMode, onModeChange }: SearchModeMenuProps) => {
   };
 
   return (
-    <div className={styles.menu_container} ref={menuRef}>
+    <div className={styles.menu_container} ref={menuRef} {...props}>
       <button
         className={styles.menu_trigger}
         onClick={() => setIsOpen(!isOpen)}

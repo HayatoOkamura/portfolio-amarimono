@@ -45,6 +45,16 @@ export const CoachmarkOnboarding: React.FC<CoachmarkOnboardingProps> = ({ isOpen
       placement: 'bottom' as Placement,
     },
     {
+      target: '[data-onboarding="search-mode-menu"]',
+      content: (
+        <div className={styles.content}>
+          <h3 className={styles.content__title}>検索方法の設定</h3>
+          <p className={styles.content__description}>検索の厳密さを調整できます。部分一致なら手持ちの具材が1つでも含まれるレシピを、完全一致なら全ての具材が必要なレシピを検索します。</p>
+        </div>
+      ),
+      placement: 'bottom' as Placement,
+    },
+    {
       target: '[data-onboarding="search-button"]',
       content: (
         <div className={styles.content}>

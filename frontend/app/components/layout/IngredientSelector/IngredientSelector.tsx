@@ -175,6 +175,7 @@ const IngredientSelector = ({
             <SearchModeMenu
               currentMode={searchMode}
               onModeChange={setSearchMode}
+              data-onboarding="search-mode-menu"
             />
           </div>
         </div>
