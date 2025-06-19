@@ -6,6 +6,7 @@ import { backendUrl, handleApiResponse } from "../utils/api";
 import useRecipeStore from "@/app/stores/recipeStore";
 import { sortRecipes } from "@/app/utils/sortRecipes";
 import { api } from "@/app/utils/api";
+import { SearchMode } from "@/app/stores/ingredientStore";
 
 interface ApiInstruction {
   stepNumber: number;
@@ -240,7 +241,7 @@ export const fetchRecipesService = async (): Promise<Recipe[]> => {
 };
 
 // 具材からレシピを検索
-export const fetchRecipesAPI = async (ingredients: { id: number; quantity: number }[], ignoreQuantity: boolean = false) => {
+export const fetchRecipesAPI = async (ingredients: { id: number; quantity: number }[], searchMode: SearchMode = 'exact_with_quantity') => {
   if (ingredients.length === 0) {
     throw new Error("具材が選択されていません");
   }
@@ -253,11 +254,11 @@ export const fetchRecipesAPI = async (ingredients: { id: number; quantity: numbe
   await new Promise(resolve => setTimeout(resolve, 500))
 
   console.log("🥦", transformedIngredients);
-  console.log("🥦 ignoreQuantity:", ignoreQuantity);
+  console.log("🥦 searchMode:", searchMode);
 
   const requestBody = {
     ingredients: transformedIngredients,
-    ignoreQuantity: ignoreQuantity
+    searchMode: searchMode
   };
 
   const response = await api.post("/api/recipes", requestBody);
@@ -528,7 +529,7 @@ export const useRecipes = () => {
 
 export const useFetchRecipesAPI = (
   ingredients: { id: number; quantity: number }[],
-  ignoreQuantity: boolean = false,
+  searchMode: SearchMode = 'exact_with_quantity',
   options?: {
     enabled?: boolean;
     staleTime?: number;
@@ -539,7 +540,7 @@ export const useFetchRecipesAPI = (
 ) => {
   
   return useQuery<Recipe[], Error>({
-    queryKey: recipeKeys.list(JSON.stringify({ ingredients, ignoreQuantity })),
+    queryKey: recipeKeys.list(JSON.stringify({ ingredients, searchMode })),
     queryFn: async () => {
       const validIngredients = ingredients.filter(ing => {
         return ing && ing.id && ing.quantity > 0;
@@ -550,7 +551,7 @@ export const useFetchRecipesAPI = (
       }
       
       try {
-        const response = await fetchRecipesAPI(validIngredients, ignoreQuantity);
+        const response = await fetchRecipesAPI(validIngredients, searchMode);
         return response;
       } catch (error) {
         console.error('Error fetching recipes:', error);

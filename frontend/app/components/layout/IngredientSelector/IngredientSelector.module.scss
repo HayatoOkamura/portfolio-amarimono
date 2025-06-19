@@ -82,8 +82,8 @@
 
     &__contents {
       display: flex;
-      flex-direction: column;
-      gap: 4px;
+      align-items: flex-end;
+      gap: 8px;
     }
 
     &__title {
@@ -102,31 +102,7 @@
     }
 
     &__button {
-      .quantity_ignore_checkbox {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--primary-font-color);
-        cursor: pointer;
-        user-select: none;
-
-        input[type="checkbox"] {
-          width: 16px;
-          height: 16px;
-          cursor: pointer;
-          accent-color: var(--primary-color);
-        }
-
-        span {
-          white-space: nowrap;
-        }
-
-        &:hover {
-          opacity: 0.8;
-        }
-      }
+      // メニューボタンのスタイルはSearchModeMenuコンポーネントで管理
     }
   }
 }

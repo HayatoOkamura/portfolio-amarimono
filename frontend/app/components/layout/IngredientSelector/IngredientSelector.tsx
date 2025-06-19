@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { useUserIngredientDefaults } from "@/app/hooks/userIngredientDefaults";
 import { useAuth } from "@/app/hooks/useAuth";
 import useIngredientStore from "@/app/stores/ingredientStore";
+import SearchModeMenu from "../../ui/SearchModeMenu/SearchModeMenu";
 
 interface IngredientSelectorProps {
   initialIngredients: Ingredient[];
@@ -25,7 +26,7 @@ const IngredientSelector = ({
   const router = useRouter();
   const { user } = useAuth();
   const { data: userDefaults } = useUserIngredientDefaults();
-  const { addIngredient, setIgnoreQuantity, ignoreQuantity: storeIgnoreQuantity } = useIngredientStore();
+  const { addIngredient, searchMode, setSearchMode } = useIngredientStore();
 
   const {
     data: ingredients = initialIngredients,
@@ -42,12 +43,6 @@ const IngredientSelector = ({
   const [selectedGenre, setSelectedGenre] = useState<string>("すべて");
   const [height, setHeight] = useState("auto");
   const [isGenresLoading, setIsGenresLoading] = useState(true);
-  const [ignoreQuantity, setIgnoreQuantityLocal] = useState(storeIgnoreQuantity);
-
-  // ストアのignoreQuantityが変更されたときにローカル状態を同期
-  useEffect(() => {
-    setIgnoreQuantityLocal(storeIgnoreQuantity);
-  }, [storeIgnoreQuantity]);
 
   // 初期設定の反映
   useEffect(() => {
@@ -123,12 +118,6 @@ const IngredientSelector = ({
     return () => window.removeEventListener("resize", updateHeight);
   }, [isIngredientsLoading, isGenresLoading]);
 
-  // 数量無視フラグの変更ハンドラー
-  const handleIgnoreQuantityChange = (checked: boolean) => {
-    setIgnoreQuantityLocal(checked);
-    setIgnoreQuantity(checked);
-  };
-
   const genres = [{ id: 0, name: "すべて" }, ...ingredientGenres];
 
   const filteredIngredients =
@@ -183,14 +172,10 @@ const IngredientSelector = ({
             <p className={styles.ingredient_head_block__note}>※画像はイメージです</p>
           </div>
           <div className={styles.ingredient_head_block__button}>
-            <label className={styles.quantity_ignore_checkbox}>
-              <input
-                type="checkbox"
-                checked={ignoreQuantity}
-                onChange={(e) => handleIgnoreQuantityChange(e.target.checked)}
-              />
-              <span>数量を無視して検索</span>
-            </label>
+            <SearchModeMenu
+              currentMode={searchMode}
+              onModeChange={setSearchMode}
+            />
           </div>
         </div>
         <div

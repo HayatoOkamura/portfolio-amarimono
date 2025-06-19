@@ -127,4 +127,19 @@
       font-weight: 500;
     }
   }
+
+  .search_mode_notice {
+    margin: 8px 0 16px;
+    padding: 8px 12px;
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 4px;
+    
+    p {
+      margin: 0;
+      font-size: 0.75rem;
+      color: #1565c0;
+      font-weight: 500;
+    }
+  }
 }

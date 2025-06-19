@@ -19,7 +19,7 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
   const [showSeasonings, setShowSeasonings] = useState(false);
   const { setGeneratedRecipes, setSearchType, setSearchExecuted } =
     useRecipeStore();
-  const { ingredients, setIngredients, selectedOrder, ignoreQuantity } = useIngredientStore();
+  const { ingredients, setIngredients, selectedOrder, searchMode } = useIngredientStore();
   const { data: fetchedIngredients } = useIngredients();
 
   useEffect(() => {
@@ -85,6 +85,22 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
     ["調味料", "スパイス"].includes(ingredient.genre.name)
   );
 
+  // 検索モードに応じたメッセージを取得
+  const getSearchModeMessage = () => {
+    switch (searchMode) {
+      case 'exact_with_quantity':
+        return '選択した具材が全て含まれ、数量も満たすレシピを検索します';
+      case 'exact_without_quantity':
+        return '選択した具材が全て含まれるレシピを検索します（数量は無視）';
+      case 'partial_with_quantity':
+        return '選択した具材が1つでも含まれ、数量も満たすレシピを検索します（調味料・スパイスは除く）';
+      case 'partial_without_quantity':
+        return '選択した具材が1つでも含まれるレシピを検索します（数量は無視、調味料・スパイスは除く）';
+      default:
+        return '';
+    }
+  };
+
   return (
     <section className={styles.container_block}>
       <div className={styles.container_block__inner}>
@@ -97,11 +113,9 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
             {showSeasonings ? "調味料、スパイスを非表示" : "調味料、スパイスを表示"}
           </button>
         )}
-        {ignoreQuantity && (
-          <div className={styles.quantity_ignore_notice}>
-            <p>※数量を無視してレシピを検索します</p>
-          </div>
-        )}
+        <div className={styles.search_mode_notice}>
+          <p>{getSearchModeMessage()}</p>
+        </div>
         <div className={styles.container_block__contents}>
           {filteredIngredients.length > 0 && (
             <ul className={styles.ingredients_list}>

@@ -35,6 +35,7 @@ type RecipeIngredientRequest struct {
 type SearchRequest struct {
 	Ingredients    []RecipeIngredientRequest `json:"ingredients"`
 	IgnoreQuantity bool                      `json:"ignoreQuantity"`
+	SearchMode     string                    `json:"searchMode"`
 }
 
 // SerchRecipes handles POST /api/recipes
@@ -55,6 +56,15 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		return
 	}
 
+	// 検索モードのデフォルト値を設定（後方互換性のため）
+	if request.SearchMode == "" {
+		if request.IgnoreQuantity {
+			request.SearchMode = "exact_without_quantity"
+		} else {
+			request.SearchMode = "exact_with_quantity"
+		}
+	}
+
 	// 選択された具材のマップを作成（IDをキーとして、数量を値として）
 	selectedIngredients := make(map[int]float64)
 	var ingredientIDs []int
@@ -63,7 +73,7 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		ingredientIDs = append(ingredientIDs, ing.IngredientID)
 	}
 	log.Printf("🥦 Selected ingredients: %+v\n", selectedIngredients)
-	log.Printf("🥦 Ignore quantity: %v\n", request.IgnoreQuantity)
+	log.Printf("🥦 Search mode: %s\n", request.SearchMode)
 
 	// サブクエリ：指定具材が含まれるレシピを取得（下書きを除外）
 	var recipeIDs []uuid.UUID
@@ -106,22 +116,41 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		}
 	}
 
-	// 結果をフィルタリング
+	// 検索モードに応じて結果をフィルタリング
 	var result []models.Recipe
+	switch request.SearchMode {
+	case "exact_with_quantity":
+		result = h.filterExactWithQuantity(recipes, request.Ingredients, selectedIngredients)
+	case "exact_without_quantity":
+		result = h.filterExactWithoutQuantity(recipes, request.Ingredients, selectedIngredients)
+	case "partial_with_quantity":
+		result = h.filterPartialWithQuantity(recipes, request.Ingredients, selectedIngredients)
+	case "partial_without_quantity":
+		result = h.filterPartialWithoutQuantity(recipes, request.Ingredients, selectedIngredients)
+	default:
+		// デフォルトは完全一致（数量考慮）
+		result = h.filterExactWithQuantity(recipes, request.Ingredients, selectedIngredients)
+	}
+
+	log.Printf("🥦 Final result count: %d\n", len(result))
+	c.JSON(http.StatusOK, result)
+}
+
+// 完全一致（数量考慮）
+func (h *RecipeHandler) filterExactWithQuantity(recipes []models.Recipe, requestIngredients []RecipeIngredientRequest, selectedIngredients map[int]float64) []models.Recipe {
+	var result []models.Recipe
+
 	for _, recipe := range recipes {
-		// レシピの具材をチェック
 		allIngredientsMatch := true
 		missingIngredients := make(map[int]float64)
 
-		// 選択された具材のマップを作成（調味料を除く）
 		selectedIngredientsMap := make(map[int]float64)
-		for _, ing := range request.Ingredients {
+		for _, ing := range requestIngredients {
 			selectedIngredientsMap[ing.IngredientID] = ing.QuantityRequired
 		}
 
-		log.Printf("🥦 Checking recipe %s (ID: %s)\n", recipe.Name, recipe.ID)
+		log.Printf("🥦 Checking recipe %s (ID: %s) - exact with quantity\n", recipe.Name, recipe.ID)
 
-		// レシピの各具材をチェック
 		for _, recipeIng := range recipe.Ingredients {
 			log.Printf("🥦 Checking ingredient %s (ID: %d, Unit: %s, Type: %s, Required: %f)\n",
 				recipeIng.Ingredient.Name,
@@ -132,7 +161,6 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 
 			// presence単位の具材は数量チェックをスキップ
 			if recipeIng.Ingredient.Unit.Type == "presence" {
-				// presence単位の場合は、選択されているかどうかだけをチェック
 				_, exists := selectedIngredientsMap[recipeIng.IngredientID]
 				if !exists {
 					allIngredientsMatch = false
@@ -159,12 +187,6 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 				break
 			}
 
-			// 数量無視フラグがtrueの場合は数量チェックをスキップ
-			if request.IgnoreQuantity {
-				log.Printf("🥦 Quantity check skipped for ingredient %d due to ignoreQuantity flag\n", recipeIng.IngredientID)
-				continue
-			}
-
 			// 数量が十分かチェック
 			if selectedQuantity < recipeIng.QuantityRequired {
 				allIngredientsMatch = false
@@ -177,7 +199,6 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 			}
 		}
 
-		// 全ての具材が一致し、かつ数量が十分な場合のみ結果に追加
 		if allIngredientsMatch {
 			result = append(result, recipe)
 			log.Printf("🥦 Recipe %s (ID: %s) matched all criteria\n", recipe.Name, recipe.ID)
@@ -189,8 +210,213 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		}
 	}
 
-	log.Printf("🥦 Final result count: %d\n", len(result))
-	c.JSON(http.StatusOK, result)
+	return result
+}
+
+// 完全一致（数量無視）
+func (h *RecipeHandler) filterExactWithoutQuantity(recipes []models.Recipe, requestIngredients []RecipeIngredientRequest, selectedIngredients map[int]float64) []models.Recipe {
+	var result []models.Recipe
+
+	for _, recipe := range recipes {
+		allIngredientsMatch := true
+		missingIngredients := make(map[int]float64)
+
+		selectedIngredientsMap := make(map[int]float64)
+		for _, ing := range requestIngredients {
+			selectedIngredientsMap[ing.IngredientID] = ing.QuantityRequired
+		}
+
+		log.Printf("🥦 Checking recipe %s (ID: %s) - exact without quantity\n", recipe.Name, recipe.ID)
+
+		for _, recipeIng := range recipe.Ingredients {
+			log.Printf("🥦 Checking ingredient %s (ID: %d, Unit: %s, Type: %s, Required: %f)\n",
+				recipeIng.Ingredient.Name,
+				recipeIng.IngredientID,
+				recipeIng.Ingredient.Unit.Name,
+				recipeIng.Ingredient.Unit.Type,
+				recipeIng.QuantityRequired)
+
+			// presence単位の具材は数量チェックをスキップ
+			if recipeIng.Ingredient.Unit.Type == "presence" {
+				_, exists := selectedIngredientsMap[recipeIng.IngredientID]
+				if !exists {
+					allIngredientsMatch = false
+					missingIngredients[recipeIng.IngredientID] = 1
+					log.Printf("🥦 Presence ingredient %d not found in selected ingredients\n", recipeIng.IngredientID)
+					break
+				}
+				continue
+			}
+
+			// 調味料はスキップ
+			if recipeIng.Ingredient.Unit.Name == "適量" ||
+				recipeIng.Ingredient.Unit.Name == "少々" ||
+				recipeIng.Ingredient.Unit.Name == "ひとつまみ" {
+				continue
+			}
+
+			// 選択された具材の中に、このレシピの具材が含まれているかチェック
+			_, exists := selectedIngredientsMap[recipeIng.IngredientID]
+			if !exists {
+				allIngredientsMatch = false
+				missingIngredients[recipeIng.IngredientID] = recipeIng.QuantityRequired
+				log.Printf("🥦 Required ingredient %d not found in selected ingredients\n", recipeIng.IngredientID)
+				break
+			}
+
+			// 数量チェックをスキップ
+			log.Printf("🥦 Quantity check skipped for ingredient %d due to exact without quantity mode\n", recipeIng.IngredientID)
+		}
+
+		if allIngredientsMatch {
+			result = append(result, recipe)
+			log.Printf("🥦 Recipe %s (ID: %s) matched all criteria\n", recipe.Name, recipe.ID)
+		} else {
+			log.Printf("🥦 Recipe %s (ID: %s) did not match. Missing ingredients: %+v\n",
+				recipe.Name,
+				recipe.ID,
+				missingIngredients)
+		}
+	}
+
+	return result
+}
+
+// 部分一致（数量考慮）
+func (h *RecipeHandler) filterPartialWithQuantity(recipes []models.Recipe, requestIngredients []RecipeIngredientRequest, selectedIngredients map[int]float64) []models.Recipe {
+	var result []models.Recipe
+
+	for _, recipe := range recipes {
+		selectedIngredientsMap := make(map[int]float64)
+		for _, ing := range requestIngredients {
+			selectedIngredientsMap[ing.IngredientID] = ing.QuantityRequired
+		}
+
+		log.Printf("🥦 Checking recipe %s (ID: %s) - partial with quantity\n", recipe.Name, recipe.ID)
+
+		// レシピの具材のうち、選択された具材と一致するものをカウント
+		matchCount := 0
+		totalIngredients := 0
+
+		for _, recipeIng := range recipe.Ingredients {
+			// 調味料とスパイスはスキップ（部分一致では除外）
+			if recipeIng.Ingredient.Genre.ID == 5 || // 調味料
+				recipeIng.Ingredient.Genre.ID == 6 { // スパイス
+				continue
+			}
+
+			// presence単位の具材は数量チェックをスキップ
+			if recipeIng.Ingredient.Unit.Type == "presence" {
+				totalIngredients++
+				_, exists := selectedIngredientsMap[recipeIng.IngredientID]
+				if exists {
+					matchCount++
+					log.Printf("🥦 Presence ingredient %d matched\n", recipeIng.IngredientID)
+				}
+				continue
+			}
+
+			// 調味料系の単位名もスキップ
+			if recipeIng.Ingredient.Unit.Name == "適量" ||
+				recipeIng.Ingredient.Unit.Name == "少々" ||
+				recipeIng.Ingredient.Unit.Name == "ひとつまみ" {
+				continue
+			}
+
+			totalIngredients++
+			selectedQuantity, exists := selectedIngredientsMap[recipeIng.IngredientID]
+			if exists {
+				// 数量が十分かチェック
+				if selectedQuantity >= recipeIng.QuantityRequired {
+					matchCount++
+					log.Printf("🥦 Ingredient %d matched with sufficient quantity: required %f, selected %f\n",
+						recipeIng.IngredientID,
+						recipeIng.QuantityRequired,
+						selectedQuantity)
+				} else {
+					log.Printf("🥦 Ingredient %d found but insufficient quantity: required %f, selected %f\n",
+						recipeIng.IngredientID,
+						recipeIng.QuantityRequired,
+						selectedQuantity)
+				}
+			} else {
+				log.Printf("🥦 Ingredient %d not found in selected ingredients\n", recipeIng.IngredientID)
+			}
+		}
+
+		// 少なくとも1つの具材が一致していれば結果に追加
+		if matchCount > 0 {
+			result = append(result, recipe)
+			log.Printf("🥦 Recipe %s (ID: %s) matched %d/%d ingredients\n", recipe.Name, recipe.ID, matchCount, totalIngredients)
+		} else {
+			log.Printf("🥦 Recipe %s (ID: %s) did not match any ingredients\n", recipe.Name, recipe.ID)
+		}
+	}
+
+	return result
+}
+
+// 部分一致（数量無視）
+func (h *RecipeHandler) filterPartialWithoutQuantity(recipes []models.Recipe, requestIngredients []RecipeIngredientRequest, selectedIngredients map[int]float64) []models.Recipe {
+	var result []models.Recipe
+
+	for _, recipe := range recipes {
+		selectedIngredientsMap := make(map[int]float64)
+		for _, ing := range requestIngredients {
+			selectedIngredientsMap[ing.IngredientID] = ing.QuantityRequired
+		}
+
+		log.Printf("🥦 Checking recipe %s (ID: %s) - partial without quantity\n", recipe.Name, recipe.ID)
+
+		// レシピの具材のうち、選択された具材と一致するものをカウント
+		matchCount := 0
+		totalIngredients := 0
+
+		for _, recipeIng := range recipe.Ingredients {
+			// 調味料とスパイスはスキップ（部分一致では除外）
+			if recipeIng.Ingredient.Genre.ID == 5 || // 調味料
+				recipeIng.Ingredient.Genre.ID == 6 { // スパイス
+				continue
+			}
+
+			// presence単位の具材は数量チェックをスキップ
+			if recipeIng.Ingredient.Unit.Type == "presence" {
+				totalIngredients++
+				_, exists := selectedIngredientsMap[recipeIng.IngredientID]
+				if exists {
+					matchCount++
+					log.Printf("🥦 Presence ingredient %d matched\n", recipeIng.IngredientID)
+				}
+				continue
+			}
+
+			// 調味料系の単位名もスキップ
+			if recipeIng.Ingredient.Unit.Name == "適量" ||
+				recipeIng.Ingredient.Unit.Name == "少々" ||
+				recipeIng.Ingredient.Unit.Name == "ひとつまみ" {
+				continue
+			}
+
+			totalIngredients++
+			_, exists := selectedIngredientsMap[recipeIng.IngredientID]
+			if exists {
+				matchCount++
+				log.Printf("🥦 Ingredient %d matched (quantity ignored)\n", recipeIng.IngredientID)
+			} else {
+				log.Printf("🥦 Ingredient %d not found in selected ingredients\n", recipeIng.IngredientID)
+			}
+		}
+
+		// 少なくとも1つの具材が一致していれば結果に追加
+		if matchCount > 0 {
+			result = append(result, recipe)
+			log.Printf("🥦 Recipe %s (ID: %s) matched %d/%d ingredients\n", recipe.Name, recipe.ID, matchCount, totalIngredients)
+		} else {
+			log.Printf("🥦 Recipe %s (ID: %s) did not match any ingredients\n", recipe.Name, recipe.ID)
+		}
+	}
+
+	return result
 }
 
 // SearchRecipesByName handles GET /api/recipes/search
