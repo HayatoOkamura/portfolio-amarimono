@@ -35,6 +35,20 @@
   .instruction_block {
     margin-top: 60px;
 
+    &__head {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    &__note {
+      color: var(--secondary-font-color);
+      font-size: 0.875rem;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      line-height: 1.2;
+    }
+
     &__title {
       color: #000;
       font-size: 1.25rem;
@@ -68,6 +82,14 @@
 
     &__contents {
       flex: 1.3;
+    }
+
+    &__text {
+      font-size: 1rem;
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      line-height: 1.4;
+      margin-top: 3px;
     }
   }
 
@@ -309,7 +331,7 @@
       margin-top: 40px;
 
       &__title {
-        color: #000;
+        color: var(--primary-font-color);
         font-size: 1.25rem;
         font-weight: 700;
         letter-spacing: 0.03em;
@@ -327,7 +349,7 @@
       }
 
       &__name {
-        color: #000;
+        color: var(--primary-font-color);
         font-size: 1.125rem;
         font-weight: 400;
         letter-spacing: 0.03em;
@@ -335,7 +357,7 @@
       }
 
       &__quantity {
-        color: #000;
+        color: var(--primary-font-color);
         font-size: 1rem;
         font-weight: 400;
         letter-spacing: 0.03em;
@@ -532,20 +554,39 @@
     }
 
     &__item {
+      width: 90%;
       background-color: white;
     }
 
     &__question {
       font-size: 1rem;
       font-weight: bold;
-      margin-bottom: 0.5rem;
-      color: #333;
+      color: var(--primary-font-color);
+      text-indent: -1.2em;
+      padding-left: 1.2em;
+
+      span {
+        font-size: 1.125rem;
+        margin-right: 8px;
+        vertical-align: bottom;
+      }
     }
 
     &__answer {
-      font-size: 0.9rem;
-      color: #666;
+      font-size: 1rem;
+      color: var(--primary-font-color);
       line-height: 1.5;
+      letter-spacing: 0.03em;
+      margin-top: 8px;
+      text-indent: -1.2em;
+      padding-left: 1.2em;
+
+      span {
+        font-size: 1.125rem;
+        font-weight: bold;
+        margin-right: 8px;
+        vertical-align: baseline;
+      }
     }
   }
 }

@@ -19,6 +19,7 @@ import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import toast from "react-hot-toast";
 import { useAIUsage } from "@/app/hooks/aiUsage";
 import { useRecipeDescription } from "@/app/hooks/useRecipeDescription";
+import { PRESENCE_UNITS } from "@/app/utils/unitConversion";
 
 export const RegistrationForm = ({
   isAdmin = false,
@@ -174,6 +175,16 @@ export const RegistrationForm = ({
                   const selectedUnit = units?.find((u) => u.name === ingredient.unit);
                   if (!selectedUnit) return;
 
+                  const isPresenceType = selectedUnit.type === "presence";
+                  const isCurrentUnitAdjustable = !isPresenceType || 
+                    (selectedUnit.type !== "presence") || 
+                    ["大さじ", "小さじ", "滴"].includes(ingredient.unit);
+
+                  // プラスボタンが押された場合で、isPresenceTypeかつ!isCurrentUnitAdjustableの場合は処理をスキップ
+                  if (delta > 0 && isPresenceType && !isCurrentUnitAdjustable) {
+                    return;
+                  }
+
                   const isQuantityTypeWithStep1 = selectedUnit.type === "quantity" && selectedUnit.step === 1;
                   const isStep50 = selectedUnit.step === 50;
                   const step = isQuantityTypeWithStep1
@@ -245,14 +256,21 @@ export const RegistrationForm = ({
                       <div className={styles.select_ingredient_block__controls}>
                         <button
                           onClick={() => handleQuantityChange(1)}
-                          className={`${styles.select_ingredient_block__button} ${styles["select_ingredient_block__button--plus"]}`}
+                          className={`${styles.select_ingredient_block__button} ${styles["select_ingredient_block__button--plus"]} ${
+                            PRESENCE_UNITS.includes(ingredient.unit as typeof PRESENCE_UNITS[number])
+                              ? styles["select_ingredient_block__button--disabled"]
+                              : ""
+                          }`}
                           aria-label={`${ingredientData.name}を増やす`}
                         />
                         <span
                           className={styles.select_ingredient_block__quantity}
                         >
-                          {formatQuantity(ingredient.quantity)}
-                          {ingredient.unit}
+                          {PRESENCE_UNITS.includes(ingredient.unit as typeof PRESENCE_UNITS[number])
+                            ? ingredient.unit
+                            : ingredient.unit === "大さじ" || ingredient.unit === "小さじ"
+                              ? `${ingredient.unit}${formatQuantity(ingredient.quantity)}`
+                              : `${formatQuantity(ingredient.quantity)}${ingredient.unit}`}
                         </span>
                         <button
                           onClick={() => handleQuantityChange(-1)}
@@ -545,6 +563,7 @@ export const RegistrationForm = ({
                           salt: 0,
                         },
                         gramEquivalent: ingredient?.gramEquivalent ?? 100,
+                        selectedUnit: ing.unit,
                       };
                     }
                   );

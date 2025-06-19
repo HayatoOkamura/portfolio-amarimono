@@ -6,6 +6,7 @@ import styles from "./BaseIngredientCard.module.scss";
 import { imageBaseUrl } from "@/app/utils/api";
 import { Ingredient } from "@/app/types/index";
 import { useUnits } from "@/app/hooks/units";
+import { SUPPORTED_UNITS, PRESENCE_UNITS } from "@/app/utils/unitConversion";
 
 export interface BaseIngredientCardProps {
   ingredient: Ingredient;
@@ -108,8 +109,11 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
         </button>
         {(!isPresenceType || isCurrentUnitAdjustable || isRecipeCreation) && (
           <span>
-            {formatQuantity(quantity)}
-            {currentUnit}
+            {PRESENCE_UNITS.includes(currentUnit as typeof PRESENCE_UNITS[number])
+              ? currentUnit
+              : currentUnit === "大さじ" || currentUnit === "小さじ"
+                ? `${currentUnit}${formatQuantity(quantity)}`
+                : `${formatQuantity(quantity)}${currentUnit}`}
           </span>
         )}
         <button

@@ -312,6 +312,12 @@ export const addRecipeService = async (formData: FormData): Promise<Recipe> => {
     // 各instructionの詳細を確認
     const instructions = JSON.parse(formData.get('instructions') as string);
 
+    // formDataの中身ををログ出力
+    formData.forEach((value, key) => {
+      console.log(`${key}: ${value}`);
+    });
+
+
     const response = await api.post("/admin/recipes", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
@@ -358,12 +364,10 @@ export const updateRecipeService = async (
   try {
     const ingredientsRaw = updatedData.get("ingredients") as string;
     if (ingredientsRaw) {
-      
       const ingredients = JSON.parse(ingredientsRaw);
       
       // 配列であることを確認し、必要なプロパティが存在することを確認
       if (Array.isArray(ingredients)) {
-        
         const formattedIngredients = ingredients
           .filter(ing => ing && typeof ing === 'object')
           .map((ing: any) => {
@@ -388,20 +392,42 @@ export const updateRecipeService = async (
       }
     }
 
+    //updatedDataの中身をログ出力
+    updatedData.forEach((value, key) => {
+      console.log(`🚨${key}: ${value}`);
+    });
+
     const response = await api.put(`/admin/recipes/${id}`, updatedData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
 
-    return response.data;
-  } catch (error) {
-    console.error("Error in updateRecipeService:", error);
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
+    console.log("🚨🚨🚨 Response data:", response.data);
+
+    // レスポンスデータの型チェック
+    if (!response.data) {
+      throw new Error('No data received from server');
     }
-    throw error;
+
+    // レスポンスデータの構造を確認
+    if (response.data.recipe) {
+      return mapRecipe(response.data.recipe);
+    }
+
+    if (typeof response.data === 'object' && 'id' in response.data) {
+      return mapRecipe(response.data);
+    }
+
+    throw new Error('Invalid response format: ' + JSON.stringify(response.data));
+  } catch (error: any) {
+    console.error("Error in updateRecipeService:", error);
+    console.error("Error response:", error.response?.data);
+    console.error("Error status:", error.response?.status);
+    
+    // エラーメッセージの詳細を追加
+    const errorMessage = error.response?.data?.error || error.message || 'Failed to update recipe';
+    throw new Error(`Failed to update recipe: ${errorMessage}`);
   }
 };
 

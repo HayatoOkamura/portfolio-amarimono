@@ -17,7 +17,7 @@ function MyRecipeDetailContent() {
   const { data: recipe, isLoading, error } = useRecipe(id as string);
   const { handleDelete, handleTogglePublish } = useRecipeActions({ 
     recipeId: id as string,
-    redirectPath: '/recipes/my'
+    redirectPath: '/user/recipes/'
   });
   const [isLiked, setIsLiked] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -78,7 +78,7 @@ function MyRecipeDetailContent() {
           onLogin={() => router.push('/login')}
           userId={user?.id}
           setShowLoginModal={setShowLoginModal}
-          onEdit={() => router.push(`/recipes/my/${recipe.id}/edit`)}
+          onEdit={() => router.push(`/user/recipes/${recipe.id}/edit`)}
           onPublish={handleTogglePublish}
           onDelete={handleDelete}
         />

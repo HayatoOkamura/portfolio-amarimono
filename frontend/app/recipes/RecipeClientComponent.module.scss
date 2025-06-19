@@ -156,7 +156,8 @@
     position: relative;
 
     &__item {
-      min-width: 197px;
+      max-width: 197px;
+      width: 100%;
       height: calc(100% - 6px);
       border-radius: 10px;
       padding: 3px;

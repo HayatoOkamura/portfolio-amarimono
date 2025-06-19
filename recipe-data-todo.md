@@ -3,34 +3,33 @@
 ## 最重要：レシピデータ作成の手順
 レシピデータは必ず以下の順序で作成すること：
 
-1. recipes.csvの基本情報作成
+1. recipe_ingredients.csvの作成
    - recipe-data-todo.mdから作成するレシピを選択
+   - レシピに必要な具材を全て生成
+   - original-data/ingredient_data.csvを確認して、その具材が存在するかどうかの確認（存在しない場合は代用するか削除する）
+   - idとunit_idを確認する
+   - original-data/units_data.csvを参照して、unit_idのtypeがpresenceの場合は、同じpresenceの単位から好きな単位を選択して良い。puantityの場合は、unit_idの単位を使用する
+   - recipe-data/csv/recipe_ingredients.csvにrecipe_idとingredient_idとquantity_requiredとunit_idを指定する
+
+2. recipes.csvの基本情報作成
    - 外部データを参照する必要がない項目（instructions、genre_id、nutrition以外）を設定
    - レシピID、名前、調理時間、費用目安、概要、キャッチフレーズ、FAQを設定
 
-2. genre_idの設定
+3. genre_idの設定
    - original-data/recipe_genres.csvを参照
    - レシピに適切なジャンルIDを設定
 
-3. recipe_ingredients.csvの作成
-   - ingredient_data.csvを参照して具材を選択
-   - 外部ファイルの参照が必要な項目は生成しない！（quantity_requiredの登録は不要）
-
-4. recipe_ingredients.csvの値を設定
-   - 具材の数量はstepの値に準拠（例：stepが10なら、10、20、30となる）
-   - 使用する具材と数量を確定
-
-5. instructionsの設定
+4. instructionsの設定
    - 確定済みのrecipe_ingredients.csvに基づいて手順を作成
    - 各手順で使用する具材を明記
    - 手順は3-6ステップで、各ステップは50-100文字程度
    - 最後の手順には必ず「〜で完成です。」を含める
 
-6. nutritionの設定
+5. nutritionの設定
    - 確定済みのrecipe_ingredients.csvの具材の栄養素を合計
    - 合計値をレシピの栄養素として設定
 
-7. image_prompts.jsonの作成
+6. image_prompts.jsonの作成
    - 確定済みのinstructionsを参照してプロンプトを作成
    - メイン画像と手順画像のプロンプトを設定
 
@@ -63,18 +62,18 @@
 ## ジャンル別レシピ生成計画
 
 ### 1. 主菜
-- [ ] 肉じゃが
-- [ ] ハンバーグ
-- [ ] 生姜焼き
-- [ ] 鶏の唐揚げ
-- [ ] 豚の角煮
-- [ ] 鮭の塩焼き
-- [ ] 鯖の味噌煮
-- [ ] 照り焼きチキン
-- [ ] 鶏の南蛮漬け
-- [ ] 鶏むね肉のピカタ
-- [ ] チキンカツ
-- [ ] エビフライ
+- [✔︎] 肉じゃが
+- [✔︎] ハンバーグ
+- [✔︎] 生姜焼き
+- [✔︎] 鶏の唐揚げ
+- [✔︎] 豚の角煮
+- [✔︎] 鮭の塩焼き
+- [✔︎] 鯖の味噌煮
+- [✔︎] 照り焼きチキン
+- [✔︎] 鶏の南蛮漬け
+- [✔︎] 鶏むね肉のピカタ
+- [✔︎] チキンカツ
+- [✔︎] エビフライ
 - [ ] 回鍋肉（ホイコーロー）
 - [ ] 麻婆豆腐
 - [ ] 豚キムチ炒め
@@ -282,42 +281,50 @@
   {
     "recipe_id": "550e8400-e29b-41d4-a716-446655440000",
     "ingredient_id": "1",
-    "quantity_required": "300"
+    "quantity_required": "300",
+    "unit_id": "1"
   },
   {
     "recipe_id": "550e8400-e29b-41d4-a716-446655440000",
     "ingredient_id": "2",
-    "quantity_required": "1"
+    "quantity_required": "1",
+    "unit_id": "1"
   },
   {
     "recipe_id": "550e8400-e29b-41d4-a716-446655440000",
     "ingredient_id": "3",
-    "quantity_required": "1"
+    "quantity_required": "1",
+    "unit_id": "1"
   },
   {
     "recipe_id": "550e8400-e29b-41d4-a716-446655440000",
     "ingredient_id": "4",
-    "quantity_required": "2"
+    "quantity_required": "2",
+    "unit_id": "1"
   },
   {
     "recipe_id": "550e8400-e29b-41d4-a716-446655440000",
     "ingredient_id": "5",
-    "quantity_required": "1"
+    "quantity_required": "1",
+    "unit_id": "1"
   },
   {
     "recipe_id": "550e8400-e29b-41d4-a716-446655440000",
     "ingredient_id": "6",
-    "quantity_required": "2"
+    "quantity_required": "2",
+    "unit_id": "1"
   },
   {
     "recipe_id": "550e8400-e29b-41d4-a716-446655440000",
     "ingredient_id": "7",
-    "quantity_required": "1"
+    "quantity_required": "1",
+    "unit_id": "1"
   },
   {
     "recipe_id": "550e8400-e29b-41d4-a716-446655440000",
     "ingredient_id": "8",
-    "quantity_required": "20"
+    "quantity_required": "20",
+    "unit_id": "1"
   }
 ]
 ```
@@ -352,73 +359,41 @@ Supabaseのデータベースに直接インポートするために、以下の
 ### ディレクトリ構成
 ```
 recipe-data/
-├── csv/
-│   ├── recipes.csv
-│   └── recipe_ingredients.csv
-├── sql/
-│   ├── recipes.sql
-│   └── recipe_ingredients.sql
-└── prompts/
-    └── image_prompts.json
+├── recipes/
+│   ├── nikujaga/
+│   │   ├── recipe.csv
+│   │   ├── ingredients.csv
+│   │   └── prompts.json
+│   └── hamburg/
+│       ├── recipe.csv
+│       ├── ingredients.csv
+│       └── prompts.json
 ```
 
 ### CSVファイル形式
-1. `recipes.csv`:
+1. `recipe.csv`:
 ```csv
 id,name,image_url,genre_id,cooking_time,cost_estimate,summary,nutrition,catchphrase,instructions,user_id,is_public,is_draft,created_at,updated_at
 a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d,生姜焼き,recipes/a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d/main.webp,1,20,600,"定番の和食、生姜焼きです。",{"fat":12.5,"salt":1.2,"protein":25.8,"calories":380,"carbohydrates":15.2},"生姜の香りが食欲をそそる、定番の和食",[{"image_url":"recipes/a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d/instructions/step1.webp","stepNumber":1,"description":"豚肉を食べやすい大きさに切ります。"}],6fbaf02f-ad06-4bee-966b-48407c7af8cb,true,false,2024-03-20 10:00:00.000000,2024-03-20 10:00:00.000000
 ```
 
-2. `recipe_ingredients.csv`:
+2. `ingredients.csv`:
 ```csv
-recipe_id,ingredient_id,quantity_required
-a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d,1,200
-a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d,2,1
-a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d,3,2
-```
-
-### SQLファイル形式
-1. `recipes.sql`:
-```sql
-INSERT INTO recipes (id, name, image_url, genre_id, cooking_time, cost_estimate, summary, nutrition, catchphrase, instructions, user_id, is_public, is_draft, created_at, updated_at)
-VALUES (
-  'a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d',
-  '生姜焼き',
-  'recipes/a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d/main.webp',
-  1,
-  20,
-  600,
-  '定番の和食、生姜焼きです。',
-  '{"fat":12.5,"salt":1.2,"protein":25.8,"calories":380,"carbohydrates":15.2}',
-  '生姜の香りが食欲をそそる、定番の和食',
-  '[{"image_url":"recipes/a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d/instructions/step1.webp","stepNumber":1,"description":"豚肉を食べやすい大きさに切ります。"}]',
-  '6fbaf02f-ad06-4bee-966b-48407c7af8cb',
-  true,
-  false,
-  '2024-03-20 10:00:00.000000',
-  '2024-03-20 10:00:00.000000'
-);
-```
-
-2. `recipe_ingredients.sql`:
-```sql
-INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity_required) VALUES
-('a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d', 1, 200),
-('a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d', 2, 1),
-('a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d', 3, 2);
+recipe_id,ingredient_id,quantity_required,unit_id
+a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d,1,200,1
+a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d,2,1,1
+a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d,3,2,1
 ```
 
 ### 画像生成プロンプト
-`prompts/image_prompts.json`:
+`prompts.json`:
 ```json
 {
-  "a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d": {
     "main_image": "高品質な料理写真、生姜焼き、玉ねぎと豚肉の炒め物、しょうがの香りが漂う、白いご飯の横に盛り付け、木目調のテーブル、プロフェッショナルな料理写真",
     "step_images": [
       "料理の手順写真、豚肉を切る、まな板の上で、包丁で、プロフェッショナルな料理写真",
       "料理の手順写真、玉ねぎを薄切りにする、まな板の上で、包丁で、プロフェッショナルな料理写真"
     ]
-  }
 }
 ```
 

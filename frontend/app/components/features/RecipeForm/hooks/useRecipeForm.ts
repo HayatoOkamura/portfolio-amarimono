@@ -5,12 +5,14 @@ import { useAddRecipe, useUpdateRecipe } from "@/app/hooks/recipes";
 import { RecipeFormData, RecipeFormProps } from "../types/recipeForm";
 import { validateDraft, validateRecipe, VALIDATION_MESSAGES } from "../constants/validationMessages";
 import { createFormData } from "@/app/utils/formDataUtils";
+import { useUnits } from "@/app/hooks/units";
 
 export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProps) => {
   const router = useRouter();
   const { user } = useAuth();
   const addRecipeMutation = useAddRecipe();
   const updateRecipeMutation = useUpdateRecipe();
+  const { data: units } = useUnits();
 
   const [formData, setFormData] = useState<RecipeFormData>({
     name: "",
@@ -46,7 +48,8 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
           id: ing.id,
           quantity: ing.quantity,
           unitId: ing.unitId,
-          name: ing.name || ''
+          name: ing.name || '',
+          unit: ing.unit || ''
         })) || [],
         faq: initialRecipe.faq || [],
         instructions: initialRecipe.instructions || [{ step: 1, description: "", imageURL: undefined }],
@@ -107,6 +110,13 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
       const recipeToSubmit = {
         ...formData,
         isDraft: false,
+        ingredients: formData.ingredients.map(ing => {
+          const selectedUnit = units?.find(u => u.name === ing.unit);
+          return {
+            ...ing,
+            unitId: selectedUnit?.id || ing.unitId
+          };
+        })
       };
 
       const formDataToSubmit = createFormData(recipeToSubmit, user.id, isAdmin, false);
@@ -116,22 +126,28 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
           id: initialRecipe.id,
           formData: formDataToSubmit,
         });
+        if (isAdmin) {
+          router.push("/admin/recipes/");
+        } else {
+          router.push("/user/recipes/");
+        }
       } else {
         await addRecipeMutation.mutateAsync({
           formData: formDataToSubmit,
           userId: user.id,
           isPublic: formData.isPublic,
         });
+        if (isAdmin) {
+          router.push("/admin/recipes/");
+        } else {
+          router.push("/user/recipes/");
+        }
       }
 
       if (!initialRecipe?.id) {
         resetFormData();
       }
       alert(VALIDATION_MESSAGES.SUCCESS);
-
-      if (isAdmin) {
-        router.push("/admin/recipes");
-      }
     } catch (error) {
       console.error('Error in handleSubmit:', error);
       console.error(VALIDATION_MESSAGES.ERROR, error);

@@ -9,10 +9,9 @@ import {
   useDeleteRecipe,
   useSortedRecipes,
 } from "@/app/hooks/recipes";
-import { useIngredients } from "@/app/hooks/ingredients";
 import useGenreStore from "@/app/stores/genreStore";
 import useRecipeStore, { SortOption } from "@/app/stores/recipeStore";
-import { Ingredient, Instruction, Recipe } from "@/app/types/index";
+import { Recipe } from "@/app/types/index";
 import Link from "next/link";
 import { calculateAverageRating } from "@/app/utils/calculateAverageRating";
 import { RecipeSort } from "@/app/components/ui/RecipeSort/RecipeSort";
@@ -21,11 +20,9 @@ import styles from "./recipe.module.scss";
 import { LuClipboardPen } from "react-icons/lu";
 
 const AdminRecipes = () => {
-  const { data: recipes, isLoading } = useRecipes();
-  const { data: ingredients = [] } = useIngredients();
+  const { data: recipes } = useRecipes();
   const { recipeGenres, fetchRecipeGenres } = useGenreStore();
   const deleteRecipeMutation = useDeleteRecipe();
-  const { sortBy, setSortBy } = useRecipeStore();
   const [selectedGenre, setSelectedGenre] = useState<string>("すべて");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -41,11 +38,6 @@ const AdminRecipes = () => {
         console.error(err.message);
       }
     }
-  };
-
-  const getIngredientName = (id: number) => {
-    const ingredient = ingredients.find((ingredient) => ingredient.id === id);
-    return ingredient ? ingredient.name : "Unknown Ingredient";
   };
 
   // ジャンルと検索クエリでフィルタリング
@@ -65,7 +57,7 @@ const AdminRecipes = () => {
       <div className={styles.head_block}>
         <div className={styles.head_block__title_box}>
           <h2 className={styles.head_block__title}>レシピ一覧</h2>
-          <span className={styles.head_block__sum}>100件</span>
+          <p className={styles.head_block__sum}>{sortedRecipes.length}<span>件</span></p>
         </div>
         <div className={styles.head_block__btn}>
           <Link href="/admin/recipes/new">レシピを追加</Link>

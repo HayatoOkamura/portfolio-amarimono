@@ -92,10 +92,10 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
               </div>
               <div
                 className={`${styles.modal_content__nav_item} ${styles["modal_content__nav_item--child"]} ${getActiveClass([
-                  "/recipes/my",
+                  "/user/recipes/",
                 ])}`}
               >
-                <Link href="/recipes/my/" onClick={onClose}>
+                <Link href="/user/recipes/" onClick={onClose}>
                   <FaListUl />
                   <span>レシピ一覧</span>
                 </Link>

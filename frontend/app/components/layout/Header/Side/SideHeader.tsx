@@ -66,9 +66,9 @@ const SideHeader = () => {
               <div
                 className={`${styles.header_block__icon} ${
                   styles["header_block__icon--child"]
-                } ${getActiveClass(["/recipes/new"])}`}
+                } ${getActiveClass(["/user/recipes/new"])}`}
               >
-                <Link href="/recipes/new/">
+                <Link href="/user/recipes/new/">
                   <BsPencilSquare />
                   <p className={styles.header_block__text}>レシピ登録</p>
                 </Link>
@@ -76,9 +76,9 @@ const SideHeader = () => {
               <div
                 className={`${styles.header_block__icon} ${
                   styles["header_block__icon--child"]
-                } ${getActiveClass(["/recipes/my"])}`}
+                } ${getActiveClass(["/user/recipes"])}`}
               >
-                <Link href="/recipes/my/">
+                <Link href="/user/recipes/">
                   <FaListUl />
                   <p className={styles.header_block__text}>レシピ一覧</p>
                 </Link>

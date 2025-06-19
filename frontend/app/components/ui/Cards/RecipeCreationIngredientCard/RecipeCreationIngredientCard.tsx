@@ -5,6 +5,9 @@ import styles from "./RecipeCreationIngredientCard.module.scss";
 import { Ingredient } from "@/app/types/index";
 import BaseIngredientCard from "../BaseIngredientCard/BaseIngredientCard";
 import { useUnits } from "@/app/hooks/units";
+import { SUPPORTED_UNITS } from "@/app/utils/unitConversion";
+
+const PRESENCE_UNITS = ["適量", "少々", "ひとつまみ"] as const;
 
 export interface RecipeCreationIngredientCardProps {
   ingredient: Ingredient;
@@ -27,7 +30,6 @@ const RecipeCreationIngredientCard: React.FC<RecipeCreationIngredientCardProps> 
   const isPresenceType = ingredient.unit.type === "presence";
   const currentUnit = selectedUnit || ingredient.unit.name;
   const selectedUnitData = units?.find(u => u.name === currentUnit);
-  const isCurrentUnitAdjustable = !isPresenceType || (selectedUnitData?.type !== "presence");
 
   const handleQuantityUpdate = (id: number, delta: number): void => {
     if (!selectedUnitData) return;
@@ -56,6 +58,18 @@ const RecipeCreationIngredientCard: React.FC<RecipeCreationIngredientCardProps> 
     }
   };
 
+  // presence型具材の場合、対応可能な単位のみをフィルタリング
+  const getAvailableUnits = () => {
+    if (!units) return [];
+    
+    if (isPresenceType) {
+      // presence型具材は対応可能な単位のみ選択可能
+      return units.filter(unit => SUPPORTED_UNITS.includes(unit.name));
+    }
+    
+    return units;
+  };
+
   return (
     <div className={styles.ingredient_card_block}>
       <BaseIngredientCard
@@ -76,7 +90,7 @@ const RecipeCreationIngredientCard: React.FC<RecipeCreationIngredientCardProps> 
             className={styles.ingredient_card_block__unit_select}
             onClick={(e) => e.stopPropagation()}
           >
-            {units?.map((unit) => (
+            {getAvailableUnits().map((unit) => (
               <option key={unit.id} value={unit.name}>
                 {unit.name}
               </option>

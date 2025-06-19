@@ -14,6 +14,8 @@ import { calculateAverageRating } from "@/app/utils/calculateAverageRating";
 import { FaStar } from "react-icons/fa";
 import LoginModal from "@/app/components/ui/LoginModal/LoginModal";
 
+const PRESENCE_UNITS = ["適量", "少々", "ひとつまみ"] as const;
+
 interface RecipeDetailProps {
   recipe: Recipe;
   isAdmin?: boolean;
@@ -82,7 +84,10 @@ const RecipeDetail = memo(
                 />
               </div>
               <section className={styles.instruction_block}>
-                <h2 className={styles.instruction_block__title}>作り方</h2>
+                <div className={styles.instruction_block__head}>
+                  <h2 className={styles.instruction_block__title}>作り方</h2>
+                  <p className={styles.instruction_block__note}>※画像はイメージです</p>
+                </div>
                 <ol className={styles.instruction_block__list}>
                   {recipe.instructions.map((step, idx) => (
                     <li className={styles.instruction_block__item} key={idx}>
@@ -102,7 +107,7 @@ const RecipeDetail = memo(
                       )}
                       <div className={styles.instruction_block__contents}>
                         <strong className={styles.instruction_block__label}>
-                          手順 {step.stepNumber}:
+                          {step.stepNumber}
                         </strong>
                         <p className={styles.instruction_block__text}>
                           {step.description}
@@ -311,10 +316,15 @@ const RecipeDetail = memo(
                         {ingredient.name}
                       </p>
                       <p className={styles.ingredient_block__quantity}>
-                        {Number.isInteger(ingredient.quantity)
-                          ? ingredient.quantity
-                          : Number(ingredient.quantity).toFixed(1)}{" "}
-                        {ingredient.unit.name}
+                        {PRESENCE_UNITS.includes(ingredient.unit.name as typeof PRESENCE_UNITS[number])
+                          ? ingredient.unit.name
+                          : ingredient.unit.name === "大さじ" || ingredient.unit.name === "小さじ"
+                            ? `${ingredient.unit.name}${Number.isInteger(ingredient.quantity)
+                                ? ingredient.quantity
+                                : Number(ingredient.quantity).toFixed(1)}`
+                            : `${Number.isInteger(ingredient.quantity)
+                                ? ingredient.quantity
+                                : Number(ingredient.quantity).toFixed(1)}${ingredient.unit.name}`}
                       </p>
                     </li>
                   ))}
@@ -329,9 +339,9 @@ const RecipeDetail = memo(
                 {recipe.faq.map((faq, idx) => (
                   <li className={styles.faq_block__item} key={idx}>
                     <h4 className={styles.faq_block__question}>
-                      {faq.question}
+                      <span>Q</span>{faq.question}
                     </h4>
-                    <p className={styles.faq_block__answer}>{faq.answer}</p>
+                    <p className={styles.faq_block__answer}><span>A</span>{faq.answer}</p>
                   </li>
                 ))}
               </ul>

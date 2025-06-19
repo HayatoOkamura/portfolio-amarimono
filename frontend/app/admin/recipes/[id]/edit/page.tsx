@@ -43,7 +43,8 @@ const AdminRecipeEdit = () => {
               id: ing.id,
               quantity: ing.quantity,
               unitId: ing.unit.id,
-              name: ing.name
+              name: ing.name,
+              unit: ing.unit.name
             })),
             image: undefined,
             imageUrl: recipeData.imageUrl,
@@ -56,6 +57,10 @@ const AdminRecipeEdit = () => {
         .catch((error) => console.error("Error fetching recipe:", error));
     }
   }, []);
+
+  useEffect(() => {
+    console.log("🥦", recipe);
+  }, [recipe]);
 
   return (
     <PageLoading isLoading={!recipe}>

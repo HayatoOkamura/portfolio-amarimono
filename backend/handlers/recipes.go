@@ -348,44 +348,6 @@ func (h *RecipeHandler) GetUserRecipes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"recipes": recipes})
 }
 
-// UpdateRecipe はレシピを更新するハンドラー
-func (h *RecipeHandler) UpdateRecipe(c *gin.Context) {
-	id := c.Param("id")
-	if id == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Recipe ID is required"})
-		return
-	}
-
-	var recipe models.Recipe
-	if err := c.ShouldBindJSON(&recipe); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.DB.Model(&models.Recipe{}).Where("id = ?", id).Updates(recipe).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update recipe"})
-		return
-	}
-
-	c.JSON(http.StatusOK, recipe)
-}
-
-// DeleteRecipe はレシピを削除するハンドラー
-func (h *RecipeHandler) DeleteRecipe(c *gin.Context) {
-	id := c.Param("id")
-	if id == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Recipe ID is required"})
-		return
-	}
-
-	if err := h.DB.Delete(&models.Recipe{}, "id = ?", id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete recipe"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Recipe deleted successfully"})
-}
-
 // GetRecipeByUserID はユーザーIDに基づいてレシピを取得するハンドラー
 func (h *RecipeHandler) GetRecipeByUserID(c *gin.Context) {
 	userID := c.Param("user_id")

@@ -17,6 +17,7 @@ interface GenerateRecipeProps {
 
 const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
   const [error, setError] = useState("");
+  const [showSeasonings, setShowSeasonings] = useState(false);
   const { setGeneratedRecipes, setSearchType, setSearchExecuted } =
     useRecipeStore();
   const { ingredients, setIngredients, selectedOrder } = useIngredientStore();
@@ -74,14 +75,33 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
     return bIndex - aIndex; // 順序を逆にして新しい順に表示
   });
 
+  // 調味料とスパイスをフィルタリング
+  const filteredIngredients = sortedIngredients.filter(ingredient => {
+    if (showSeasonings) return true;
+    return !["調味料", "スパイス"].includes(ingredient.genre.name);
+  });
+
+  // 調味料とスパイスの具材があるかチェック
+  const hasSeasonings = sortedIngredients.some(ingredient => 
+    ["調味料", "スパイス"].includes(ingredient.genre.name)
+  );
+
   return (
     <section className={styles.container_block}>
       <div className={styles.container_block__inner}>
         <h2 className={styles.container_block__title}>選択した具材</h2>
+        {hasSeasonings && (
+          <button 
+            className={styles.toggle_seasonings}
+            onClick={() => setShowSeasonings(!showSeasonings)}
+          >
+            {showSeasonings ? "調味料、スパイスを非表示" : "調味料、スパイスを表示"}
+          </button>
+        )}
         <div className={styles.container_block__contents}>
-          {sortedIngredients.length > 0 && (
+          {filteredIngredients.length > 0 && (
             <ul className={styles.ingredients_list}>
-              {sortedIngredients.map((ingredient: Ingredient) => (
+              {filteredIngredients.map((ingredient: Ingredient) => (
                 <li
                   key={ingredient.id}
                   className={styles.ingredients_list__item}

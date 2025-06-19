@@ -225,7 +225,7 @@ id,name,genre_id,unit_id,nutrition
 224,塩,5,4,"{""fat"":0,""salt"":18,""protein"":0,""calories"":0,""carbohydrates"":0}"
 225,こしょう,5,5,"{""fat"":0.18,""salt"":0,""protein"":0.22,""calories"":7.28,""carbohydrates"":0.12}"
 226,砂糖,5,4,"{""fat"":0,""salt"":0,""protein"":0,""calories"":34.56,""carbohydrates"":0}"
-227,醤油,5,4,"{""fat"":1.08,""salt"":0,""protein"":1.39,""calories"":12.78,""carbohydrates"":0}"
+227,醤油,5,4,"{""fat"":1.08,""salt"":1.3,""protein"":1.39,""calories"":12.78,""carbohydrates"":0}"
 228,料理酒,5,4,"{""fat"":0,""salt"":0,""protein"":0.03,""calories"":13,""carbohydrates"":0.71}"
 229,みりん,5,4,"{""fat"":0,""salt"":0,""protein"":0.02,""calories"":40.68,""carbohydrates"":0}"
 230,酢,5,4,"{""fat"":0,""salt"":0,""protein"":0.01,""calories"":3.75,""carbohydrates"":0}"

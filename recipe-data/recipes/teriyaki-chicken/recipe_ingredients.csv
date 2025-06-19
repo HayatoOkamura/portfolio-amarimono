@@ -1,0 +1,8 @@
+recipe_id,ingredient_id,quantity_required,unit_id
+a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c6d,94,250,1
+a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c6d,227,4,4
+a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c6d,229,4,4
+a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c6d,228,4,4
+a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c6d,226,4,4
+a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c6d,5,2,7
+a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c6d,10,1,3 

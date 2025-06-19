@@ -19,7 +19,7 @@ const ListMyRecipeContent = () => {
   const recipes = Array.isArray(data) ? data : [];
 
   const handleRecipeClick = (recipeId: string) => {
-    router.push(`/recipes/my/${recipeId}`);
+    router.push(`/user/recipes/${recipeId}`);
   };
 
   return (

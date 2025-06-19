@@ -14,7 +14,7 @@ export default function Main({ children }: { children: React.ReactNode }) {
     
     const RecipeDetail = [
       new RegExp(`^/recipes/${uuidPattern}$`),           // /recipes/[uuid]
-      new RegExp(`^/recipes/my/${uuidPattern}$`),       // /recipes/my/[uuid]
+      new RegExp(`^/user/recipes/${uuidPattern}$`),       // /user/recipes/[uuid]
       new RegExp(`^/admin/recipes/${uuidPattern}$`),    // /admin/recipes/[uuid]
     ];
 

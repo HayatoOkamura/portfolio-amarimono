@@ -8,7 +8,7 @@ interface UseRecipeActionsProps {
   redirectPath?: string;
 }
 
-export const useRecipeActions = ({ recipeId, redirectPath = '/recipes/my' }: UseRecipeActionsProps) => {
+export const useRecipeActions = ({ recipeId, redirectPath = '/user/recipes/' }: UseRecipeActionsProps) => {
   const queryClient = useQueryClient();
   const router = useRouter();
   const deleteRecipeMutation = useDeleteRecipe();

@@ -12,12 +12,9 @@ import {
   useDeleteRecipe,
   useUpdateRecipe,
 } from "@/app/hooks/recipes";
-import { imageBaseUrl } from "@/app/utils/api";
-import Image from "next/image";
 import { useState } from "react";
-import { Ingredient, Instruction, Recipe } from "@/app/types/index";
+import { Instruction } from "@/app/types/index";
 import styles from "./new.module.scss";
-import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
 import { useRouter } from "next/navigation";
 import { withAuth } from "@/app/components/auth/withAuth";
 

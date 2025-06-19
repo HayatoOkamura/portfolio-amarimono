@@ -24,8 +24,8 @@ export const InitialSettingsStep: React.FC<InitialSettingsStepProps> = ({ onComp
   const handleYes = async () => {
     if (!ingredients) return;
 
-    // 調味料とスパイス（genre_id: 6）の具材を全て選択
-    const seasoningIngredients = ingredients.filter(ing => ing.genre.id === 6);
+    // 調味料（genre_id: 5）とスパイス（genre_id: 6）の具材を全て選択
+    const seasoningIngredients = ingredients.filter(ing => ing.genre.id === 5 || ing.genre.id === 6);
     const updates = seasoningIngredients.map(ing => ({
       ingredient_id: ing.id,
       default_quantity: 1
