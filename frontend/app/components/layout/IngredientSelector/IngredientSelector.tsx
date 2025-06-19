@@ -25,7 +25,7 @@ const IngredientSelector = ({
   const router = useRouter();
   const { user } = useAuth();
   const { data: userDefaults } = useUserIngredientDefaults();
-  const { addIngredient } = useIngredientStore();
+  const { addIngredient, setIgnoreQuantity, ignoreQuantity: storeIgnoreQuantity } = useIngredientStore();
 
   const {
     data: ingredients = initialIngredients,
@@ -42,6 +42,12 @@ const IngredientSelector = ({
   const [selectedGenre, setSelectedGenre] = useState<string>("すべて");
   const [height, setHeight] = useState("auto");
   const [isGenresLoading, setIsGenresLoading] = useState(true);
+  const [ignoreQuantity, setIgnoreQuantityLocal] = useState(storeIgnoreQuantity);
+
+  // ストアのignoreQuantityが変更されたときにローカル状態を同期
+  useEffect(() => {
+    setIgnoreQuantityLocal(storeIgnoreQuantity);
+  }, [storeIgnoreQuantity]);
 
   // 初期設定の反映
   useEffect(() => {
@@ -117,6 +123,12 @@ const IngredientSelector = ({
     return () => window.removeEventListener("resize", updateHeight);
   }, [isIngredientsLoading, isGenresLoading]);
 
+  // 数量無視フラグの変更ハンドラー
+  const handleIgnoreQuantityChange = (checked: boolean) => {
+    setIgnoreQuantityLocal(checked);
+    setIgnoreQuantity(checked);
+  };
+
   const genres = [{ id: 0, name: "すべて" }, ...ingredientGenres];
 
   const filteredIngredients =
@@ -165,9 +177,21 @@ const IngredientSelector = ({
           className={styles.ingredient_block__overlay}
           data-onboarding="ingredient-selector"
         ></div>
-        <div className={styles.ingredient_block__head}>
-          <h2 className={styles.ingredient_block__title}>具材一覧</h2>
-          <p className={styles.ingredient_block__note}>※画像はイメージです</p>
+        <div className={styles.ingredient_head_block}>
+          <div className={styles.ingredient_head_block__contents}>
+            <h2 className={styles.ingredient_head_block__title}>具材一覧</h2>
+            <p className={styles.ingredient_head_block__note}>※画像はイメージです</p>
+          </div>
+          <div className={styles.ingredient_head_block__button}>
+            <label className={styles.quantity_ignore_checkbox}>
+              <input
+                type="checkbox"
+                checked={ignoreQuantity}
+                onChange={(e) => handleIgnoreQuantityChange(e.target.checked)}
+              />
+              <span>数量を無視して検索</span>
+            </label>
+          </div>
         </div>
         <div
           className={styles.ingredient_block__wrapper}

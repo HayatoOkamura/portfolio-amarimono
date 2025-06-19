@@ -240,7 +240,7 @@ export const fetchRecipesService = async (): Promise<Recipe[]> => {
 };
 
 // 具材からレシピを検索
-export const fetchRecipesAPI = async (ingredients: { id: number; quantity: number }[]) => {
+export const fetchRecipesAPI = async (ingredients: { id: number; quantity: number }[], ignoreQuantity: boolean = false) => {
   if (ingredients.length === 0) {
     throw new Error("具材が選択されていません");
   }
@@ -253,8 +253,14 @@ export const fetchRecipesAPI = async (ingredients: { id: number; quantity: numbe
   await new Promise(resolve => setTimeout(resolve, 500))
 
   console.log("🥦", transformedIngredients);
+  console.log("🥦 ignoreQuantity:", ignoreQuantity);
 
-  const response = await api.post("/api/recipes", transformedIngredients);
+  const requestBody = {
+    ingredients: transformedIngredients,
+    ignoreQuantity: ignoreQuantity
+  };
+
+  const response = await api.post("/api/recipes", requestBody);
 
   console.log("🥦 リクエストURL", api.defaults.baseURL);
 
@@ -522,6 +528,7 @@ export const useRecipes = () => {
 
 export const useFetchRecipesAPI = (
   ingredients: { id: number; quantity: number }[],
+  ignoreQuantity: boolean = false,
   options?: {
     enabled?: boolean;
     staleTime?: number;
@@ -532,7 +539,7 @@ export const useFetchRecipesAPI = (
 ) => {
   
   return useQuery<Recipe[], Error>({
-    queryKey: recipeKeys.list(JSON.stringify(ingredients)),
+    queryKey: recipeKeys.list(JSON.stringify({ ingredients, ignoreQuantity })),
     queryFn: async () => {
       const validIngredients = ingredients.filter(ing => {
         return ing && ing.id && ing.quantity > 0;
@@ -543,7 +550,7 @@ export const useFetchRecipesAPI = (
       }
       
       try {
-        const response = await fetchRecipesAPI(validIngredients);
+        const response = await fetchRecipesAPI(validIngredients, ignoreQuantity);
         return response;
       } catch (error) {
         console.error('Error fetching recipes:', error);

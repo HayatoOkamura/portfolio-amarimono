@@ -112,4 +112,19 @@
       border-color: #999;
     }
   }
+
+  .quantity_ignore_notice {
+    margin: 8px 0 16px;
+    padding: 8px 12px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    
+    p {
+      margin: 0;
+      font-size: 0.75rem;
+      color: #856404;
+      font-weight: 500;
+    }
+  }
 }

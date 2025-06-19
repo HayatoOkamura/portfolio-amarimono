@@ -32,7 +32,10 @@ type RecipeIngredientRequest struct {
 }
 
 // SearchRequestの構造を変更
-type SearchRequest []RecipeIngredientRequest
+type SearchRequest struct {
+	Ingredients    []RecipeIngredientRequest `json:"ingredients"`
+	IgnoreQuantity bool                      `json:"ignoreQuantity"`
+}
 
 // SerchRecipes handles POST /api/recipes
 func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
@@ -55,11 +58,12 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 	// 選択された具材のマップを作成（IDをキーとして、数量を値として）
 	selectedIngredients := make(map[int]float64)
 	var ingredientIDs []int
-	for _, ing := range request {
+	for _, ing := range request.Ingredients {
 		selectedIngredients[ing.IngredientID] = ing.QuantityRequired
 		ingredientIDs = append(ingredientIDs, ing.IngredientID)
 	}
 	log.Printf("🥦 Selected ingredients: %+v\n", selectedIngredients)
+	log.Printf("🥦 Ignore quantity: %v\n", request.IgnoreQuantity)
 
 	// サブクエリ：指定具材が含まれるレシピを取得（下書きを除外）
 	var recipeIDs []uuid.UUID
@@ -111,7 +115,7 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 
 		// 選択された具材のマップを作成（調味料を除く）
 		selectedIngredientsMap := make(map[int]float64)
-		for _, ing := range request {
+		for _, ing := range request.Ingredients {
 			selectedIngredientsMap[ing.IngredientID] = ing.QuantityRequired
 		}
 
@@ -153,6 +157,12 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 				missingIngredients[recipeIng.IngredientID] = recipeIng.QuantityRequired
 				log.Printf("🥦 Required ingredient %d not found in selected ingredients\n", recipeIng.IngredientID)
 				break
+			}
+
+			// 数量無視フラグがtrueの場合は数量チェックをスキップ
+			if request.IgnoreQuantity {
+				log.Printf("🥦 Quantity check skipped for ingredient %d due to ignoreQuantity flag\n", recipeIng.IngredientID)
+				continue
 			}
 
 			// 数量が十分かチェック

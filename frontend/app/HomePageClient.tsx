@@ -19,13 +19,14 @@ export default function HomePageClient({ initialIngredients }: HomePageClientPro
   const [isSearching, setIsSearching] = useState(false);
   const [progress, setProgress] = useState(0);
   const { setSearchType, setSearchExecuted, setRecipes } = useRecipeStore();
-  const { ingredients } = useIngredientStore();
+  const { ingredients, ignoreQuantity } = useIngredientStore();
 
   const { refetch, isSuccess, data } = useFetchRecipesAPI(
     ingredients.map(ing => ({
       id: ing.id,
       quantity: ing.quantity
     })),
+    ignoreQuantity,
     {
       enabled: false
     }

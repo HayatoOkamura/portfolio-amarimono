@@ -9,7 +9,6 @@ import useRecipeStore from "@/app/stores/recipeStore";
 import useIngredientStore from "@/app/stores/ingredientStore";
 import { Ingredient } from "@/app/types/index";
 import { useIngredients } from "@/app/hooks/ingredients";
-import RecipeLoading from "../Loading/RecipeLoading";
 
 interface GenerateRecipeProps {
   onSearch: () => Promise<void>;
@@ -20,7 +19,7 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
   const [showSeasonings, setShowSeasonings] = useState(false);
   const { setGeneratedRecipes, setSearchType, setSearchExecuted } =
     useRecipeStore();
-  const { ingredients, setIngredients, selectedOrder } = useIngredientStore();
+  const { ingredients, setIngredients, selectedOrder, ignoreQuantity } = useIngredientStore();
   const { data: fetchedIngredients } = useIngredients();
 
   useEffect(() => {
@@ -97,6 +96,11 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
           >
             {showSeasonings ? "調味料、スパイスを非表示" : "調味料、スパイスを表示"}
           </button>
+        )}
+        {ignoreQuantity && (
+          <div className={styles.quantity_ignore_notice}>
+            <p>※数量を無視してレシピを検索します</p>
+          </div>
         )}
         <div className={styles.container_block__contents}>
           {filteredIngredients.length > 0 && (
