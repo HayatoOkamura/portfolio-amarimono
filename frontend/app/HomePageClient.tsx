@@ -9,6 +9,7 @@ import RecipeLoading from "./components/ui/Loading/RecipeLoading";
 import { useFetchRecipesAPI } from "./hooks/recipes";
 import useRecipeStore from "./stores/recipeStore";
 import useIngredientStore from "./stores/ingredientStore";
+import styles from "./components/ui/GenerateRecipe/GenerateRecipe.module.scss";
 
 interface HomePageClientProps {
   initialIngredients: Ingredient[];
@@ -100,6 +101,15 @@ export default function HomePageClient({ initialIngredients }: HomePageClientPro
         onSearch={handleSearch}
       />
       <GenerateRecipe onSearch={handleSearch} />
+      
+      {/* スマホ用の検索ボタン（GenerateRecipeが非表示の時に表示） */}
+      <button
+        className={styles.container_block__mobile_btn}
+        onClick={handleSearch}
+        data-onboarding="mobile-search-button"
+      >
+        レシピを検索
+      </button>
     </>
   );
 } 

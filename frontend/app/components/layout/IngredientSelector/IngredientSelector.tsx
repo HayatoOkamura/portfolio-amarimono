@@ -14,6 +14,7 @@ import { useAuth } from "@/app/hooks/useAuth";
 import useIngredientStore from "@/app/stores/ingredientStore";
 import SearchModeMenu from "../../ui/SearchModeMenu/SearchModeMenu";
 import { useTextSearch } from "@/app/hooks/useTextSearch";
+import GenerateRecipe from "../../ui/GenerateRecipe/GenerateRecipe";
 
 interface IngredientSelectorProps {
   initialIngredients: Ingredient[];
@@ -28,6 +29,7 @@ const IngredientSelector = ({
   const { user } = useAuth();
   const { data: userDefaults } = useUserIngredientDefaults();
   const { addIngredient, searchMode, setSearchMode } = useIngredientStore();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const {
     data: ingredients = initialIngredients,
@@ -160,6 +162,14 @@ const IngredientSelector = ({
       });
   }, [ingredients, searchResults, selectedGenre]);
 
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
   if (isIngredientsLoading || isGenresLoading) {
     return (
       <div className={styles.container_block}>
@@ -245,6 +255,23 @@ const IngredientSelector = ({
           </div>
         </div>
       </section>
+
+      {/* スマホ用設定ボタン */}
+      <button
+        className={styles.settings_button}
+        onClick={handleOpenModal}
+        data-onboarding="settings-button"
+      >
+        <span className={styles.settings_button__icon}>⚙️</span>
+        選択具材
+      </button>
+
+      {/* モーダル表示用のGenerateRecipe */}
+      <GenerateRecipe
+        onSearch={onSearch}
+        isModalOpen={isModalOpen}
+        onCloseModal={handleCloseModal}
+      />
     </div>
   );
 };

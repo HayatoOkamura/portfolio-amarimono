@@ -12,9 +12,11 @@ import { useIngredients } from "@/app/hooks/ingredients";
 
 interface GenerateRecipeProps {
   onSearch: () => Promise<void>;
+  isModalOpen?: boolean;
+  onCloseModal?: () => void;
 }
 
-const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
+const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: GenerateRecipeProps) => {
   const [error, setError] = useState("");
   const [showSeasonings, setShowSeasonings] = useState(false);
   const { setGeneratedRecipes, setSearchType, setSearchExecuted } =
@@ -107,6 +109,74 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
     }
   };
 
+  // モーダル表示の場合
+  if (isModalOpen) {
+    return (
+      <>
+        <div className={styles.modal_overlay} onClick={onCloseModal} />
+        <div className={styles.modal_content}>
+          <div className={styles.modal_content__header}>
+            <h2>選択した具材</h2>
+            <button onClick={onCloseModal}>×</button>
+          </div>
+          <div className={styles.modal_content__body}>
+            {hasSeasonings && (
+              <button
+                className={styles.toggle_seasonings}
+                onClick={() => setShowSeasonings(!showSeasonings)}
+              >
+                {showSeasonings
+                  ? "調味料、スパイスを非表示"
+                  : "調味料、スパイスを表示"}
+              </button>
+            )}
+            <div className={styles.search_mode_notice}>
+              <p>{getSearchModeMessage()}</p>
+            </div>
+            {filteredIngredients.length > 0 && (
+              <ul className={styles.ingredients_list}>
+                {filteredIngredients.map((ingredient: Ingredient) => (
+                  <li
+                    key={ingredient.id}
+                    className={styles.ingredients_list__item}
+                  >
+                    <div className={styles.ingredients_list__image}>
+                      <Image
+                        src={
+                          ingredient.imageUrl
+                            ? `${imageBaseUrl}/${ingredient.imageUrl}`
+                            : "/pic_recipe_default.webp"
+                        }
+                        alt={ingredient.name}
+                        width={100}
+                        height={100}
+                      />
+                    </div>
+                    <p className={styles.ingredients_list__name}>
+                      {ingredient.name}
+                    </p>
+                    {ingredient.unit?.type !== "presence" && (
+                      <p className={styles.ingredients_list__quantity}>
+                        {Number.isInteger(ingredient.quantity)
+                          ? ingredient.quantity
+                          : Number(ingredient.quantity).toFixed(1)}
+                        {ingredient.unit?.name || ""}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className={styles.modal_content__footer}>
+            <button onClick={handleRecipe}>レシピを検索</button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // 通常表示（PC用）
   return (
     <section className={styles.container_block}>
       <div className={styles.container_block__inner}>
