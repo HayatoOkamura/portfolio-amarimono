@@ -61,6 +61,11 @@ export const matchesSearchQuery = async (query: string, target: string): Promise
     const normalizedQuery = await normalizeTextForSearch(query);
     const normalizedTarget = await normalizeTextForSearch(target);
     
+    // 正規化されたテキスト全体での部分一致チェック
+    if (normalizedTarget.includes(normalizedQuery) || normalizedQuery.includes(normalizedTarget)) {
+      return true;
+    }
+    
     // クエリの各部分で検索
     const queryParts = normalizedQuery.split(' ');
     const targetParts = normalizedTarget.split(' ');
@@ -87,6 +92,11 @@ const matchesSearchQueryFallback = (query: string, target: string): boolean => {
   const normalizedQuery = normalizeTextForSearchFallback(query);
   const normalizedTarget = normalizeTextForSearchFallback(target);
   
+  // 正規化されたテキスト全体での部分一致チェック
+  if (normalizedTarget.includes(normalizedQuery) || normalizedQuery.includes(normalizedTarget)) {
+    return true;
+  }
+  
   const queryParts = normalizedQuery.split(' ');
   const targetParts = normalizedTarget.split(' ');
   
@@ -106,6 +116,11 @@ export const matchesSearchQuerySync = (query: string, target: string): boolean =
   
   const normalizedQuery = normalizeTextForSearchFallback(query);
   const normalizedTarget = normalizeTextForSearchFallback(target);
+  
+  // 正規化されたテキスト全体での部分一致チェック
+  if (normalizedTarget.includes(normalizedQuery) || normalizedQuery.includes(normalizedTarget)) {
+    return true;
+  }
   
   const queryParts = normalizedQuery.split(' ');
   const targetParts = normalizedTarget.split(' ');

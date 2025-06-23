@@ -7,11 +7,11 @@ import (
 	"net/http"
 
 	"portfolio-amarimono/models"
+	"portfolio-amarimono/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type RecipeHandler struct {
@@ -428,42 +428,58 @@ func (h *RecipeHandler) SearchRecipesByName(c *gin.Context) {
 		return
 	}
 
-	var recipes []models.Recipe
+	// 全レシピを取得（下書きを除外）
+	var allRecipes []models.Recipe
 	err := h.DB.Preload("Ingredients.Ingredient").
 		Preload("Ingredients.Ingredient.Unit").
 		Preload("Ingredients.Ingredient.Genre").
 		Preload("Genre").
-		Where("LOWER(name) LIKE LOWER(?) AND is_draft = ?", "%"+query+"%", false).
-		Order(clause.Expr{SQL: "POSITION(LOWER(?) IN LOWER(name))", Vars: []interface{}{query}}).
-		Find(&recipes).Error
+		Where("is_draft = ?", false).
+		Find(&allRecipes).Error
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "データベースエラー"})
 		return
 	}
 
-	// 栄養情報の標準値を取得
-	var standard models.NutritionStandard
-	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Nutrition standard not found"})
-		return
-	}
-
-	// 各レシピの栄養素の割合を計算
-	for i := range recipes {
-		if recipes[i].Nutrition != (models.NutritionInfo{}) {
-			nutritionPercentage := map[string]float64{
-				"calories":      (float64(recipes[i].Nutrition.Calories) / standard.Calories) * 100,
-				"carbohydrates": (float64(recipes[i].Nutrition.Carbohydrates) / standard.Carbohydrates) * 100,
-				"fat":           (float64(recipes[i].Nutrition.Fat) / standard.Fat) * 100,
-				"protein":       (float64(recipes[i].Nutrition.Protein) / standard.Protein) * 100,
-				"salt":          (float64(recipes[i].Nutrition.Salt) / standard.Salt) * 100,
-			}
-			recipes[i].NutritionPercentage = nutritionPercentage
+	// 正規化検索でフィルタリング
+	var filteredRecipes []models.Recipe
+	for _, recipe := range allRecipes {
+		if utils.MatchesSearchQuery(query, recipe.Name) {
+			filteredRecipes = append(filteredRecipes, recipe)
 		}
 	}
 
-	c.JSON(http.StatusOK, recipes)
+	// 栄養情報の標準値を取得
+	var standard models.NutritionStandard
+	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
+		// 標準値が見つからない場合はデフォルト値を設定
+		standard = models.NutritionStandard{
+			AgeGroup:      "18-29",
+			Gender:        "male",
+			Calories:      2500,
+			Carbohydrates: 300,
+			Fat:           70,
+			Protein:       60,
+			Salt:          8,
+		}
+	}
+
+	// 各レシピの栄養素の割合を計算
+	for i := range filteredRecipes {
+		if filteredRecipes[i].Nutrition != (models.NutritionInfo{}) {
+			nutritionPercentage := map[string]float64{
+				"calories":      (float64(filteredRecipes[i].Nutrition.Calories) / standard.Calories) * 100,
+				"carbohydrates": (float64(filteredRecipes[i].Nutrition.Carbohydrates) / standard.Carbohydrates) * 100,
+				"fat":           (float64(filteredRecipes[i].Nutrition.Fat) / standard.Fat) * 100,
+				"protein":       (float64(filteredRecipes[i].Nutrition.Protein) / standard.Protein) * 100,
+				"salt":          (float64(filteredRecipes[i].Nutrition.Salt) / standard.Salt) * 100,
+			}
+			filteredRecipes[i].NutritionPercentage = nutritionPercentage
+		}
+	}
+
+	c.JSON(http.StatusOK, filteredRecipes)
 }
 
 // GetRecipeByID は特定のレシピを取得するハンドラー

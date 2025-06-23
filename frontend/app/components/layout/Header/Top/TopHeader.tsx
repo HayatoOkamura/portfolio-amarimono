@@ -44,6 +44,7 @@ const TopHeader = () => {
         return;
       }
 
+      // バックエンド側で正規化検索が実装されたので、結果をそのまま使用
       setRecipes(result.data);
       router.push("/recipes");
     } catch (error) {
