@@ -3,7 +3,24 @@ import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 
 // クライアントサイドとサーバーサイドで異なるURLを使用
 export const backendUrl = typeof window !== 'undefined'
-  ? process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
+  ? (() => {
+      // クライアントサイドでは現在のホストに基づいてバックエンドURLを設定
+      const currentHost = window.location.hostname;
+      const currentPort = window.location.port;
+      
+      // 開発環境の場合、同じホストの8080ポートを使用
+      if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+        return 'http://localhost:8080';
+      }
+      
+      // ローカルネットワークの場合（192.168.x.xなど）
+      if (currentHost.match(/^192\.168\./) || currentHost.match(/^10\./) || currentHost.match(/^172\./)) {
+        return `http://${currentHost}:8080`;
+      }
+      
+      // その他の場合は環境変数を使用
+      return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+    })()
   : process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL || 'http://portfolio-amarimono_backend_1:8080';
 
 export const imageBaseUrl = process.env.ENVIRONMENT === 'production'
