@@ -32,12 +32,16 @@
     margin-top: 15px;
   }
 
+  &__search_container {
+    position: relative;
+    margin-bottom: 1rem;
+  }
+
   &__search_input {
     width: 100%;
     padding: 0.75rem;
     border: 1px solid #c6c6c6;
     border-radius: 0.5rem;
-    margin-bottom: 1rem;
     font-size: 1rem;
     color: var(--primary-font-color);
     background: #fff;
@@ -46,6 +50,18 @@
       outline: none;
       border-color: var(--primary-accent-color);
     }
+  }
+
+  &__search_loading {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.875rem;
+    color: var(--secondary-font-color);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 4px 8px;
+    border-radius: 4px;
   }
 
   &__genre {

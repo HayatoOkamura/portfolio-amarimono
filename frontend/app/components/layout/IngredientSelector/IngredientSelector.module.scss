@@ -105,6 +105,42 @@
       // メニューボタンのスタイルはSearchModeMenuコンポーネントで管理
     }
   }
+
+  .search_block {
+    margin-top: 12px;
+    position: relative;
+
+    &__input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #c6c6c6;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      color: var(--primary-font-color);
+      background: #fff;
+
+      &:focus {
+        outline: none;
+        border-color: var(--primary-accent-color);
+      }
+
+      &::placeholder {
+        color: var(--secondary-font-color);
+      }
+    }
+
+    &__loading {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.875rem;
+      color: var(--secondary-font-color);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+  }
 }
 
 .search_button_container {

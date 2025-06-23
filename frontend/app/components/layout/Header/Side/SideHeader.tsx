@@ -23,8 +23,13 @@ const SideHeader = () => {
   const isAdmin = authUser?.role === "admin";
 
   // 現在のパスがリンク先と一致すれば is-active を付与
-  const getActiveClass = (paths: string[]) =>
-    paths.includes(pathname) ? styles["is-active"] : "";
+  const getActiveClass = (paths: string[], exactMatch: boolean = false) => {
+    return paths.some(path => 
+      exactMatch 
+        ? pathname === path 
+        : pathname === path || pathname.startsWith(path + '/')
+    ) ? styles["is-active"] : "";
+  };
 
   return (
     <header className={styles.header_block}>
@@ -66,7 +71,7 @@ const SideHeader = () => {
               <div
                 className={`${styles.header_block__icon} ${
                   styles["header_block__icon--child"]
-                } ${getActiveClass(["/user/recipes/new"])}`}
+                } ${getActiveClass(["/user/recipes/new"], true)}`}
               >
                 <Link href="/user/recipes/new/">
                   <BsPencilSquare />
@@ -76,7 +81,7 @@ const SideHeader = () => {
               <div
                 className={`${styles.header_block__icon} ${
                   styles["header_block__icon--child"]
-                } ${getActiveClass(["/user/recipes"])}`}
+                } ${getActiveClass(["/user/recipes"], true)}`}
               >
                 <Link href="/user/recipes/">
                   <FaListUl />
@@ -86,7 +91,7 @@ const SideHeader = () => {
               <div
                 className={`${styles.header_block__icon} ${
                   styles["header_block__icon--child"]
-                } ${getActiveClass(["/user/settings"])}`}
+                } ${getActiveClass(["/user/settings"], true)}`}
               >
                 <Link href="/user/settings/">
                   <CgSmartHomeRefrigerator />
@@ -96,9 +101,9 @@ const SideHeader = () => {
               <div
                 className={`${styles.header_block__icon} ${
                   styles["header_block__icon--child"]
-                } ${getActiveClass(["/favorite"])}`}
+                } ${getActiveClass(["/user/favorite"], true)}`}
               >
-                <Link href="/favorite/">
+                <Link href="/user/favorite/">
                   <FaHeart />
                   <p className={styles.header_block__text}>お気に入り</p>
                 </Link>
@@ -109,7 +114,7 @@ const SideHeader = () => {
             <div
               className={`${styles.header_block__icon} ${getActiveClass([
                 "/admin",
-              ])}`}
+              ], false)}`}
             >
               <Link href="/admin/">
                 <FaCog />

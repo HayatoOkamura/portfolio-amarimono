@@ -19,7 +19,8 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
   const [showSeasonings, setShowSeasonings] = useState(false);
   const { setGeneratedRecipes, setSearchType, setSearchExecuted } =
     useRecipeStore();
-  const { ingredients, setIngredients, selectedOrder, searchMode } = useIngredientStore();
+  const { ingredients, setIngredients, selectedOrder, searchMode } =
+    useIngredientStore();
   const { data: fetchedIngredients } = useIngredients();
 
   useEffect(() => {
@@ -32,14 +33,19 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
     try {
       const filteredIngredients = ingredients
         .filter((ingredient: Ingredient) => ingredient.quantity > 0)
-        .reduce((acc: { id: number; quantity: number }[], current: Ingredient) => {
-          const existingIngredient = acc.find(item => item.id === current.id);
-          if (existingIngredient) {
-            existingIngredient.quantity += current.quantity;
-            return acc;
-          }
-          return [...acc, { id: current.id, quantity: current.quantity }];
-        }, []);
+        .reduce(
+          (acc: { id: number; quantity: number }[], current: Ingredient) => {
+            const existingIngredient = acc.find(
+              (item) => item.id === current.id
+            );
+            if (existingIngredient) {
+              existingIngredient.quantity += current.quantity;
+              return acc;
+            }
+            return [...acc, { id: current.id, quantity: current.quantity }];
+          },
+          []
+        );
 
       if (filteredIngredients.length === 0) {
         alert("具材が選択されていません。");
@@ -59,7 +65,7 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
   const selectedIngredients = ingredients
     .filter((ingredient: Ingredient) => ingredient.quantity > 0)
     .reduce((acc: Ingredient[], current: Ingredient) => {
-      const existingIngredient = acc.find(item => item.id === current.id);
+      const existingIngredient = acc.find((item) => item.id === current.id);
       if (existingIngredient) {
         existingIngredient.quantity = current.quantity;
         return acc;
@@ -75,29 +81,29 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
   });
 
   // 調味料とスパイスをフィルタリング
-  const filteredIngredients = sortedIngredients.filter(ingredient => {
+  const filteredIngredients = sortedIngredients.filter((ingredient) => {
     if (showSeasonings) return true;
     return !["調味料", "スパイス"].includes(ingredient.genre.name);
   });
 
   // 調味料とスパイスの具材があるかチェック
-  const hasSeasonings = sortedIngredients.some(ingredient => 
+  const hasSeasonings = sortedIngredients.some((ingredient) =>
     ["調味料", "スパイス"].includes(ingredient.genre.name)
   );
 
   // 検索モードに応じたメッセージを取得
   const getSearchModeMessage = () => {
     switch (searchMode) {
-      case 'exact_with_quantity':
-        return '選択した具材が全て含まれ、数量も満たすレシピを検索します';
-      case 'exact_without_quantity':
-        return '選択した具材が全て含まれるレシピを検索します（数量は無視）';
-      case 'partial_with_quantity':
-        return '選択した具材が1つでも含まれ、数量も満たすレシピを検索します（調味料・スパイスは除く）';
-      case 'partial_without_quantity':
-        return '選択した具材が1つでも含まれるレシピを検索します（数量は無視、調味料・スパイスは除く）';
+      case "exact_with_quantity":
+        return "選んだ具材すべてが含まれ、指定した分量も満たすレシピを検索します";
+      case "exact_without_quantity":
+        return "選んだ具材すべてが含まれるレシピを検索します（分量は問いません）";
+      case "partial_with_quantity":
+        return "選んだ具材のいずれかが含まれ、分量も満たすレシピを検索します（調味料・スパイスは除外）";
+      case "partial_without_quantity":
+        return "選んだ具材のいずれかが含まれるレシピを検索します（分量は不問、調味料・スパイスは除外）";
       default:
-        return '';
+        return "";
     }
   };
 
@@ -106,11 +112,13 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
       <div className={styles.container_block__inner}>
         <h2 className={styles.container_block__title}>選択した具材</h2>
         {hasSeasonings && (
-          <button 
+          <button
             className={styles.toggle_seasonings}
             onClick={() => setShowSeasonings(!showSeasonings)}
           >
-            {showSeasonings ? "調味料、スパイスを非表示" : "調味料、スパイスを表示"}
+            {showSeasonings
+              ? "調味料、スパイスを非表示"
+              : "調味料、スパイスを表示"}
           </button>
         )}
         <div className={styles.search_mode_notice}>
@@ -139,7 +147,7 @@ const GenerateRecipe = ({ onSearch }: GenerateRecipeProps) => {
                   <p className={styles.ingredients_list__name}>
                     {ingredient.name}
                   </p>
-                  {ingredient.unit?.type !== 'presence' && (
+                  {ingredient.unit?.type !== "presence" && (
                     <p className={styles.ingredients_list__quantity}>
                       {Number.isInteger(ingredient.quantity)
                         ? ingredient.quantity

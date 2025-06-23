@@ -16,13 +16,13 @@
     &::before {
       content: "";
       display: block;
-      width: 800px;
-      height: 800px;
+      width: 950px;
+      height: 950px;
       border-radius: 100%;
       border: 100px solid var(--secondary-bg-color);
       position: absolute;
-      top: -540px;
-      left: -220px;
+      top: -710px;
+      left: -340px;
       z-index: -1;
     }
   }
@@ -71,12 +71,12 @@
     align-items: center;
     gap: 30px;
     width: 100%;
-    padding-left: 50px;
+    padding-left: 20px;
     &::before {
       content: "";
       display: block;
-      min-width: 220px;
-      height: 220px;
+      min-width: 280px;
+      height: 280px;
       aspect-ratio: 1 / 1;
     }
 
@@ -102,10 +102,10 @@
       position: absolute;
       top: 40px;
       left: 40px;
-      width: 800px;
-      height: 800px;
-      top: -550px;
-      left: -220px;
+      width: 1000px;
+      height: 1000px;
+      top: -710px;
+      left: -340px;
       z-index: -1;
     }
 
@@ -113,9 +113,17 @@
       position: absolute;
       border-radius: 100%;
       overflow: hidden;
+      top: 50%;
+      left: 50%;
       // box-shadow: -6px 15px 37px -10px #ad7c7c;
-      left: calc(400px + 400px * cos(90deg) - 110px) - 20px;
-      top: calc(400px + 300px * sin(90deg) - 110px);
+      
+      // 通常状態: 90度の位置に配置
+      --angle: 90deg;
+      --radius: 500px; // 円の半径
+      // コサイン関数とサイン関数で座標位置を計算
+      --x: calc(cos(var(--angle)) * var(--radius));
+      --y: calc(sin(var(--angle)) * var(--radius));
+      translate: calc(var(--x) - 50%) calc(var(--y) - 100%);
 
       img {
         object-fit: cover;
@@ -123,8 +131,13 @@
       }
 
       &.next {
-        left: calc(400px + 300px * cos(0deg) - 110px);
-        top: calc(400px + 400px * sin(0deg) - 110px) + 20px;
+        // next状態: 0度の位置に配置
+        --angle: 0deg;
+        --radius: 500px;
+        // コサイン関数とサイン関数で座標位置を計算
+        --x: calc(cos(var(--angle)) * var(--radius));
+        --y: calc(sin(var(--angle)) * var(--radius));
+        translate: calc(var(--x) - 100%) calc(var(--y) - 50%);
 
         .current_recipe__img_inner {
           transform: rotate(-90deg);
@@ -134,8 +147,8 @@
 
     &__img_inner {
       position: relative;
-      width: 220px;
-      height: 220px;
+      width: 280px;
+      height: 280px;
       aspect-ratio: 1;
 
       img {
@@ -158,6 +171,7 @@
     &__item {
       max-width: 197px;
       width: 100%;
+      flex-shrink: 0;
       height: calc(100% - 6px);
       border-radius: 10px;
       padding: 3px;

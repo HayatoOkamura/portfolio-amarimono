@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import styles from "./IngredientSelector.module.scss";
 import useGenreStore from "@/app/stores/genreStore";
 import { useIngredients } from "@/app/hooks/ingredients";
@@ -13,6 +13,7 @@ import { useUserIngredientDefaults } from "@/app/hooks/userIngredientDefaults";
 import { useAuth } from "@/app/hooks/useAuth";
 import useIngredientStore from "@/app/stores/ingredientStore";
 import SearchModeMenu from "../../ui/SearchModeMenu/SearchModeMenu";
+import { useTextSearch } from "@/app/hooks/useTextSearch";
 
 interface IngredientSelectorProps {
   initialIngredients: Ingredient[];
@@ -43,6 +44,13 @@ const IngredientSelector = ({
   const [selectedGenre, setSelectedGenre] = useState<string>("すべて");
   const [height, setHeight] = useState("auto");
   const [isGenresLoading, setIsGenresLoading] = useState(true);
+  const [searchResults, setSearchResults] = useState<boolean[]>([]);
+
+  // 検索機能の初期化
+  const { searchTerm, setSearchTerm, isSearching, executeSearch } = useTextSearch({
+    useAsync: true,
+    debounceMs: 300,
+  });
 
   // 初期設定の反映
   useEffect(() => {
@@ -118,19 +126,39 @@ const IngredientSelector = ({
     return () => window.removeEventListener("resize", updateHeight);
   }, [isIngredientsLoading, isGenresLoading]);
 
+  // 検索実行
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!ingredients) return;
+      
+      const ingredientNames = ingredients.map(ing => ing.name);
+      const results = await executeSearch(ingredientNames);
+      setSearchResults(results);
+    };
+
+    performSearch();
+  }, [ingredients, executeSearch]);
+
   const genres = [{ id: 0, name: "すべて" }, ...ingredientGenres];
 
-  const filteredIngredients =
-    selectedGenre === "すべて"
-      ? [...ingredients].sort((a, b) => {
-          // まずgenre_idでソート
-          if (a.genre.id !== b.genre.id) {
-            return a.genre.id - b.genre.id;
-          }
-          // 同じジャンル内ではidでソート
-          return a.id - b.id;
-        })
-      : ingredients.filter((ing) => ing.genre.name === selectedGenre);
+  const filteredIngredients = useMemo(() => {
+    if (!ingredients) return [];
+
+    return ingredients
+      .filter((ingredient, index) => {
+        const matchesSearch = searchResults[index] ?? true;
+        const matchesGenre = selectedGenre === "すべて" || ingredient.genre.name === selectedGenre;
+        return matchesSearch && matchesGenre;
+      })
+      .sort((a, b) => {
+        // まずgenre_idでソート
+        if (a.genre.id !== b.genre.id) {
+          return a.genre.id - b.genre.id;
+        }
+        // 同じジャンル内ではidでソート
+        return a.id - b.id;
+      });
+  }, [ingredients, searchResults, selectedGenre]);
 
   if (isIngredientsLoading || isGenresLoading) {
     return (
@@ -179,6 +207,23 @@ const IngredientSelector = ({
             />
           </div>
         </div>
+        
+        {/* 検索機能 */}
+        <div className={styles.search_block}>
+          <input
+            type="text"
+            placeholder="具材を検索..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={styles.search_block__input}
+          />
+          {isSearching && (
+            <div className={styles.search_block__loading}>
+              検索中...
+            </div>
+          )}
+        </div>
+        
         <div
           className={styles.ingredient_block__wrapper}
           id="target"

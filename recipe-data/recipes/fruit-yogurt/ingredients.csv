@@ -1,0 +1,6 @@
+recipe_id,ingredient_id,quantity_required,unit_id
+a1b2c3d4-e5f6-7890-abcd-ef1234567890,295,200,1
+a1b2c3d4-e5f6-7890-abcd-ef1234567890,331,1,15
+a1b2c3d4-e5f6-7890-abcd-ef1234567890,329,1,7
+a1b2c3d4-e5f6-7890-abcd-ef1234567890,332,1,3
+a1b2c3d4-e5f6-7890-abcd-ef1234567890,242,1,4 

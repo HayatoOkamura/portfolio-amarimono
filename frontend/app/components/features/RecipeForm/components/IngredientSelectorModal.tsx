@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Modal } from '@/app/components/common/Modal/Modal';
 import { Ingredient, Unit } from '@/app/types/index';
 import styles from './IngredientSelectorModal.module.scss';
 import CategoryCard from '@/app/components/ui/Cards/CategoryCard/CategoryCard';
 import RecipeCreationIngredientCard from '@/app/components/ui/Cards/RecipeCreationIngredientCard/RecipeCreationIngredientCard';
 import { useUnits } from '@/app/hooks/units';
+import { useTextSearch } from '@/app/hooks/useTextSearch';
 
 interface IngredientSelectorModalProps {
   isOpen: boolean;
@@ -21,9 +22,15 @@ export const IngredientSelectorModal = ({
   selectedIngredients,
   onSelect,
 }: IngredientSelectorModalProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
+  const [searchResults, setSearchResults] = useState<boolean[]>([]);
   const { data: units } = useUnits();
+
+  // 検索機能の初期化
+  const { searchTerm, setSearchTerm, isSearching, executeSearch } = useTextSearch({
+    useAsync: true,
+    debounceMs: 300,
+  });
 
   // ジャンルの一覧を取得
   const genres = [{ id: 0, name: "すべて" }, ...Array.from(new Set(ingredients.map(ing => ing.genre.id)))
@@ -31,21 +38,36 @@ export const IngredientSelectorModal = ({
     .filter((genre): genre is NonNullable<typeof genre> => genre !== undefined)
     .sort((a, b) => a.id - b.id)];
 
+  // 検索実行
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!ingredients) return;
+      
+      const ingredientNames = ingredients.map(ing => ing.name);
+      const results = await executeSearch(ingredientNames);
+      setSearchResults(results);
+    };
+
+    performSearch();
+  }, [ingredients, executeSearch]);
+
   // 検索とジャンルでフィルタリング
-  const filteredIngredients = ingredients
-    .filter((ingredient) => {
-      const matchesSearch = ingredient.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesGenre = selectedGenre === null || ingredient.genre.id === selectedGenre;
-      return matchesSearch && matchesGenre;
-    })
-    .sort((a, b) => {
-      // まずgenre_idでソート
-      if (a.genre.id !== b.genre.id) {
-        return a.genre.id - b.genre.id;
-      }
-      // 同じジャンル内ではidでソート
-      return a.id - b.id;
-    });
+  const filteredIngredients = useMemo(() => {
+    return ingredients
+      .filter((ingredient, index) => {
+        const matchesSearch = searchResults[index] ?? true;
+        const matchesGenre = selectedGenre === null || ingredient.genre.id === selectedGenre;
+        return matchesSearch && matchesGenre;
+      })
+      .sort((a, b) => {
+        // まずgenre_idでソート
+        if (a.genre.id !== b.genre.id) {
+          return a.genre.id - b.genre.id;
+        }
+        // 同じジャンル内ではidでソート
+        return a.id - b.id;
+      });
+  }, [ingredients, searchResults, selectedGenre]);
 
   const handleQuantityChange = (id: number, delta: number) => {
     const ingredient = ingredients.find(ing => ing.id === id);
@@ -107,13 +129,20 @@ export const IngredientSelectorModal = ({
         </button>
       </div>
       <div className={styles.modal_block__search}>
-        <input
-          type="text"
-          placeholder="材料を検索..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className={styles.modal_block__search_input}
-        />
+        <div className={styles.modal_block__search_container}>
+          <input
+            type="text"
+            placeholder="材料を検索..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={styles.modal_block__search_input}
+          />
+          {isSearching && (
+            <div className={styles.modal_block__search_loading}>
+              検索中...
+            </div>
+          )}
+        </div>
         <div className={styles.modal_block__genre}>
           <h2 className={styles.modal_block__genre_title}>カテゴリー</h2>
           <div className={styles.modal_block__genre_content}>

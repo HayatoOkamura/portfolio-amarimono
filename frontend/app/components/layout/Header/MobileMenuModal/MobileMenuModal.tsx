@@ -32,8 +32,13 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
   const pathname = usePathname();
   const { isAuthorized, isLoading } = useAdmin();
 
-  const getActiveClass = (paths: string[]) =>
-    paths.includes(pathname) ? styles["is-active"] : "";
+  const getActiveClass = (paths: string[], exactMatch: boolean = false) => {
+    return paths.some(path => 
+      exactMatch 
+        ? pathname === path 
+        : pathname === path || pathname.startsWith(path + '/')
+    ) ? styles["is-active"] : "";
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -82,18 +87,18 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
               </div>
               <div
                 className={`${styles.modal_content__nav_item} ${styles["modal_content__nav_item--child"]} ${getActiveClass([
-                  "/recipes/new",
-                ])}`}
+                  "/user/recipes/new",
+                ], true)}`}
               >
-                <Link href="/recipes/new/" onClick={onClose}>
+                <Link href="/user/recipes/new/" onClick={onClose}>
                   <BsPencilSquare />
                   <span>レシピ登録</span>
                 </Link>
               </div>
               <div
                 className={`${styles.modal_content__nav_item} ${styles["modal_content__nav_item--child"]} ${getActiveClass([
-                  "/user/recipes/",
-                ])}`}
+                  "/user/recipes",
+                ], true)}`}
               >
                 <Link href="/user/recipes/" onClick={onClose}>
                   <FaListUl />
@@ -103,7 +108,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
               <div
                 className={`${styles.modal_content__nav_item} ${styles["modal_content__nav_item--child"]} ${getActiveClass([
                   "/user/settings",
-                ])}`}
+                ], true)}`}
               >
                 <Link href="/user/settings/" onClick={onClose}>
                   <CgSmartHomeRefrigerator />
@@ -112,10 +117,10 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
               </div>
               <div
                 className={`${styles.modal_content__nav_item} ${styles["modal_content__nav_item--child"]} ${getActiveClass([
-                  "/favorite",
-                ])}`}
+                  "/user/favorite",
+                ], true)}`}
               >
-                <Link href="/favorite/" onClick={onClose}>
+                <Link href="/user/favorite/" onClick={onClose}>
                   <FaHeart />
                   <span>お気に入り</span>
                 </Link>
@@ -126,7 +131,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
             <div
               className={`${styles.modal_content__nav_item} ${getActiveClass([
                 "/admin",
-              ])}`}
+              ], false)}`}
             >
               <Link href="/admin/recipes" onClick={onClose}>
                 <FaCog />

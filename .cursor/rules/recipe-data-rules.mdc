@@ -19,10 +19,13 @@ alwaysApply: true
 
 ## 1. 具材情報の作成
 - レシピに必要な具材を全て生成する
+- 必要具材は全て一人前で生成してください
 - original-data/ingredient_data.csvを確認して、その具材が存在するかどうかの確認（存在しない場合は代用するか削除する）
 - idとunit_idを確認する
 - original-data/units_data.csvを参照して、unit_idのtypeがpresenceの場合は、同じpresenceの単位から好きな単位を選択して良い。puantityの場合は、unit_idの単位を使用する
 - recipe-data/csv/recipe_ingredients.csvにrecipe_idとingredient_idとquantity_requiredとunit_idを指定する
+- 再度original-data/ingredient_data.csvとoriginal-data/units_data.csvを参照して、設定した値が正しいか確認してください
+- 具材の単位がpresenceの場合はfrontend/app/utils/unitConversion.tsで実装されている単位から選択可能
 
 ## 2. レシピ基本情報の作成
 - レシピIDはUUID形式で生成
@@ -237,7 +240,7 @@ recipe-data/
 ### CSVファイル形式
 1. `recipe.csv`:
 ```csv
-id,name,image_url,genre_id,cooking_time,cost_estimate,summary,nutrition,catchphrase,instructions,user_id,is_public,is_draft,created_at,updated_at
+id,name,image_url,genre_id,cooking_time,cost_estimate,summary,nutrition,catchphrase,instructions,faq,user_id,is_public,is_draft,created_at,updated_at
 a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d,生姜焼き,recipes/a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d/main.webp,1,20,600,"定番の和食、生姜焼きです。",{"fat":12.5,"salt":1.2,"protein":25.8,"calories":380,"carbohydrates":15.2},"生姜の香りが食欲をそそる、定番の和食",[{"image_url":"recipes/a1b2c3d4-e5f6-4a5b-8c7d-9e0f1a2b3c4d/instructions/step1.webp","stepNumber":1,"description":"豚肉を食べやすい大きさに切ります。"}],6fbaf02f-ad06-4bee-966b-48407c7af8cb,true,false,2024-03-20 10:00:00.000000,2024-03-20 10:00:00.000000
 ```
 

@@ -17,22 +17,22 @@ const SearchModeMenu = ({ currentMode, onModeChange, ...props }: SearchModeMenuP
   const searchModes = [
     {
       value: 'exact_with_quantity' as SearchMode,
-      label: '完全一致（数量考慮）',
+      label: '材料すべて＋分量も一致',
       description: '選択した具材が全て含まれ、数量も満たすレシピ'
     },
     {
       value: 'exact_without_quantity' as SearchMode,
-      label: '完全一致（数量無視）',
+      label: '材料すべて一致（分量は不問）',
       description: '選択した具材が全て含まれるレシピ（数量は無視）'
     },
     {
       value: 'partial_with_quantity' as SearchMode,
-      label: '部分一致（数量考慮）',
+      label: '材料いくつか一致＋分量も一致',
       description: '選択した具材が1つでも含まれ、数量も満たすレシピ'
     },
     {
       value: 'partial_without_quantity' as SearchMode,
-      label: '部分一致（数量無視）',
+      label: '材料いくつか一致（分量は不問）',
       description: '選択した具材が1つでも含まれるレシピ（数量は無視）'
     }
   ];
@@ -80,6 +80,9 @@ const SearchModeMenu = ({ currentMode, onModeChange, ...props }: SearchModeMenuP
               onClick={() => handleModeSelect(mode.value)}
             >
               <div className={styles.menu_item__content}>
+                {mode.value === 'partial_without_quantity' && (
+                  <div className={styles.menu_item__recommend}>おすすめ</div>
+                )}
                 <div className={styles.menu_item__label}>{mode.label}</div>
                 <div className={styles.menu_item__description}>{mode.description}</div>
               </div>
