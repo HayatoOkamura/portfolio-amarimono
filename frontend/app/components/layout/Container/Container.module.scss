@@ -1,6 +1,11 @@
+@import "../../../styles/config/breakpoints";
+
 .container_block {
   height: 100vh;
   display: flex;
+  @include mq-max("sp") {
+    height: auto;
+  }
   &__inner {
     height: 100%;
     overflow: hidden;

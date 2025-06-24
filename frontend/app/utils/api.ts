@@ -23,9 +23,25 @@ export const backendUrl = typeof window !== 'undefined'
     })()
   : process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL || 'http://portfolio-amarimono_backend_1:8080';
 
-export const imageBaseUrl = process.env.ENVIRONMENT === 'production'
-    ? process.env.NEXT_PUBLIC_IMAGE_BASE_URL
-    : process.env.NEXT_PUBLIC_LOCAL_IMAGE_URL;
+export const imageBaseUrl = typeof window !== 'undefined'
+  ? (() => {
+      // クライアントサイドでは現在のホストに基づいて画像URLを設定
+      const currentHost = window.location.hostname;
+      
+      // 開発環境の場合、同じホストの54321ポートを使用
+      if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+        return 'http://localhost:54321/storage/v1/object/public/images';
+      }
+      
+      // ローカルネットワークの場合（192.168.x.xなど）
+      if (currentHost.match(/^192\.168\./) || currentHost.match(/^10\./) || currentHost.match(/^172\./)) {
+        return `http://${currentHost}:54321/storage/v1/object/public/images`;
+      }
+      
+      // その他の場合は環境変数を使用
+      return process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:54321/storage/v1/object/public/images';
+    })()
+  : process.env.NEXT_PUBLIC_LOCAL_IMAGE_URL || 'http://localhost:54321/storage/v1/object/public/images';
 
 // axiosインスタンスの作成
 export const api = axios.create({

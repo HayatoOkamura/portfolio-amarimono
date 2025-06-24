@@ -37,7 +37,7 @@ const useIngredientStore = create<IngredientStore>()(
         ingredients: [],
         selectedOrder: [], // 選択順序を管理する配列
         ignoreQuantity: false, // 数量を無視するフラグ（後方互換性のため）
-        searchMode: 'partial_with_quantity', // デフォルトは部分一致（数量考慮）
+        searchMode: 'partial_without_quantity', // デフォルトは部分一致（数量無視）
         error: null,
         newIngredient: {
           id: 0,

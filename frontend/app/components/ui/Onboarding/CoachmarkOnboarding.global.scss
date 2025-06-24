@@ -1,0 +1,104 @@
+// Joyride用のグローバルスタイル
+.joyride-tooltip {
+  background-color: white !important;
+  color: var(--primary-font-color) !important;
+  border-radius: 8px !important;
+  padding: 30px 35px !important;
+  width: 460px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  max-width: 90vw !important;
+}
+
+.joyride-button-next {
+  background-color: var(--primary-accent-color) !important;
+  color: white !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 4px !important;
+  border: none !important;
+  font-weight: 600 !important;
+  
+  &:hover {
+    background-color: var(--primary-accent-color-hover) !important;
+  }
+}
+
+.joyride-button-back {
+  color: var(--primary-font-color) !important;
+  margin-right: 1rem !important;
+  border: none !important;
+  background: transparent !important;
+  font-weight: 500 !important;
+  
+  &:hover {
+    color: var(--primary-accent-color) !important;
+  }
+}
+
+.joyride-button-skip {
+  color: var(--secondary-font-color) !important;
+  border: none !important;
+  background: transparent !important;
+  font-weight: 500 !important;
+  
+  &:hover {
+    color: var(--primary-font-color) !important;
+  }
+}
+
+.joyride-overlay {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.joyride-spotlight {
+  border-radius: 8px !important;
+}
+
+// レスポンシブ対応
+@media (max-width: 768px) {
+  .joyride-tooltip {
+    width: 90vw !important;
+    max-width: 400px !important;
+    padding: 20px 25px !important;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 10001 !important;
+  }
+
+  .joyride-tooltip__container {
+    position: relative !important;
+  }
+
+  .joyride-tooltip__main {
+    position: relative !important;
+  }
+
+  .joyride-tooltip__footer {
+    margin-top: 1rem !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  .joyride-tooltip__button {
+    min-width: 80px !important;
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem !important;
+  }
+}
+
+// さらに小さい画面での対応
+@media (max-width: 480px) {
+  .joyride-tooltip {
+    width: 95vw !important;
+    max-width: 350px !important;
+    padding: 15px 20px !important;
+  }
+
+  .joyride-tooltip__button {
+    min-width: 70px !important;
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.8rem !important;
+  }
+} 

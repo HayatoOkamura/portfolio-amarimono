@@ -1,3 +1,5 @@
+@import "@/app/styles/config/breakpoints";
+
 .card_block {
   padding: 8px;
   border: none;
@@ -10,13 +12,25 @@
   align-items: center;
   flex: 1 1 0;
   gap: 8px;
+  @include mq-max("sp") {
+    border-radius: 0px;
+    border: none;
+    justify-content: center;
+    padding: 15px 10px;
+  }
 
   &:hover {
-    background-color: #ddd;
+    @include mq-min("tab") {
+      background-color: #ddd;
+    }
   }
 
   &.current {
     border: 2px solid var(--primary-accent-color);
+    @include mq-max("sp") {
+      border: none;
+      border-bottom: 3px solid var(--primary-accent-color);
+    }
   }
 
   &__image {

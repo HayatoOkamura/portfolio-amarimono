@@ -1,9 +1,9 @@
 "use client";
 
-import { useUserStore } from "@/app/stores/userStore";
+import { useAuth } from "@/app/hooks/useAuth";
 
 export default function LogoutButton() {
-  const { signOut } = useUserStore();
+  const { logout } = useAuth();
 
-  return <button onClick={signOut}>ログアウト</button>;
+  return <button onClick={logout}>ログアウト</button>;
 }

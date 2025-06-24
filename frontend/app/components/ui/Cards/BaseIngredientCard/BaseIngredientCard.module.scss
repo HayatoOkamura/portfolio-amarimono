@@ -1,8 +1,13 @@
+@import "@/app/styles/config/breakpoints";
+
 .card_block {
   background: white;
   border-radius: 12px;
   text-align: center;
   transition: all 0.2s ease;
+  @include mq-max("sp") {
+    border-radius: 5px;
+  }
 
   &--selected {
     border: 3px solid #de616a;
@@ -17,11 +22,17 @@
       border-radius: 12px 12px 0 0;
       object-fit: cover;
       width: 100%;
+      @include mq-max("sp") {
+        border-radius: 5px 5px 0 0;
+      }
     }
   }
 
   &__contents {
     padding: 10px 8px 15px 8px;
+    @include mq-max("sp") {
+      padding: 5px 5px 15px 5px;
+    }
   }
 
   &__name {
@@ -29,18 +40,23 @@
     font-weight: 700;
     color: #323232;
     margin: 0;
+    @include mq-max("sp") {
+      font-size: 0.875rem;
+    }
   }
 
   &__controls {
     display: flex;
-    justify-content: center;
-    gap: 15px;
+    justify-content: space-between;
+    gap: 2px;
     align-items: center;
+    margin-top: 5px;
 
     span {
       color: #323232;
       font-size: 0.75rem;
       min-width: 2rem;
+      white-space: nowrap;
     }
 
     button {

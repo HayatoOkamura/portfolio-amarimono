@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Joyride, { CallBackProps, STATUS, Step, Placement } from 'react-joyride';
 import styles from './CoachmarkOnboarding.module.scss';
+import './CoachmarkOnboarding.global.scss';
 import { InitialSettingsStep } from '../../features/Onboarding/InitialSettingsStep';
 
 interface CoachmarkOnboardingProps {
@@ -18,7 +19,7 @@ export const CoachmarkOnboarding: React.FC<CoachmarkOnboardingProps> = ({ isOpen
       content: (
         <div className={styles.content}>
           <h3 className={styles.content__title}>あまりものへようこそ！</h3>
-          <p className={styles.content__description}>ここでは手持ちの材料からレシピを検索できます。</p>
+          <p className={styles.content__description}>ここでは冷蔵庫の食材からレシピを検索できます。</p>
         </div>
       ),
       placement: 'center' as Placement,
@@ -33,6 +34,7 @@ export const CoachmarkOnboarding: React.FC<CoachmarkOnboardingProps> = ({ isOpen
         </div>
       ),
       placement: 'bottom' as Placement,
+      disableBeacon: false,
     },
     {
       target: '[data-onboarding="category-filter"]',
@@ -43,26 +45,29 @@ export const CoachmarkOnboarding: React.FC<CoachmarkOnboardingProps> = ({ isOpen
         </div>
       ),
       placement: 'bottom' as Placement,
+      disableBeacon: false,
     },
     {
       target: '[data-onboarding="search-mode-menu"]',
       content: (
         <div className={styles.content}>
           <h3 className={styles.content__title}>検索方法の設定</h3>
-          <p className={styles.content__description}>検索の厳密さを調整できます。部分一致なら手持ちの具材が1つでも含まれるレシピを、完全一致なら全ての具材が必要なレシピを検索します。</p>
+          <p className={styles.content__description}>検索の厳密さを調整できます。「材料いくつか」なら手持ちの具材が1つでも含まれるレシピを、「材料すべて」なら全ての具材が必要なレシピを検索します。</p>
         </div>
       ),
       placement: 'bottom' as Placement,
+      disableBeacon: false,
     },
     {
       target: '[data-onboarding="search-button"]',
       content: (
         <div className={styles.content}>
-          <h3 className={styles.content__title}>レシピ生成</h3>
-          <p className={styles.content__description}>レシピ生成ボタンを押すと、選択した具材を使ったレシピが生成されます。</p>
+          <h3 className={styles.content__title}>レシピ検索</h3>
+          <p className={styles.content__description}>レシピ検索ボタンを押すと、選択した具材を使ったレシピが検索されます。</p>
         </div>
       ),
       placement: 'top' as Placement,
+      disableBeacon: false,
     }
   ]);
 
@@ -100,7 +105,7 @@ export const CoachmarkOnboarding: React.FC<CoachmarkOnboardingProps> = ({ isOpen
       <div className={styles.modal_overlay}>
         <div className={styles.modal_content}>
           <div className={styles.completion_message}>
-            <h3>セットアップ完了！</h3>
+            <h3>準備完了！</h3>
             <p>これで準備完了です。ぜひご利用ください！</p>
           </div>
         </div>
@@ -116,6 +121,17 @@ export const CoachmarkOnboarding: React.FC<CoachmarkOnboardingProps> = ({ isOpen
       showProgress={false}
       disableOverlayClose
       disableCloseOnEsc
+      scrollToFirstStep
+      scrollOffset={100}
+      floaterProps={{
+        disableAnimation: true,
+        placement: 'auto',
+        styles: {
+          floater: {
+            filter: 'drop-shadow(0 0 10px rgba(0, 0, 0, 0.1))',
+          },
+        },
+      }}
       locale={{
         back: '戻る',
         close: '閉じる',
@@ -126,28 +142,8 @@ export const CoachmarkOnboarding: React.FC<CoachmarkOnboardingProps> = ({ isOpen
       styles={{
         options: {
           primaryColor: 'var(--primary-accent-color)',
-          zIndex: 1000,
-        },
-        tooltip: {
-          backgroundColor: 'white',
-          color: 'var(--primary-font-color)',
-          borderRadius: '8px',
-          padding: '30px 35px',
-          width: '460px',
-        },
-        buttonNext: {
-          backgroundColor: 'var(--primary-accent-color)',
-          color: 'white',
-          padding: '0.5rem 1rem',
-          borderRadius: '4px',
-        },
-        buttonBack: {
-          color: 'var(--primary-font-color)',
-          marginRight: '1rem',
-        },
-        buttonSkip: {
-          color: 'var(--secondary-font-color)',
-        },
+          zIndex: 10000,
+        }
       }}
       callback={handleJoyrideCallback}
     />

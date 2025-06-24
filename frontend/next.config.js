@@ -3,44 +3,67 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     unoptimized: process.env.ENVIRONMENT === 'development',
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'amarimono-backend.onrender.com',
-        port: '',
-        pathname: '/uploads/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'backend',
-        port: '8080',
-        pathname: '/uploads/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '8080',
-        pathname: '/uploads/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'qmrjsqeigdkizkrpiahs.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/public/images/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '54321',
-        pathname: '/storage/v1/object/public/images/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'host.docker.internal',
-        port: '54321',
-        pathname: '/storage/v1/object/public/images/**',
-      }
-    ],
+    remotePatterns: process.env.ENVIRONMENT === 'development' 
+      ? [
+          // 開発環境ではすべてのローカルホストを許可
+          {
+            protocol: 'http',
+            hostname: 'localhost',
+            port: '8080',
+            pathname: '/uploads/**',
+          },
+          {
+            protocol: 'http',
+            hostname: 'localhost',
+            port: '54321',
+            pathname: '/storage/v1/object/public/images/**',
+          },
+          {
+            protocol: 'http',
+            hostname: '127.0.0.1',
+            port: '8080',
+            pathname: '/uploads/**',
+          },
+          {
+            protocol: 'http',
+            hostname: '127.0.0.1',
+            port: '54321',
+            pathname: '/storage/v1/object/public/images/**',
+          },
+          {
+            protocol: 'http',
+            hostname: '192.168.11.2',
+            port: '8080',
+            pathname: '/uploads/**',
+          },
+          {
+            protocol: 'http',
+            hostname: '192.168.11.2',
+            port: '54321',
+            pathname: '/storage/v1/object/public/images/**',
+          },
+          {
+            protocol: 'http',
+            hostname: 'host.docker.internal',
+            port: '54321',
+            pathname: '/storage/v1/object/public/images/**',
+          }
+        ]
+      : [
+          // 本番環境では特定のホストのみ許可
+          {
+            protocol: 'https',
+            hostname: 'amarimono-backend.onrender.com',
+            port: '',
+            pathname: '/uploads/**',
+          },
+          {
+            protocol: 'https',
+            hostname: 'qmrjsqeigdkizkrpiahs.supabase.co',
+            port: '',
+            pathname: '/storage/v1/object/public/images/**',
+          }
+        ],
     minimumCacheTTL: 60,
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],

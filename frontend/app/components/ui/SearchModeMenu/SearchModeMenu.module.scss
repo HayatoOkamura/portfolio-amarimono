@@ -1,6 +1,11 @@
+@import "../../../styles/config/breakpoints";
+
 .menu_container {
   position: relative;
   display: inline-block;
+  @include mq-max("sp") {
+    display: none;
+  }
 }
 
 .menu_trigger {
@@ -124,5 +129,154 @@
     font-weight: bold;
     color: var(--primary-color);
     margin-left: 8px;
+  }
+}
+
+// モーダルオーバーレイ
+.modal_overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1002;
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s, visibility 0.5s;
+
+
+  &.is-open {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+// モーダルコンテンツ
+.modal_content {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  padding: 20px;
+  width: 100vw;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 1002;
+  transform: translateX(100%);
+  transition: transform 0.5s;
+
+  &.is-open {
+    transform: translateX(0);
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e5e7eb;
+
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    button {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #666;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background-color: #f5f5f5;
+      }
+    }
+  }
+
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+  }
+}
+
+// モーダル内のアイテム
+.modal_item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f3f4f6;
+
+  &:hover {
+    background: #f9fafb;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &_active {
+    background: #eff6ff;
+    color: var(--primary-color);
+
+    &:hover {
+      background: #dbeafe;
+    }
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__recommend {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--primary-accent-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  &__label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: inherit;
+    margin-bottom: 4px;
+  }
+
+  &__description {
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+
+  &__check {
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-left: 12px;
   }
 } 

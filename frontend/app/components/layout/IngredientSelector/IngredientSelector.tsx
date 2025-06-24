@@ -14,22 +14,21 @@ import { useAuth } from "@/app/hooks/useAuth";
 import useIngredientStore from "@/app/stores/ingredientStore";
 import SearchModeMenu from "../../ui/SearchModeMenu/SearchModeMenu";
 import { useTextSearch } from "@/app/hooks/useTextSearch";
-import GenerateRecipe from "../../ui/GenerateRecipe/GenerateRecipe";
+import { ResponsiveWrapper } from "@/app/components/common/ResponsiveWrapper";
+import { useScreenSize } from "@/app/hooks/useScreenSize";
 
 interface IngredientSelectorProps {
   initialIngredients: Ingredient[];
-  onSearch: () => Promise<void>;
 }
 
 const IngredientSelector = ({
   initialIngredients,
-  onSearch,
 }: IngredientSelectorProps) => {
   const router = useRouter();
   const { user } = useAuth();
   const { data: userDefaults } = useUserIngredientDefaults();
   const { addIngredient, searchMode, setSearchMode } = useIngredientStore();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const isSmartphone = useScreenSize('sp');
 
   const {
     data: ingredients = initialIngredients,
@@ -49,10 +48,11 @@ const IngredientSelector = ({
   const [searchResults, setSearchResults] = useState<boolean[]>([]);
 
   // 検索機能の初期化
-  const { searchTerm, setSearchTerm, isSearching, executeSearch } = useTextSearch({
-    useAsync: true,
-    debounceMs: 300,
-  });
+  const { searchTerm, setSearchTerm, isSearching, executeSearch } =
+    useTextSearch({
+      useAsync: true,
+      debounceMs: 300,
+    });
 
   // 初期設定の反映
   useEffect(() => {
@@ -60,7 +60,9 @@ const IngredientSelector = ({
       if (user && userDefaults) {
         // 認証済みユーザーの場合
         userDefaults.forEach((default_) => {
-          const ingredient = ingredients?.find(ing => ing.id === default_.ingredient_id);
+          const ingredient = ingredients?.find(
+            (ing) => ing.id === default_.ingredient_id
+          );
           if (ingredient) {
             addIngredient({
               ...ingredient,
@@ -73,25 +75,34 @@ const IngredientSelector = ({
         const getCookie = (name: string) => {
           const value = `; ${document.cookie}`;
           const parts = value.split(`; ${name}=`);
-          if (parts.length === 2) return parts.pop()?.split(';').shift();
+          if (parts.length === 2) return parts.pop()?.split(";").shift();
           return null;
         };
 
-        const cookieData = getCookie('ingredient_defaults');
+        const cookieData = getCookie("ingredient_defaults");
         if (cookieData) {
           try {
-            const defaultIngredients = JSON.parse(decodeURIComponent(cookieData));
-            defaultIngredients.forEach((default_: { ingredient_id: number; default_quantity: number }) => {
-              const ingredient = ingredients?.find(ing => ing.id === default_.ingredient_id);
-              if (ingredient) {
-                addIngredient({
-                  ...ingredient,
-                  quantity: default_.default_quantity,
-                });
+            const defaultIngredients = JSON.parse(
+              decodeURIComponent(cookieData)
+            );
+            defaultIngredients.forEach(
+              (default_: {
+                ingredient_id: number;
+                default_quantity: number;
+              }) => {
+                const ingredient = ingredients?.find(
+                  (ing) => ing.id === default_.ingredient_id
+                );
+                if (ingredient) {
+                  addIngredient({
+                    ...ingredient,
+                    quantity: default_.default_quantity,
+                  });
+                }
               }
-            });
+            );
           } catch (error) {
-            console.error('Error parsing cookie data:', error);
+            console.error("Error parsing cookie data:", error);
           }
         }
       }
@@ -115,6 +126,9 @@ const IngredientSelector = ({
     const updateHeight = () => {
       if (isIngredientsLoading || isGenresLoading) return;
 
+      // スマートフォン画面の場合は処理をスキップ
+      if (isSmartphone) return;
+
       const element = document.getElementById("target");
       if (element) {
         const topOffset = element.getBoundingClientRect().top;
@@ -126,14 +140,14 @@ const IngredientSelector = ({
     updateHeight();
 
     return () => window.removeEventListener("resize", updateHeight);
-  }, [isIngredientsLoading, isGenresLoading]);
+  }, [isIngredientsLoading, isGenresLoading, isSmartphone]);
 
   // 検索実行
   useEffect(() => {
     const performSearch = async () => {
       if (!ingredients) return;
-      
-      const ingredientNames = ingredients.map(ing => ing.name);
+
+      const ingredientNames = ingredients.map((ing) => ing.name);
       const results = await executeSearch(ingredientNames);
       setSearchResults(results);
     };
@@ -149,7 +163,8 @@ const IngredientSelector = ({
     return ingredients
       .filter((ingredient, index) => {
         const matchesSearch = searchResults[index] ?? true;
-        const matchesGenre = selectedGenre === "すべて" || ingredient.genre.name === selectedGenre;
+        const matchesGenre =
+          selectedGenre === "すべて" || ingredient.genre.name === selectedGenre;
         return matchesSearch && matchesGenre;
       })
       .sort((a, b) => {
@@ -161,14 +176,6 @@ const IngredientSelector = ({
         return a.id - b.id;
       });
   }, [ingredients, searchResults, selectedGenre]);
-
-  const handleOpenModal = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-  };
 
   if (isIngredientsLoading || isGenresLoading) {
     return (
@@ -185,7 +192,10 @@ const IngredientSelector = ({
         className={styles.category_block}
         data-onboarding="category-filter"
       >
-        <h2 className={styles.category_block__title}>具材カテゴリー</h2>
+        {/* category_block__titleをスマホ時は非表示 */}
+        <ResponsiveWrapper breakpoint="sp" renderBelow={null}>
+          <h2 className={styles.category_block__title}>具材カテゴリー</h2>
+        </ResponsiveWrapper>
         <div className={styles.category_block__contents}>
           {genres.map((genre) => (
             <CategoryCard
@@ -204,20 +214,28 @@ const IngredientSelector = ({
           className={styles.ingredient_block__overlay}
           data-onboarding="ingredient-selector"
         ></div>
-        <div className={styles.ingredient_head_block}>
-          <div className={styles.ingredient_head_block__contents}>
-            <h2 className={styles.ingredient_head_block__title}>具材一覧</h2>
-            <p className={styles.ingredient_head_block__note}>※画像はイメージです</p>
+
+        <ResponsiveWrapper breakpoint="sp" renderBelow={null}>
+          <div className={styles.ingredient_head_block}>
+            <div className={styles.ingredient_head_block__contents}>
+              <h2 className={styles.ingredient_head_block__title}>具材一覧</h2>
+              <p className={styles.ingredient_head_block__note}>
+                ※画像はイメージです
+              </p>
+            </div>
+            <ResponsiveWrapper breakpoint="sp" renderBelow={null}>
+              
+            <div className={styles.ingredient_head_block__button}>
+              <SearchModeMenu
+                currentMode={searchMode}
+                onModeChange={setSearchMode}
+                data-onboarding="search-mode-menu"
+              />
+            </div>
+            </ResponsiveWrapper>
           </div>
-          <div className={styles.ingredient_head_block__button}>
-            <SearchModeMenu
-              currentMode={searchMode}
-              onModeChange={setSearchMode}
-              data-onboarding="search-mode-menu"
-            />
-          </div>
-        </div>
-        
+        </ResponsiveWrapper>
+
         {/* 検索機能 */}
         <div className={styles.search_block}>
           <input
@@ -228,12 +246,10 @@ const IngredientSelector = ({
             className={styles.search_block__input}
           />
           {isSearching && (
-            <div className={styles.search_block__loading}>
-              検索中...
-            </div>
+            <div className={styles.search_block__loading}>検索中...</div>
           )}
         </div>
-        
+
         <div
           className={styles.ingredient_block__wrapper}
           id="target"
@@ -255,23 +271,6 @@ const IngredientSelector = ({
           </div>
         </div>
       </section>
-
-      {/* スマホ用設定ボタン */}
-      <button
-        className={styles.settings_button}
-        onClick={handleOpenModal}
-        data-onboarding="settings-button"
-      >
-        <span className={styles.settings_button__icon}>⚙️</span>
-        選択具材
-      </button>
-
-      {/* モーダル表示用のGenerateRecipe */}
-      <GenerateRecipe
-        onSearch={onSearch}
-        isModalOpen={isModalOpen}
-        onCloseModal={handleCloseModal}
-      />
     </div>
   );
 };

@@ -4,8 +4,15 @@ $breakpoints: (
   'pc': 1440px,
 );
 
-@mixin mq($size) {
+@mixin mq-max($size) {
   @media screen and (max-width: #{map-get($breakpoints, $size)}) {
+    @content;
+  }
+}
+
+// min-width
+@mixin mq-min($size) {
+  @media screen and (min-width: #{map-get($breakpoints, $size)}) {
     @content;
   }
 }

@@ -7,7 +7,7 @@
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: flex-end;
-  z-index: 100;
+  z-index: 1000;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.5s, visibility 0.5s;

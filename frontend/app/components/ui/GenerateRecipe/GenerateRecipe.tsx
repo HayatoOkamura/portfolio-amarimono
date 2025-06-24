@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import { IoMdInformationCircleOutline } from "react-icons/io";
 import styles from "./GenerateRecipe.module.scss";
 import { imageBaseUrl } from "@/app/utils/api";
 import useRecipeStore from "@/app/stores/recipeStore";
@@ -19,6 +20,7 @@ interface GenerateRecipeProps {
 const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: GenerateRecipeProps) => {
   const [error, setError] = useState("");
   const [showSeasonings, setShowSeasonings] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
   const { setGeneratedRecipes, setSearchType, setSearchExecuted } =
     useRecipeStore();
   const { ingredients, setIngredients, selectedOrder, searchMode } =
@@ -30,6 +32,19 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
       setIngredients(fetchedIngredients);
     }
   }, [fetchedIngredients, setIngredients]);
+
+  // モーダル開閉時のbodyスクロール制御
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isModalOpen]);
 
   const handleRecipe = async () => {
     try {
@@ -97,42 +112,50 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
   const getSearchModeMessage = () => {
     switch (searchMode) {
       case "exact_with_quantity":
-        return "選んだ具材すべてが含まれ、指定した分量も満たすレシピを検索します";
+        return "選んだ具材すべてが含まれ、\n指定した分量も満たすレシピを検索します";
       case "exact_without_quantity":
-        return "選んだ具材すべてが含まれるレシピを検索します（分量は問いません）";
+        return "選んだ具材すべてが含まれる\nレシピを検索します\n（分量は問いません）";
       case "partial_with_quantity":
-        return "選んだ具材のいずれかが含まれ、分量も満たすレシピを検索します（調味料・スパイスは除外）";
+        return "選んだ具材のいずれかが含まれ、\n分量も満たすレシピを検索します\n（調味料・スパイスは除外）";
       case "partial_without_quantity":
-        return "選んだ具材のいずれかが含まれるレシピを検索します（分量は不問、調味料・スパイスは除外）";
+        return "選んだ具材のいずれかが含まれる\nレシピを検索します\n（分量は不問、調味料・スパイスは除外）";
       default:
         return "";
     }
   };
 
-  // モーダル表示の場合
-  if (isModalOpen) {
-    return (
-      <>
-        <div className={styles.modal_overlay} onClick={onCloseModal} />
-        <div className={styles.modal_content}>
-          <div className={styles.modal_content__header}>
-            <h2>選択した具材</h2>
-            <button onClick={onCloseModal}>×</button>
-          </div>
-          <div className={styles.modal_content__body}>
-            {hasSeasonings && (
-              <button
-                className={styles.toggle_seasonings}
-                onClick={() => setShowSeasonings(!showSeasonings)}
-              >
-                {showSeasonings
-                  ? "調味料、スパイスを非表示"
-                  : "調味料、スパイスを表示"}
-              </button>
-            )}
-            <div className={styles.search_mode_notice}>
-              <p>{getSearchModeMessage()}</p>
+  return (
+    <>
+      {/* 通常表示（PC用） */}
+      <section className={styles.container_block}>
+        <div className={styles.container_block__inner}>
+          <div className={styles.container_block__header}>
+            <h2 className={styles.container_block__title}>選択した具材</h2>
+            <div 
+              className={styles.search_mode_notice}
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              onClick={() => setShowTooltip(!showTooltip)}
+            >
+              <IoMdInformationCircleOutline />
+              {showTooltip && (
+                <div className={styles.search_mode_notice__tooltip}>
+                  <p>{getSearchModeMessage()}</p>
+                </div>
+              )}
             </div>
+          </div>
+          {hasSeasonings && (
+            <button
+              className={styles.toggle_seasonings}
+              onClick={() => setShowSeasonings(!showSeasonings)}
+            >
+              {showSeasonings
+                ? "調味料、スパイスを非表示"
+                : "調味料、スパイスを表示"}
+            </button>
+          )}
+          <div className={styles.container_block__contents}>
             {filteredIngredients.length > 0 && (
               <ul className={styles.ingredients_list}>
                 {filteredIngredients.map((ingredient: Ingredient) => (
@@ -168,33 +191,56 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
               </ul>
             )}
           </div>
-          <div className={styles.modal_content__footer}>
+          <div
+            className={styles.container_block__btn}
+            data-onboarding="search-button"
+          >
             <button onClick={handleRecipe}>レシピを検索</button>
           </div>
         </div>
-      </>
-    );
-  }
 
-  // 通常表示（PC用）
-  return (
-    <section className={styles.container_block}>
-      <div className={styles.container_block__inner}>
-        <h2 className={styles.container_block__title}>選択した具材</h2>
-        {hasSeasonings && (
-          <button
-            className={styles.toggle_seasonings}
-            onClick={() => setShowSeasonings(!showSeasonings)}
-          >
-            {showSeasonings
-              ? "調味料、スパイスを非表示"
-              : "調味料、スパイスを表示"}
-          </button>
-        )}
-        <div className={styles.search_mode_notice}>
-          <p>{getSearchModeMessage()}</p>
+        {error && <p className="text-red-500">{error}</p>}
+      </section>
+
+      {/* モーダル表示（スマホ用） - 常にレンダリング */}
+      <div 
+        className={`${styles.modal_overlay} ${isModalOpen ? styles["is-open"] : ""}`}
+        onClick={onCloseModal}
+      />
+      <div 
+        className={`${styles.modal_content} ${isModalOpen ? styles["is-open"] : ""}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className={styles.modal_content__header}>
+          <div className={styles.modal_content__header__title}>
+            <h2>選択した具材</h2>
+            <div 
+              className={styles.search_mode_notice}
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              onClick={() => setShowTooltip(!showTooltip)}
+            >
+              <IoMdInformationCircleOutline />
+              {showTooltip && (
+                <div className={styles.search_mode_notice__tooltip}>
+                  <p>{getSearchModeMessage()}</p>
+                </div>
+              )}
+            </div>
+          </div>
+          <button onClick={onCloseModal}>×</button>
         </div>
-        <div className={styles.container_block__contents}>
+        <div className={styles.modal_content__body}>
+          {hasSeasonings && (
+            <button
+              className={styles.toggle_seasonings}
+              onClick={() => setShowSeasonings(!showSeasonings)}
+            >
+              {showSeasonings
+                ? "調味料、スパイスを非表示"
+                : "調味料、スパイスを表示"}
+            </button>
+          )}
           {filteredIngredients.length > 0 && (
             <ul className={styles.ingredients_list}>
               {filteredIngredients.map((ingredient: Ingredient) => (
@@ -230,16 +276,11 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
             </ul>
           )}
         </div>
-        <div
-          className={styles.container_block__btn}
-          data-onboarding="search-button"
-        >
+        <div className={styles.modal_content__footer}>
           <button onClick={handleRecipe}>レシピを検索</button>
         </div>
       </div>
-
-      {error && <p className="text-red-500">{error}</p>}
-    </section>
+    </>
   );
 };
 

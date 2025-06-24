@@ -1,6 +1,4 @@
 import React from "react";
-import IngredientSelector from "./components/layout/IngredientSelector/IngredientSelector";
-import GenerateRecipe from "./components/ui/GenerateRecipe/GenerateRecipe";
 import styles from "./styles/HomePage.module.scss";
 import { fetchIngredientsServer } from "./hooks/ingredients";
 import HomePageClient from "./HomePageClient";

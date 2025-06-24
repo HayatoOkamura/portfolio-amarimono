@@ -21,9 +21,7 @@ export const useImageUpload = () => {
       if (imageUrl.startsWith('http')) {
         return imageUrl;
       }
-      if (process.env.ENVIRONMENT === 'production') {
-        return `${imageBaseUrl}/${imageUrl}`;
-      }
+      // imageBaseUrlは動的に設定されるため、そのまま使用
       return `${imageBaseUrl}/${imageUrl}`;
     }
     return undefined;
