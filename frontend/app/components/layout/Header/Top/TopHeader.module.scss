@@ -9,6 +9,8 @@
   gap: 50px;
   @include mq-max('sp') {
     gap: 20px;
+    position: sticky;
+    top: 0;
   }
 
   &__inner {
@@ -39,6 +41,9 @@
     @include mq-max('tab') {
       max-width: 620px;
     }
+    @include mq-max("sp") {
+      max-width: 300px;
+    }
     &__form {
       display: flex;
       justify-content: space-between;
@@ -52,6 +57,10 @@
       border-radius: 3px;
       flex: 1;
       font-size: 0.875rem;
+      @include mq-max("sp") {
+        font-size: 0.75rem;
+        padding: 10px;
+      }
     }
 
     &__button {
@@ -63,6 +72,11 @@
       padding: 3px 13px;
       border-radius: 3px;
       font-size: 0.875rem;
+      white-space: nowrap;
+      @include mq-max("sp") {
+        font-size: 0.75rem;
+        padding: 3px 10px;
+      }
     }
   }
 

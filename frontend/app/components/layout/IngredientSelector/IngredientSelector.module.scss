@@ -20,7 +20,7 @@
     @include mq-max("sp") {
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 10;
     }
 
     &__title {
@@ -135,15 +135,23 @@
   .search_block {
     margin-top: 12px;
     position: relative;
+    @include mq-max("sp") {
+      margin-top: 8px;
+    }
 
     &__input {
       width: 100%;
       padding: 0.75rem;
       border: 1px solid #c6c6c6;
-      border-radius: 0.5rem;
+      border-radius: 8px;
       font-size: 1rem;
       color: var(--primary-font-color);
       background: #fff;
+      @include mq-max("sp") {
+        font-size: 0.875rem;
+        padding: 10px;
+        border-radius: 5px;
+      }
 
       &:focus {
         outline: none;

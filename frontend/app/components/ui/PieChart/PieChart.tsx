@@ -38,7 +38,7 @@ const ResponsivePieChart = ({ value, type }: { value: number; type: NutritionTyp
   const color = getNutritionColor(type);
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div className={styles.pie_chart}>
       <svg 
         className={styles.svg} 
         viewBox="0 0 150 150" 

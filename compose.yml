@@ -32,7 +32,7 @@ services:
       resources:
         limits:
           cpus: '1'
-          memory: 2G
+          memory: 4G
     networks:
       - app-network
     hostname: backend

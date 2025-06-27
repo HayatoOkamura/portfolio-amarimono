@@ -1,9 +1,15 @@
+@import "@/app/styles/config/device";
+@import "@/app/styles/config/breakpoints";
+
 .card_block {
   background: #fff;
   border-radius: 10px;
   text-align: center;
   height: 100%;
   overflow: hidden;
+  @include mq-max("sp") {
+    border-radius: calc(4 / #{$device_sp} * 100vw);
+  }
 
   &--small {
     .card_block__name {
@@ -14,6 +20,9 @@
   &--medium {
     .card_block__name {
       font-size: 1rem;
+      @include mq-max("sp") {
+        font-size: calc(12 / #{$device_sp} * 100vw);
+      }
     }
   }
 
@@ -61,6 +70,9 @@
 
   &__contents {
     padding: 5px 15px;
+    @include mq-max("sp") {
+      padding: calc(5 / #{$device_sp} * 100vw) calc(8 / #{$device_sp} * 100vw);
+    }
   }
 
   &__name {
@@ -68,6 +80,7 @@
     font-weight: bold;
     color: #323232;
     text-align: left;
+  
   }
 
   &__genre {

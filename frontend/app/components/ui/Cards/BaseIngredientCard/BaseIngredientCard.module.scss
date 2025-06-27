@@ -11,6 +11,9 @@
 
   &--selected {
     border: 3px solid #de616a;
+    @include mq-max("sp") {
+      border: 2px solid #de616a;
+    }
   }
 
   &__image {

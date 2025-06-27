@@ -10,6 +10,10 @@ body {
 }
 
 main {
-  height: calc(100% - 65px);
+  height: calc(100svh - 65px);
   overflow-y: auto;
+
+  @include mq-max("sp") {
+    height: calc(100svh - 61px);
+  }
 }

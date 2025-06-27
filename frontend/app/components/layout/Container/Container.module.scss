@@ -4,7 +4,7 @@
   height: 100vh;
   display: flex;
   @include mq-max("sp") {
-    height: auto;
+    height: 100%;
   }
   &__inner {
     height: 100%;
@@ -13,8 +13,9 @@
     background: var(--primary-bg-color);
     justify-content: space-between;
 
-    @media (max-width: 768px) {
+    @include mq-max("sp") {
       flex-direction: column;
+      overflow: inherit;
     }
   }
 }

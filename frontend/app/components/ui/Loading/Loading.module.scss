@@ -1,3 +1,5 @@
+@import "@/app/styles/config/breakpoints";
+
 .loading_block {
   display: flex;
   flex-direction: column;
@@ -6,12 +8,21 @@
   max-width: 940px;
   width: 100%;
   margin-top: 50px;
+  overflow: hidden;
+  @include mq-max("sp") {
+    padding: 0 20px;
+    margin-top: 20px;
+  }
 
   &__text {
     font-size: 1.5rem;
     color: #666;
     line-height: 1.6;
     margin-top: 18px;
+    @include mq-max("sp") {
+      font-size: 1rem;
+      margin-top: 12px;
+    }
   }
 
   &__lottie {
@@ -19,6 +30,11 @@
     width: 100%;
     height: 100%;
     margin: auto;
+    @include mq-max("sp") { 
+      max-width: none;
+      width: 120vw;
+      margin: 30px calc(50% - 60vw) 0px;
+    }
   }
 
   &__progress {
@@ -47,6 +63,9 @@
     background-color: #eee;
     border-radius: 4px;
     overflow: hidden;
+    @include mq-max("sp") {
+      height: 4px;
+    }
 
     &__fill {
       height: 100%;

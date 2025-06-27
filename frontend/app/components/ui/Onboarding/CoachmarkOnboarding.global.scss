@@ -1,12 +1,17 @@
+@import "@/app/styles/config/breakpoints";
+
 // Joyride用のグローバルスタイル
 .joyride-tooltip {
-  background-color: white !important;
+  background-color: red !important;
   color: var(--primary-font-color) !important;
   border-radius: 8px !important;
   padding: 30px 35px !important;
   width: 460px !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   max-width: 90vw !important;
+
+  @include mq-max("sp") {
+  }
 }
 
 .joyride-button-next {

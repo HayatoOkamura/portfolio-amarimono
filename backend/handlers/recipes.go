@@ -132,6 +132,20 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		result = h.filterExactWithQuantity(recipes, request.Ingredients, selectedIngredients)
 	}
 
+	// 栄養素の割合を計算
+	for i := range result {
+		if result[i].Nutrition != (models.NutritionInfo{}) {
+			nutritionPercentage := map[string]float64{
+				"calories":      (float64(result[i].Nutrition.Calories) / standard.Calories) * 100,
+				"carbohydrates": (float64(result[i].Nutrition.Carbohydrates) / standard.Carbohydrates) * 100,
+				"fat":           (float64(result[i].Nutrition.Fat) / standard.Fat) * 100,
+				"protein":       (float64(result[i].Nutrition.Protein) / standard.Protein) * 100,
+				"salt":          (float64(result[i].Nutrition.Salt) / standard.Salt) * 100,
+			}
+			result[i].NutritionPercentage = nutritionPercentage
+		}
+	}
+
 	log.Printf("🥦 Final result count: %d\n", len(result))
 	c.JSON(http.StatusOK, result)
 }
