@@ -1,0 +1,124 @@
+@import "@/app/styles/config/breakpoints";
+
+.card_block {
+  background: white;
+  border-radius: 12px;
+  text-align: center;
+  transition: all 0.2s ease;
+  @include mq-max("sp") {
+    border-radius: 5px;
+  }
+
+  &--selected {
+    border: 3px solid #de616a;
+    @include mq-max("sp") {
+      border: 2px solid #de616a;
+    }
+  }
+
+  &__image {
+    width: 100%;
+    display: block;
+    position: relative;
+    aspect-ratio: 1 / 1;
+    img {
+      border-radius: 12px 12px 0 0;
+      object-fit: cover;
+      width: 100%;
+      @include mq-max("sp") {
+        border-radius: 5px 5px 0 0;
+      }
+    }
+  }
+
+  &__contents {
+    padding: 10px 8px 15px 8px;
+    @include mq-max("sp") {
+      padding: 5px 5px 15px 5px;
+    }
+  }
+
+  &__name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #323232;
+    margin: 0;
+    @include mq-max("sp") {
+      font-size: 0.875rem;
+    }
+  }
+
+  &__controls {
+    display: flex;
+    justify-content: space-between;
+    gap: 2px;
+    align-items: center;
+    margin-top: 5px;
+
+    span {
+      color: #323232;
+      font-size: 0.75rem;
+      min-width: 2rem;
+      white-space: nowrap;
+    }
+
+    button {
+      background: var(--primary-accent-color);
+      border-radius: 100%;
+      width: 25px;
+      height: 25px;
+      aspect-ratio: 1 / 1;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+      line-height: 1;
+
+      &:disabled {
+        background-color: var(--disabled-color);
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+
+      &:hover:not(:disabled) {
+        opacity: 0.8;
+      }
+    }
+  }
+
+  &__unit {
+    color: #666;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  &__unit_selector {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+  }
+
+  &__unit_select {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    min-width: 120px;
+
+    &:focus {
+      outline: none;
+      border-color: #666;
+    }
+
+    option {
+      padding: 4px;
+    }
+  }
+}

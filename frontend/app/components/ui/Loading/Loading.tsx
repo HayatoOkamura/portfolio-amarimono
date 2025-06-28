@@ -1,24 +1,18 @@
 "use client";
 
 import React from "react";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import styles from "./Loading.module.scss";
 
-type LoadingProps = {
-  type?: "spinner" | "dots" | "bars"; // 複数のアニメーションパターン
-};
-
-const Loading: React.FC<LoadingProps> = ({ type = "spinner" }) => {
+const Loading: React.FC = () => {
   return (
     <div className={styles.loading_block}>
-      {type === "spinner" && <div className={styles.loading_block__spinner}></div>}
-      {type === "dots" && (
-        <div className={styles.loading_block__dots}>
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      )}
-      {type === "bars" && <div className={styles.loading_block__bars}></div>}
+      <DotLottieReact
+        src="https://lottie.host/593f8704-611e-44a2-8442-c42fc8e8d3fc/5hnEEVP1Y6.lottie"
+        loop
+        autoplay
+        className={styles.loading_block__lottie}
+      />
     </div>
   );
 };

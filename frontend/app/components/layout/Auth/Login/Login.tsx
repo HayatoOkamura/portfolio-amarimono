@@ -12,22 +12,37 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLogin, setIsLogin] = useState(true);
-  const { login, isLoggingIn } = useAuth();
+  const { isLoading } = useAuth();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login({ email, password });
   };
 
   const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/callback`,
-      },
-    });
-    if (error) {
-      alert(error.message);
+    try {
+      const redirectUrl = `${window.location.origin}/callback`;
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+          skipBrowserRedirect: false,
+        },
+      });
+
+      if (error) {
+        console.error("Google login error:", error);
+        alert(error.message);
+        return;
+      }
+      
+    } catch (error) {
+      console.error("Unexpected error during Google login:", error);
+      alert("ログイン中にエラーが発生しました");
     }
   };
 
@@ -56,7 +71,7 @@ export default function LoginPage() {
         <button
           onClick={handleGoogleLogin}
           className={styles.google_button}
-          disabled={isLoggingIn}
+          disabled={isLoading}
         >
           <FaGoogle className={styles.google_icon} />
           Googleで{isLogin ? "ログイン" : "登録"}
@@ -89,10 +104,10 @@ export default function LoginPage() {
           </div>
           <button
             type="submit"
-            disabled={isLoggingIn}
+            disabled={isLoading}
             className={styles.auth_button}
           >
-            {isLoggingIn
+            {isLoading
               ? "処理中..."
               : isLogin
               ? "ログイン"

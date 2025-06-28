@@ -19,6 +19,7 @@ export interface Unit {
   name: string;
   description: string;
   step: number;
+  type: 'quantity' | 'presence';
 }
 
 export interface Ingredient {
@@ -28,6 +29,8 @@ export interface Ingredient {
   imageUrl: string | null;
   quantity: number;
   unit: Unit;
+  nutrition: Nutrition;
+  gramEquivalent: number;
 }
 
 export interface Instruction {
@@ -42,7 +45,6 @@ export interface Nutrition {
   carbohydrates: number;
   fat: number;
   protein: number;
-  sugar: number;
   salt: number;
 }
 
@@ -66,7 +68,13 @@ export interface Recipe {
   nutrition: Nutrition | null;
   faq: FAQ[];
   userId?: string;
-  nutritionPercentage?: Nutrition | null;
+  nutritionPercentage?: {
+    calories: number;
+    carbohydrates: number;
+    fat: number;
+    protein: number;
+    salt: number;
+  } | null;
   isPublic?: boolean;
   isDraft?: boolean;
 }
@@ -84,7 +92,6 @@ export interface NewRecipe {
     carbohydrates: number;
     fat: number;
     protein: number;
-    sugar: number;
     salt: number;
   };
   ingredients: {
@@ -128,10 +135,18 @@ export interface EditIngredient {
   unit: {
     id: number;
     name: string;
+    description: string;
     step: number;
   };
   imageUrl: string | File | null;
   quantity: number;
+  nutrition: {
+    calories: number;
+    carbohydrates: number;
+    fat: number;
+    protein: number;
+    salt: number;
+  };
 }
 
 export interface EditRecipe {

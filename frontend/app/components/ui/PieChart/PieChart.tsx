@@ -4,57 +4,72 @@
 import { useState, useEffect } from "react";
 import styles from "./PieChart.module.scss";
 
-type NutritionType = "calories" | "carbohydrates" | "fat" | "protein" | "salt" | "sugar";
+type NutritionType = "calories" | "carbohydrates" | "fat" | "protein" | "salt" ;
 
 const getNutritionColor = (type: NutritionType): string => {
   const colors = {
-    calories: "#5B9BD5",      // 青
-    carbohydrates: "#70AD47", // 緑
-    fat: "#FFC000",          // 黄色
-    protein: "#A5A5A5",      // グレー
-    salt: "#7B68EE",         // 紫
-    sugar: "#ED7D31",        // オレンジ
+    calories: "#DA5944",      // 赤
+    carbohydrates: "#3762ED", // 青
+    fat: "#6846C1",          // 紫
+    protein: "#DBBE62",      // 黄
+    salt: "#49B552",         // 紫
   };
   return colors[type] || "#03a9f4"; // デフォルトは青
 };
 
 const ResponsivePieChart = ({ value, type }: { value: number; type: NutritionType }) => {
   const [radius, setRadius] = useState(70);
+  const circumference = 2 * Math.PI * radius;
 
   useEffect(() => {
     const resizeHandler = () => {
-      const newRadius = Math.min(window.innerWidth * 0.2, 70); // 画面幅に応じて最大半径を調整
+      const newRadius = Math.min(window.innerWidth * 0.2, 70);
       setRadius(newRadius);
     };
 
-    resizeHandler(); // 初回サイズ設定
-    window.addEventListener("resize", resizeHandler); // 画面リサイズ時にサイズを再計算
+    resizeHandler();
+    window.addEventListener("resize", resizeHandler);
     
     return () => window.removeEventListener("resize", resizeHandler);
   }, []);
 
-  // 100%を超える場合は0（完全な円）を表示
-  const strokeDashoffset = value > 100 
-    ? 0 
-    : `calc(440 - (440 * ${value}) / 100)`;
-  const strokeDasharray = 440;
+  const normalizedValue = Math.min(value, 100);
+  const strokeDashoffset = circumference * (1 - normalizedValue / 100);
   const color = getNutritionColor(type);
 
   return (
-    <svg className={styles.svg} viewBox="0 0 150 150" style={{ width: "100%", height: "auto" }}>
-      <circle className={styles.base} cx="75" cy="75" r={radius}></circle>
-      <circle
-        className={styles.line}
-        cx="75"
-        cy="75"
-        r={radius}
-        style={{
-          strokeDashoffset,
-          strokeDasharray,
-          stroke: color,
-        }}
-      ></circle>
-    </svg>
+    <div className={styles.pie_chart}>
+      <svg 
+        className={styles.svg} 
+        viewBox="0 0 150 150" 
+        preserveAspectRatio="xMidYMid meet"
+        style={{ width: '100%', height: '100%' }}
+      >
+        <circle 
+          className={styles.base} 
+          cx="75" 
+          cy="75" 
+          r={radius}
+          fill="none"
+          stroke="#e5e8ed"
+          strokeWidth="10"
+        />
+        <circle
+          className={styles.line}
+          cx="75"
+          cy="75"
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth="10"
+          strokeDasharray={circumference}
+          style={{
+            '--dash-offset': strokeDashoffset,
+            transform: 'rotate(-90deg)'
+          } as React.CSSProperties}
+        />
+      </svg>
+    </div>
   );
 };
 

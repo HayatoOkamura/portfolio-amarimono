@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
@@ -23,81 +22,196 @@ func NewUserHandler(db *gorm.DB) *UserHandler {
 	}
 }
 
-// CreateUser ユーザー作成のハンドラー
+// CreateUser handles user creation
 func (h *UserHandler) CreateUser(c *gin.Context) {
-	// Multipart form dataを取得
-	form, err := c.MultipartForm()
-	if err != nil {
-		log.Println("Form parsing error:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
+	var user models.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user data"})
 		return
 	}
 
-	// フォームデータのログ
-	for key, values := range form.Value {
-		log.Printf("%s: %v", key, values)
+	// ユーザーIDの検証
+	if user.ID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
+		return
 	}
 
-	// 必要なデータをUser構造体にマッピング
-	user := models.User{
-		ID:       form.Value["id"][0],       // ID
-		Email:    form.Value["email"][0],    // Email
-		Username: form.Value["username"][0], // ユーザー名
-		Age:      form.Value["age"][0],      // 年齢
-		Gender:   form.Value["gender"][0],   // 性別
+	// メールアドレスの検証
+	if user.Email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email is required"})
+		return
 	}
 
-	// 画像ファイルがある場合は処理
-	if files := form.File["profileImage"]; len(files) > 0 {
-		// ここで画像の保存処理（例: ファイルをローカルディスクに保存するなど）
-		profileImage := files[0]
+	// 画像ファイルの処理
+	if file, err := c.FormFile("image"); err == nil {
+		// ファイルサイズのチェック（10MB制限）
+		if file.Size > 10*1024*1024 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Image file size exceeds 10MB limit"})
+			return
+		}
 
-		// 保存先ディレクトリに保存
-		imageURL, err := utils.SaveImage(c, profileImage, "user", "")
+		// 画像を保存
+		imagePath, err := utils.SaveImage(c, file, "users/"+user.ID, "")
 		if err != nil {
-			log.Printf("File upload error: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload profile image"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
 			return
 		}
-
-		// 保存した画像のパスをUser構造体に追加
-		user.ProfileImage = imageURL
+		user.ProfileImage = &imagePath
+	} else {
+		// 画像が選択されていない場合は、既存のimageUrlを使用
+		imageUrl := c.PostForm("image_url")
+		if imageUrl != "" {
+			user.ProfileImage = &imageUrl
+		}
 	}
 
-	// ユーザーをデータベースに保存
-	if err := models.CreateUser(h.DB, user); err != nil {
-		log.Printf("Failed to create user: %v", err)
-		// PostgreSQLのユニーク制約違反エラーをチェック
-		if err.Error() == "ERROR: duplicate key value violates unique constraint \"users_pkey\" (SQLSTATE 23505)" {
-			c.JSON(http.StatusConflict, gin.H{"error": "このメールアドレスは既に登録されています"})
+	// 既存のユーザーを確認
+	existingUser, err := models.GetUserByID(h.DB, user.ID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// ユーザーが存在しない場合は新規作成
+			if err := models.CreateUser(h.DB, &user); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+				return
+			}
+			c.JSON(http.StatusCreated, user)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー登録に失敗しました"})
+		// その他のエラーの場合
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check existing user"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User created successfully"})
+	// ユーザーが既に存在する場合は更新
+	user.CreatedAt = existingUser.CreatedAt // 作成日時は保持
+	if err := models.UpdateUser(h.DB, &user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
 }
 
-// GetUserProfile ユーザーのプロフィール情報を取得するハンドラー
+// GetUserProfile handles retrieving a user's profile
 func (h *UserHandler) GetUserProfile(c *gin.Context) {
-	userID := c.Param("id") // URLのパラメータからuserIDを取得
+	userID := c.Param("id")
 
-	user, err := models.GetUserByID(h.DB, userID)
+	// ユーザー情報とrole情報を結合して取得
+	var user struct {
+		models.User
+		Role string `json:"role"`
+	}
+
+	// usersテーブルとuser_rolesテーブルを結合して取得
+	err := h.DB.Table("users").
+		Select("users.*, user_roles.role").
+		Joins("LEFT JOIN user_roles ON users.id = user_roles.user_id").
+		Where("users.id = ?", userID).
+		First(&user).Error
+
 	if err != nil {
-		log.Printf("Failed to retrieve user: %v", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"id":           user.ID,
-		"email":        user.Email,
-		"username":     user.Username,
-		"profileImage": user.ProfileImage,
-		"age":          user.Age,
-		"gender":       user.Gender,
-	})
+	// roleがnullの場合はデフォルト値として"user"を設定
+	if user.Role == "" {
+		user.Role = "user"
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
+// UpdateUserProfile handles updating a user's profile
+func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
+	userID := c.Param("id")
+
+	// 既存のユーザーを取得
+	existingUser, err := models.GetUserByID(h.DB, userID)
+	if err != nil {	
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// 画像ファイルの処理
+	if file, err := c.FormFile("image"); err == nil {
+		// ファイルサイズのチェック（10MB制限）
+		if file.Size > 10*1024*1024 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Image file size exceeds 10MB limit"})
+			return
+		}
+
+		// 既存の画像がある場合は削除
+		if existingUser.ProfileImage != nil && *existingUser.ProfileImage != "" && *existingUser.ProfileImage != "[object File]" {
+			if err := utils.DeleteImage(*existingUser.ProfileImage); err != nil {
+				// 画像の削除に失敗しても処理は続行
+			} else {
+			}
+		}
+
+		// 新しい画像を保存
+		imagePath, err := utils.SaveImage(c, file, "users/"+userID, "")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
+			return
+		}
+		existingUser.ProfileImage = &imagePath
+	} else {
+		// 画像が選択されていない場合は、既存のimageUrlを使用
+		imageUrl := c.PostForm("image_url")
+		if imageUrl != "" && imageUrl != "[object File]" {
+			existingUser.ProfileImage = &imageUrl
+		}
+	}
+
+	// FormDataから他のフィールドを取得
+	email := c.PostForm("email")
+	username := c.PostForm("username")
+	ageStr := c.PostForm("age")
+	gender := c.PostForm("gender")
+
+	// 年齢の変換
+	var age *int
+	if ageStr != "" {
+		ageInt, err := strconv.Atoi(ageStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid age format"})
+			return
+		}
+		age = &ageInt
+	}
+
+	// 各フィールドが空でない場合のみ更新
+	if email != "" {
+		existingUser.Email = email
+	}
+	if username != "" {
+		existingUser.Username = &username
+	}
+	if age != nil {
+		existingUser.Age = age
+	}
+	if gender != "" {
+		existingUser.Gender = &gender
+	}
+
+	if err := models.UpdateUser(h.DB, existingUser); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, existingUser)
+}
+
+// DeleteUser handles user deletion
+func (h *UserHandler) DeleteUser(c *gin.Context) {
+	userID := c.Param("id")
+	if err := models.DeleteUser(h.DB, userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 // ユーザーが投稿したレシピのいいね数を取得
@@ -111,7 +225,6 @@ func (h *UserHandler) GetUserLikeCount(c *gin.Context) {
 		Count(&likeCount).Error
 
 	if err != nil {
-		log.Printf("Failed to count likes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve like count"})
 		return
 	}
@@ -132,7 +245,6 @@ func (h *UserHandler) GetUserRecipeAverageRating(c *gin.Context) {
 		Scan(&avgRating).Error
 
 	if err != nil {
-		log.Printf("Failed to get average rating: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve average rating"})
 		return
 	}
@@ -140,61 +252,125 @@ func (h *UserHandler) GetUserRecipeAverageRating(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"average_rating": avgRating})
 }
 
-// UpdateUserProfile ユーザーのプロフィールを更新するハンドラー
-func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
-	userID := c.Param("id") // URLのパラメータから userID を取得
-	log.Println("⭐️⭐️⭐️ User ID:", userID)
-
-	// フォームデータを取得
-	form, err := c.MultipartForm()
-	if err != nil {
-		log.Println("Form parsing error:", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form data"})
+// SetUserRole ユーザーのロールを設定するハンドラー
+func (h *UserHandler) SetUserRole(c *gin.Context) {
+	// リクエストユーザーの認証チェック
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
 
-	// 更新データを格納するマップ
-	updateFields := map[string]interface{}{}
-
-	// フォームデータの取得と更新処理
-	if username, exists := form.Value["username"]; exists && len(username) > 0 {
-		updateFields["username"] = username[0]
+	// リクエストユーザーが管理者かチェック
+	var requesterRole struct {
+		Role string
 	}
-	if ageStr, exists := form.Value["age"]; exists && len(ageStr) > 0 {
-		age, err := strconv.Atoi(ageStr[0])
-		if err != nil {
-			log.Println("Invalid age format:", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid age format"})
+	if err := h.DB.Table("user_roles").Where("user_id = ?", userID).First(&requesterRole).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "管理者権限が必要です"})
+		return
+	}
+	if requesterRole.Role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "管理者権限が必要です"})
+		return
+	}
+
+	// リクエストボディから対象ユーザーIDとロールを取得
+	var requestBody struct {
+		UserID string `json:"user_id" binding:"required"`
+		Role   string `json:"role" binding:"required,oneof=admin user"`
+	}
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "無効なリクエストです"})
+		return
+	}
+
+	// トランザクションを開始
+	tx := h.DB.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "データベースエラーが発生しました"})
+		return
+	}
+
+	// 既存のロールを確認
+	var existingRole struct {
+		Role string
+	}
+	result := tx.Table("user_roles").Where("user_id = ?", requestBody.UserID).First(&existingRole)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			// 新規作成
+			if err := tx.Table("user_roles").Create(map[string]interface{}{
+				"user_id": requestBody.UserID,
+				"role":    requestBody.Role,
+			}).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "ロールの設定に失敗しました"})
+				return
+			}
+		} else {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "データベースエラーが発生しました"})
 			return
 		}
-		updateFields["age"] = age
-	}
-	if gender, exists := form.Value["gender"]; exists && len(gender) > 0 {
-		updateFields["gender"] = gender[0]
-	}
-
-	// 画像アップロード処理
-	if files, exists := form.File["profileImage"]; exists && len(files) > 0 {
-		profileImage := files[0]
-
-		// 画像を保存し、パスを取得
-		imageURL, err := utils.SaveImage(c, profileImage, "user", "")
-		if err != nil {
-			log.Printf("File upload error: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload profile image"})
-			return
-		}
-		updateFields["profile_image"] = imageURL
-	}
-
-	// 更新処理（`updateFields` が空でない場合のみ実行）
-	if len(updateFields) > 0 {
-		if err := h.DB.Model(&models.User{}).Where("id = ?", userID).Updates(updateFields).Error; err != nil {
-			log.Println("Failed to update user:", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
+	} else {
+		// 更新
+		if err := tx.Table("user_roles").Where("user_id = ?", requestBody.UserID).Update("role", requestBody.Role).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ロールの更新に失敗しました"})
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
+	// トランザクションをコミット
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "データベースエラーが発生しました"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "ロールを設定しました"})
+}
+
+// UploadProfileImage handles uploading a user's profile image
+func (h *UserHandler) UploadProfileImage(c *gin.Context) {
+	userID := c.Param("id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
+		return
+	}
+
+	// 画像ファイルを取得
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No image file provided"})
+		return
+	}
+
+	// ファイルサイズのチェック（10MB制限）
+	if file.Size > 10*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Image file size exceeds 10MB limit"})
+		return
+	}
+
+	// 画像を保存
+	imagePath, err := utils.SaveImage(c, file, "users/"+userID, "")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
+		return
+	}
+
+	// ユーザーのプロフィール画像URLを更新
+	user, err := models.GetUserByID(h.DB, userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	user.ProfileImage = &imagePath
+	if err := models.UpdateUser(h.DB, user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user profile"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"imageUrl": imagePath})
 }

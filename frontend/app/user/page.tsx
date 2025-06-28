@@ -5,9 +5,8 @@ import { useEffect, useState } from "react";
 import styles from "./user.module.scss";
 import Image from "next/image";
 import Link from "next/link";
-import { backendUrl } from "../utils/api";
-import { useAuth } from "@/app/hooks/useAuth";
 import { useUserLikeCount, useUserRecipeAverageRating } from "@/app/hooks/user";
+import { imageBaseUrl } from "@/app/utils/api";
 import { useRecommendedRecipes } from "@/app/hooks/recipes";
 import { FaUserCircle } from "react-icons/fa";
 import { ImSpoonKnife } from "react-icons/im";
@@ -15,117 +14,170 @@ import { FaHeart } from "react-icons/fa";
 import { FaStar } from "react-icons/fa";
 import RecipeCard from "@/app/components/ui/Cards/RecipeCard/RecipeCard";
 import { Recipe } from "@/app/types/index";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/app/lib/api/supabase/supabaseClient";
+import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
+import { withAuth } from "@/app/components/auth/withAuth";
+import { useUserStore } from "@/app/stores/userStore";
+import { ResponsiveWrapper } from "../components/common/ResponsiveWrapper";
 
-export default function UserPage() {
-  const { user } = useAuth();
-  const router = useRouter();
+interface User {
+  id: string;
+  email: string;
+  username?: string;
+  profileImage?: string;
+  age?: number;
+  gender?: string;
+  email_confirmed_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ユーザープロフィールコンポーネント
+const UserProfile = () => {
+  const { user } = useUserStore();
+  const { likeCount, loading: isLikeCountLoading } = useUserLikeCount(
+    user?.id || ""
+  );
+  const { averageRating, loading: isRatingLoading } =
+    useUserRecipeAverageRating(user?.id || "");
+  const { data: recipes, isLoading: isRecipesLoading } = useRecommendedRecipes(
+    user?.id || ""
+  );
+  const [recipeCount, setRecipeCount] = useState(0);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
+    if (recipes) {
+      setRecipeCount(recipes.length);
     }
-  }, [user, router]);
+  }, [recipes]);
+
+  const isLoading = isLikeCountLoading || isRatingLoading || isRecipesLoading;
+
+  const handleImageError = () => {
+    console.error("Error loading profile image");
+    setImageError(true);
+  };
 
   if (!user) {
-    return null;
+    return <div>ユーザー情報の取得に失敗しました</div>;
   }
-
-  const { likeCount, loading: likesLoading } = useUserLikeCount(user.id);
-  const { averageRating, loading: ratingLoading } = useUserRecipeAverageRating(user.id);
-  const { data: recommendedRecipes, isLoading: recommendedLoading } = useRecommendedRecipes(user.id);
-
-  if (recommendedLoading || likesLoading || ratingLoading) {
-    return <p>Loading...</p>;
-  }
-
-  const [recipeCount, setRecipeCount] = useState(0);
-
-  useEffect(() => {
-    if (recommendedRecipes) {
-      console.log("Recommended recipes:", recommendedRecipes);
-      setRecipeCount(recommendedRecipes.length);
-    }
-  }, [recommendedRecipes]);
 
   return (
-    <section className={styles.profile_block}>
-      <div className={styles.profile_block__head}>
-        <div className={styles.profile_block__image}>
-          {user && user.profileImage ? (
-            <Image
-              fill
-              src={user.profileImage}
-              alt="User Profile"
-              className={styles.user_block__icon_img}
-              unoptimized
-            />
-          ) : (
-            <FaUserCircle />
-          )}
+    <PageLoading isLoading={isLoading}>
+      <div className={styles.profile_block}>
+        <div className={styles.profile_block__head}>
+          <div className={styles.profile_block__image}>
+            {user.profileImage && !imageError ? (
+              <Image
+                src={`${imageBaseUrl}/${user.profileImage}`}
+                alt="User Profile"
+                className={styles.user_block__icon_img}
+                width={100}
+                height={100}
+                onError={handleImageError}
+                priority
+              />
+            ) : (
+              <FaUserCircle size={100} />
+            )}
+          </div>
+          <div className={styles.profile_block__detail}>
+            <h1 className={styles.profile_block__name}>
+              {user.username || "名前未設定"}
+            </h1>
+            <p className={styles.profile_block__email}>{user.email}</p>
+            <ResponsiveWrapper breakpoint="sp" renderBelow={null}>
+              <div className={styles.profile_block__list}>
+                <div className={styles.item_block}>
+                  <div className={styles.item_block__icon}>
+                    <ImSpoonKnife />
+                  </div>
+                  <div className={styles.item_block__num}>{recipeCount}</div>
+                  <div className={styles.item_block__text}>レシピ投稿数</div>
+                </div>
+                <div className={styles.item_block}>
+                  <div className={styles.item_block__icon}>
+                    <FaHeart />
+                  </div>
+                  <div className={styles.item_block__num}>{likeCount}</div>
+                  <div className={styles.item_block__text}>合計いいね数</div>
+                </div>
+                <div className={styles.item_block}>
+                  <div className={styles.item_block__icon}>
+                    <FaStar />
+                  </div>
+                  <div className={styles.item_block__num}>
+                    {averageRating?.toFixed(1) ?? "0.0"}
+                  </div>
+                  <div className={styles.item_block__text}>レビュー平均</div>
+                </div>
+              </div>
+            </ResponsiveWrapper>
+            <div className={styles.profile_block__btn}>
+              <Link href="/user/edit">プロフィールを編集</Link>
+            </div>
+          </div>
         </div>
-        <div className={styles.profile_block__detail}>
-          <p className={styles.profile_block__name}>
-            {user && user.username || "ゲスト"}
-          </p>
-          <p className={styles.profile_block__email}>{user && user.email}</p>
+
+        <ResponsiveWrapper breakpoint="sp" renderAbove={null}>
           <div className={styles.profile_block__list}>
             <div className={styles.item_block}>
               <div className={styles.item_block__icon}>
                 <ImSpoonKnife />
               </div>
-              <div className={styles.item_block__texts}>
-                <p className={styles.item_block__num}>{recipeCount}</p>
-                <p className={styles.item_block__text}>レシピ投稿数</p>
-              </div>
+              <div className={styles.item_block__num}>{recipeCount}</div>
+              <div className={styles.item_block__text}>レシピ投稿数</div>
             </div>
             <div className={styles.item_block}>
               <div className={styles.item_block__icon}>
                 <FaHeart />
               </div>
-              <div className={styles.item_block__texts}>
-                <p className={styles.item_block__num}>{likeCount}</p>
-                <p className={styles.item_block__text}>合計いいね数</p>
-              </div>
+              <div className={styles.item_block__num}>{likeCount}</div>
+              <div className={styles.item_block__text}>合計いいね数</div>
             </div>
             <div className={styles.item_block}>
               <div className={styles.item_block__icon}>
                 <FaStar />
               </div>
-              <div className={styles.item_block__texts}>
-                <p className={styles.item_block__num}>
-                  {averageRating?.toFixed(1) ?? "0.0"}
-                </p>
-                <p className={styles.item_block__text}>レビュー平均</p>
+              <div className={styles.item_block__num}>
+                {averageRating?.toFixed(1) ?? "0.0"}
               </div>
+              <div className={styles.item_block__text}>レビュー平均</div>
             </div>
           </div>
-          <button className={styles.profile_block__btn}>
-            <Link href="/user/edit">プロフィールを編集</Link>
-          </button>
+        </ResponsiveWrapper>
+        <div className={styles.recommend_block}>
+          <h2 className={styles.recommend_block__title}>あなたにおすすめのレシピ</h2>
+          {recipes && recipes.length > 0 ? (
+            <div className={styles.recommend_block__inner}>
+              <div className={styles.recommend_block__contents}>
+                {recipes.map((recipe: Recipe) => (
+                  <div key={recipe.id} className={styles.recommend_block__card}>
+                    <RecipeCard
+                      recipe={recipe}
+                      isFavoritePage={false}
+                      path="/recipes/"
+                      isLink={true}
+                      href={`/recipes/${recipe.id}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className={styles.recommend_block__no_recipe}>
+              おすすめのレシピはありません
+            </div>
+          )}
         </div>
       </div>
-
-      <div className={styles.recommend_block}>
-        <h2>おすすめのレシピ</h2>
-        {recommendedLoading ? (
-          <p>おすすめレシピを読み込み中...</p>
-        ) : recommendedRecipes && recommendedRecipes.length === 0 ? (
-          <p>おすすめのレシピはありません</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recommendedRecipes?.map((recipe: Recipe) => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={recipe}
-                isFavoritePage={false}
-                path="/recipes/"
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </section>
+    </PageLoading>
   );
+};
+
+// メインコンポーネント
+function UserPage() {
+  return <UserProfile />;
 }
+
+export default withAuth(UserPage);

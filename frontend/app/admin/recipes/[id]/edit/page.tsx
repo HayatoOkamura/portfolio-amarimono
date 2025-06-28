@@ -7,17 +7,19 @@ import { imageBaseUrl } from "@/app/utils/api";
 import { fetchRecipeByIdService } from "@/app/hooks/recipes";
 import { RegistrationForm } from "@/app/components/features/RecipeForm/RegistrationForm";
 import { useRouter } from "next/navigation";
+import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
+import { RecipeFormData } from "@/app/components/features/RecipeForm/types/recipeForm";
 
 const AdminRecipeEdit = () => {
   const router = useRouter();
-  const [recipe, setRecipe] = useState<NewRecipe | null>(null);
+  const [recipe, setRecipe] = useState<RecipeFormData | null>(null);
 
   useEffect(() => {
     const id = window.location.pathname.split("/").slice(-2)[0];
     if (id) {
       fetchRecipeByIdService(id)
         .then((recipeData) => {
-          const newRecipe: NewRecipe = {
+          const newRecipe: RecipeFormData = {
             id: recipeData.id,
             name: recipeData.name,
             genre: recipeData.genre || { id: 1, name: "すべて" },
@@ -25,13 +27,12 @@ const AdminRecipeEdit = () => {
             costEstimate: recipeData.costEstimate,
             summary: recipeData.summary,
             catchphrase: recipeData.catchphrase,
-            nutrition: recipeData.nutrition || {
-              calories: 0,
-              carbohydrates: 0,
-              fat: 0,
-              protein: 0,
-              sugar: 0,
-              salt: 0
+            nutrition: {
+              calories: recipeData.nutrition?.calories || 0,
+              carbohydrates: recipeData.nutrition?.carbohydrates || 0,
+              fat: recipeData.nutrition?.fat || 0,
+              protein: recipeData.nutrition?.protein || 0,
+              salt: recipeData.nutrition?.salt || 0
             },
             instructions: recipeData.instructions.map(step => ({
               step: step.stepNumber,
@@ -41,7 +42,9 @@ const AdminRecipeEdit = () => {
             ingredients: recipeData.ingredients.map(ing => ({
               id: ing.id,
               quantity: ing.quantity,
-              unitId: ing.unit.id
+              unitId: ing.unit.id,
+              name: ing.name,
+              unit: ing.unit.name
             })),
             image: undefined,
             imageUrl: recipeData.imageUrl,
@@ -55,14 +58,18 @@ const AdminRecipeEdit = () => {
     }
   }, []);
 
-  if (!recipe) {
-    return <div>Loading...</div>;
-  }
+  useEffect(() => {
+    console.log("🥦", recipe);
+  }, [recipe]);
 
   return (
-    <div className="">
-      <RegistrationForm isAdmin={true} initialRecipe={recipe} />
-    </div>
+    <PageLoading isLoading={!recipe}>
+      {recipe && (
+        <div className="">
+          <RegistrationForm isAdmin={true} initialRecipe={recipe} />
+        </div>
+      )}
+    </PageLoading>
   );
 };
 

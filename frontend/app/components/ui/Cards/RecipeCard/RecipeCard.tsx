@@ -1,22 +1,30 @@
 "use client";
 import React, { useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { imageBaseUrl } from "@/app/utils/api";
 import styles from "./RecipeCard.module.scss";
 import { backendUrl } from "@/app/utils/api";
 import { Recipe } from "@/app/types/index";
-import Link from "next/link";
 
 interface RecipeCardProps {
   recipe: Recipe;
   isFavoritePage?: boolean;
   path: string;
+  className?: string;
+  size?: 'small' | 'medium' | 'large';
+  isLink?: boolean;
+  href?: string;
 }
 
 const RecipeCard: React.FC<RecipeCardProps> = ({
   recipe,
   isFavoritePage,
   path,
+  className,
+  size = 'medium',
+  isLink = false,
+  href,
 }) => {
   // ジャンル表示用の文字列を取得
   const getGenreText = () => {
@@ -37,44 +45,40 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
     return "すべて";
   };
 
-  return (
-    <div className={styles.card_block}>
+  const cardContent = (
+    <div className={`${styles.card_block} ${styles[`card_block--${size}`]} ${className || ''}`}>
       <div className={styles.card_block__img}>
         {recipe.isDraft && (
           <span className={styles.card_block__draft}>下書き</span>
         )}
         <Image
-          fill
           src={
             recipe.imageUrl
               ? `${imageBaseUrl}/${recipe.imageUrl}`
               : "/pic_recipe_default.webp"
           }
           alt={recipe.name}
-          unoptimized
+          width={100}
+          height={100}
         />
       </div>
       <div className={styles.card_block__contents}>
         <h2 className={styles.card_block__name}>{recipe.name}</h2>
       </div>
-      {/* <p className={styles.card_block__genre}>
-        ジャンル: <strong>{getGenreText()}</strong>
-      </p>
-      <h3 className={styles.card_block__ingredients}>材料</h3>
-      <ul className={styles.card_block__ing_list}>
-        {recipe.ingredients.map((ingredient, idx) => (
-          <li key={idx} className={styles.card_block__ing_item}>
-            {ingredient.name} ({ingredient.quantity} {ingredient.unit?.name})
-          </li>
-        ))}
-      </ul>
-      {isFavoritePage && recipe.id && (
-        <Link href={`${path}${recipe.id}`}>
-          <button className={styles.details_button}>詳しく見る</button>
-        </Link>
-      )} */}
     </div>
   );
+
+  // リンクが必要な場合はLinkコンポーネントでラップ
+  if (isLink && href) {
+    return (
+      <Link href={href} className={styles.card_block__link}>
+        {cardContent}
+      </Link>
+    );
+  }
+
+  // リンクが不要な場合は通常のdivを返す
+  return cardContent;
 };
 
 export default RecipeCard;

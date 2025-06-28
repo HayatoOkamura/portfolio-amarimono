@@ -1,0 +1,125 @@
+@import "@/app/styles/config/breakpoints";
+@import "@/app/styles/config/device";
+
+.modal_block {
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #c6c6c6;
+
+    &__title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--primary-font-color);
+    }
+
+    &__close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--primary-font-color);
+      padding: 0.5rem;
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: var(--primary-accent-color);
+      }
+    }
+  }
+
+  &__search {
+    padding: 10px 10px 0 10px;
+    margin-top: 15px;
+  }
+
+  &__search_container {
+    position: relative;
+  }
+
+  &__search_input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #c6c6c6;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    color: var(--primary-font-color);
+    background: #fff;
+
+    &:focus {
+      outline: none;
+      border-color: var(--primary-accent-color);
+    }
+  }
+
+  &__search_loading {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.875rem;
+    color: var(--secondary-font-color);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  &__genre {
+    margin-top: 16px;
+    @include mq-max("sp") {
+      margin-top: 32px;
+    }
+  }
+
+  &__genre_title {
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--primary-font-color);
+  }
+
+  &__genre_content {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    margin-top: 12px;
+    @include mq-max("sp") {
+      background: #fff;
+    }
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  &__ingredients {
+    margin-top: 32px;
+    padding: 10px;
+    @include mq-max("sp") {
+      padding: 0 10px 10px;
+    }
+  }
+
+  &__ingredients_title {
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--primary-font-color);
+  }
+
+  &__ingredients_content {
+    margin-top: 12px;
+    overflow-y: auto;
+    max-height: 60vh;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    @include mq-max("sp") {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 5px;
+      max-height: 80svh;
+    }
+  }
+}

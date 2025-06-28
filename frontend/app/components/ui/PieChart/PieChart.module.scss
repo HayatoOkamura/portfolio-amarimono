@@ -1,35 +1,38 @@
-.svg {
-  transform: rotate(-90deg);
-  circle {
-    stroke-width: 10;
-    fill: #fff;
+.pie_chart {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .svg {
+    width: 100%;
+    height: 100%;
     position: relative;
-    stroke: #e5e8ed;
-    stroke-dasharray: 440;
-    stroke-dashoffset: 0;
-    stroke-linecap: round;
-    &.base {
-    }
-    
-    &.line {
-      stroke: #03a9f4; /* 円グラフの色（例：青） */
-      transition: stroke-dashoffset 1s ease-in-out;
-      animation: circleAnim 1s forwards;
-      fill: transparent;
-      
+
+    circle {
+      &.base {
+        fill: none;
+        stroke: #e5e8ed;
+        stroke-width: 10;
+        stroke-linecap: round;
+      }
+
+      &.line {
+        fill: none;
+        stroke-width: 10;
+        stroke-linecap: round;
+        transform-origin: center;
+        animation: circleAnim 1.5s ease-in-out forwards;
+      }
     }
   }
-
 }
 
-
-
 @keyframes circleAnim {
-  0% {
-    stroke-dasharray: 0 440;
+  from {
+    stroke-dashoffset: 440;
   }
-  99.9%,
   to {
-    stroke-dasharray: 440 440;
+    stroke-dashoffset: var(--dash-offset);
   }
 }

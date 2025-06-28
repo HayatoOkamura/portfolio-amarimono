@@ -5,252 +5,176 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
-	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	storage_go "github.com/supabase-community/storage-go"
+	supabase "github.com/supabase-community/supabase-go"
 )
 
 var log = logrus.New()
 
-// SaveImage は環境に応じて画像を保存し、URLを返す
-func SaveImage(c *gin.Context, file *multipart.FileHeader, dir string, recipeID string) (string, error) {
-	// 環境変数で保存先を判定
-	env := os.Getenv("GO_ENV")
-	if env == "production" {
-		return saveToSupabase(file, dir, recipeID)
-	}
-	return saveToLocal(c, file, dir, recipeID)
-}
-
-// saveToLocal はローカルストレージに画像を保存
-func saveToLocal(c *gin.Context, file *multipart.FileHeader, dir string, id string) (string, error) {
-	// dirが空の場合はエラーを返す
-	if dir == "" {
-		log.Printf("ERROR: 保存先ディレクトリが指定されていません")
-		return "", fmt.Errorf("保存先ディレクトリが指定されていません")
-	}
-
-	// 保存先のディレクトリを構築
-	var saveDir string
-	if dir == "ingredients" {
-		// 具材の画像の場合
-		if id == "" {
-			log.Printf("ERROR: 具材IDが指定されていません")
-			return "", fmt.Errorf("具材IDが指定されていません")
-		}
-		saveDir = filepath.Join(".", "uploads", "ingredients", id)
-	} else if dir == "temp_uploads" {
-		// 一時的なアップロードの場合
-		saveDir = filepath.Join(".", "uploads", "temp")
-	} else {
-		// レシピの画像の場合
-		if id == "" {
-			log.Printf("ERROR: レシピIDが指定されていません")
-			return "", fmt.Errorf("レシピIDが指定されていません")
-		}
-		saveDir = filepath.Join(".", "uploads", "recipes", id, dir)
-	}
-
-	log.Printf("INFO: 画像を保存するディレクトリ: %s", saveDir)
-
-	// ディレクトリが存在しない場合は作成
-	if _, err := os.Stat(saveDir); os.IsNotExist(err) {
-		log.Printf("INFO: ディレクトリが存在しないため作成します: %s", saveDir)
-		if err := os.MkdirAll(saveDir, 0755); err != nil {
-			log.Printf("ERROR: ディレクトリの作成に失敗しました: %v", err)
-			return "", err
-		}
-	}
-
-	// 一意のファイル名を生成
-	uniqueFilename := fmt.Sprintf("%d-%s", time.Now().UnixNano(), file.Filename)
-	savePath := filepath.Join(saveDir, uniqueFilename)
-	log.Printf("INFO: 画像の保存パス: %s", savePath)
-
-	if err := c.SaveUploadedFile(file, savePath); err != nil {
-		log.Printf("ERROR: 画像の保存に失敗しました: %v", err)
-		return "", err
-	}
-
-	// 相対パスを返す
-	if dir == "ingredients" {
-		return filepath.Join("ingredients", id, uniqueFilename), nil
-	} else if dir == "temp_uploads" {
-		return filepath.Join("temp", uniqueFilename), nil
-	} else {
-		return filepath.Join("recipes", id, dir, uniqueFilename), nil
-	}
-}
-
-// saveToSupabase はSupabase Storageに画像を保存
-func saveToSupabase(file *multipart.FileHeader, dir string, id string) (string, error) {
-	// 環境変数のチェック
-	supabaseKey := os.Getenv("SUPABASE_SERVICE_KEY")
-	if supabaseKey == "" {
-		log.Printf("ERROR: SUPABASE_SERVICE_KEY is not set")
-		return "", fmt.Errorf("SUPABASE_SERVICE_KEY is not set")
-	}
+// SaveImage は画像を保存し、URLを返す
+func SaveImage(c *gin.Context, file *multipart.FileHeader, path string, fileName string) (string, error) {
+	log.Printf("Starting SaveImage function with path: %s, fileName: %s", path, fileName)
 
 	// ファイルを開く
 	src, err := file.Open()
 	if err != nil {
-		log.Printf("ERROR: Failed to open file: %v", err)
+		log.Printf("Failed to open file: %v", err)
 		return "", fmt.Errorf("failed to open file: %v", err)
 	}
 	defer src.Close()
+	log.Printf("Successfully opened file: %s", file.Filename)
 
 	// ファイルの内容を読み込む
-	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, src); err != nil {
-		log.Printf("ERROR: Failed to read file content: %v", err)
+	fileContent, err := io.ReadAll(src)
+	if err != nil {
+		log.Printf("Failed to read file content: %v", err)
 		return "", fmt.Errorf("failed to read file content: %v", err)
 	}
+	log.Printf("Successfully read file content, size: %d bytes", len(fileContent))
 
-	// ファイルの拡張子を取得
-	ext := filepath.Ext(file.Filename)
-	if ext == "" {
-		ext = ".png" // デフォルトの拡張子
+	// ファイル名を生成
+	if fileName == "" {
+		ext := filepath.Ext(file.Filename)
+		fileName = fmt.Sprintf("%d_%s%s", time.Now().Unix(), uuid.New().String(), ext)
+		log.Printf("Generated new fileName: %s", fileName)
 	}
 
-	// 一意のファイル名を生成
-	uniqueFilename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+	// ファイルパスを生成
+	filePath := filepath.Join(path, fileName)
+	filePath = strings.ReplaceAll(filePath, "\\", "/") // Windowsのパス区切り文字を修正
+	log.Printf("Generated filePath: %s", filePath)
 
-	// パス名を構築（URLエンコードは各コンポーネントに対してのみ行う）
-	var filePath string
-	if dir == "ingredients" {
-		// 具材の画像の場合
-		if id == "" {
-			log.Printf("ERROR: 具材IDが指定されていません")
-			return "", fmt.Errorf("具材IDが指定されていません")
-		}
-		encodedID := url.PathEscape(id)
-		encodedFilename := url.PathEscape(uniqueFilename)
-		filePath = fmt.Sprintf("ingredients/%s/%s", encodedID, encodedFilename)
-	} else if dir == "temp_uploads" {
-		// 一時的なアップロードの場合
-		encodedFilename := url.PathEscape(uniqueFilename)
-		filePath = fmt.Sprintf("temp/%s", encodedFilename)
-	} else {
-		// レシピの画像の場合
-		if id == "" {
-			log.Printf("ERROR: レシピIDが指定されていません")
-			return "", fmt.Errorf("レシピIDが指定されていません")
-		}
-		encodedID := url.PathEscape(id)
-		encodedDir := url.PathEscape(dir)
-		encodedFilename := url.PathEscape(uniqueFilename)
-		filePath = fmt.Sprintf("recipes/%s/%s/%s", encodedID, encodedDir, encodedFilename)
+	// Get Supabase credentials
+	supabaseURL := os.Getenv("SUPABASE_URL")
+	supabaseKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+	log.Printf("Supabase URL: %s", supabaseURL)
+	log.Printf("Supabase Key exists: %v", supabaseKey != "")
+
+	// For local development, update the URL
+	if os.Getenv("ENVIRONMENT") == "development" {
+		supabaseURL = "http://host.docker.internal:54321"
+		log.Printf("Updated Supabase URL for Docker: %s", supabaseURL)
 	}
 
-	// Supabase Storageにアップロード
-	supabaseURL := "https://qmrjsqeigdkizkrpiahs.supabase.co/storage/v1/object/images/" + filePath
-	log.Printf("INFO: Uploading to Supabase URL: %s", supabaseURL)
-
-	req, err := http.NewRequest("PUT", supabaseURL, bytes.NewReader(buf.Bytes()))
+	// Initialize Supabase client
+	client, err := supabase.NewClient(supabaseURL, supabaseKey, nil)
 	if err != nil {
-		log.Printf("ERROR: Failed to create request: %v", err)
-		return "", fmt.Errorf("failed to create request: %v", err)
+		log.Printf("Failed to initialize Supabase client: %v", err)
+		return "", fmt.Errorf("failed to initialize Supabase client: %v", err)
 	}
+	log.Printf("Successfully initialized Supabase client")
 
-	// ヘッダーを設定
-	req.Header.Set("Content-Type", file.Header.Get("Content-Type"))
-	req.Header.Set("Authorization", "Bearer "+supabaseKey)
+	// Get file content type
+	contentType := file.Header.Get("Content-Type")
+	log.Printf("File content type: %s", contentType)
 
-	// リクエストを送信
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	// Try to delete existing file first
+	_, err = client.Storage.RemoveFile("images", []string{filePath})
 	if err != nil {
-		log.Printf("ERROR: Failed to send request: %v", err)
-		return "", fmt.Errorf("failed to send request: %v", err)
+		log.Printf("Warning: Failed to delete existing file: %v", err)
+		// Continue with upload even if deletion fails
 	}
-	defer resp.Body.Close()
 
-	// レスポンスの内容を読み込む
-	body, err := io.ReadAll(resp.Body)
+	// Create file options
+	upsert := true
+	fileOptions := storage_go.FileOptions{
+		ContentType: &contentType,
+		Upsert:      &upsert,
+	}
+
+	// Upload the file to Supabase Storage
+	_, err = client.Storage.UploadFile("images", filePath, bytes.NewReader(fileContent), fileOptions)
 	if err != nil {
-		log.Printf("ERROR: Failed to read response body: %v", err)
-	} else {
-		log.Printf("INFO: Response body: %s", string(body))
+		log.Printf("Failed to upload to Supabase Storage: %v", err)
+		return "", fmt.Errorf("failed to upload to Supabase Storage: %v", err)
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("ERROR: Upload failed with status: %d, body: %s", resp.StatusCode, string(body))
-		return "", fmt.Errorf("failed to upload image: status %d, body: %s", resp.StatusCode, string(body))
-	}
-
+	log.Printf("Successfully uploaded file to Supabase Storage")
 	return filePath, nil
 }
 
-// DeleteImage は環境に応じて画像を削除する
-func DeleteImage(imagePath string) error {
-	env := os.Getenv("GO_ENV")
-	if env == "production" {
-		return deleteFromSupabase(imagePath)
+// SaveRecipeImage はレシピの画像を保存する
+func SaveRecipeImage(c *gin.Context, file *multipart.FileHeader, recipeID string, isInstruction bool) (string, error) {
+	// パスを設定
+	basePath := "recipes"
+	if isInstruction {
+		basePath = filepath.Join(basePath, recipeID, "instructions")
+	} else {
+		basePath = filepath.Join(basePath, recipeID)
 	}
-	return deleteFromLocal(imagePath)
+
+	// ファイル名を生成（拡張子を保持）
+	ext := filepath.Ext(file.Filename)
+	fileName := fmt.Sprintf("%s%s", uuid.New().String(), ext)
+
+	// 画像を保存
+	imagePath, err := SaveImage(c, file, basePath, fileName)
+	if err != nil {
+		return "", err
+	}
+
+	// 相対パスのみを返す
+	return imagePath, nil
 }
 
-// deleteFromLocal はローカルストレージから画像を削除
-func deleteFromLocal(imagePath string) error {
-	// 先頭の/を除去
-	if strings.HasPrefix(imagePath, "/") {
-		imagePath = imagePath[1:]
-	}
-	// /uploads/を除去
-	if strings.HasPrefix(imagePath, "uploads/") {
-		imagePath = imagePath[8:]
-	}
+// DeleteImage は画像を削除する
+func DeleteImage(url string) error {
+	logrus.Printf("Starting DeleteImage function with URL: %s", url)
 
-	// パスの最初の部分で保存先を判定
-	parts := strings.Split(imagePath, "/")
-	if len(parts) < 2 {
-		return fmt.Errorf("invalid image path: %s", imagePath)
-	}
-
-	var fullPath string
-	switch parts[0] {
-	case "ingredients":
-		// 具材の画像の場合
-		fullPath = filepath.Join(".", "uploads", imagePath)
-	case "recipes":
-		// レシピの画像の場合
-		fullPath = filepath.Join(".", "uploads", imagePath)
-	case "temp":
-		// 一時的な画像の場合
-		fullPath = filepath.Join(".", "uploads", imagePath)
-	default:
-		return fmt.Errorf("invalid image type: %s", parts[0])
+	// Extract file path from URL
+	var filePath string
+	if strings.HasPrefix(url, "http") {
+		// If it's a full URL, extract the path after /object/public/
+		parts := strings.Split(url, "/object/public/")
+		if len(parts) != 2 {
+			logrus.Printf("Invalid image URL format: %s", url)
+			return fmt.Errorf("invalid image URL format")
+		}
+		filePath = parts[1]
+	} else {
+		// If it's just a path, use it directly
+		filePath = url
 	}
 
-	return os.Remove(fullPath)
-}
+	logrus.Printf("Extracted file path: %s", filePath)
 
-// deleteFromSupabase はSupabase Storageから画像を削除
-func deleteFromSupabase(imagePath string) error {
-	supabaseURL := "https://qmrjsqeigdkizkrpiahs.supabase.co/storage/v1/object/public/images/" + imagePath
-	req, err := http.NewRequest("DELETE", supabaseURL, nil)
+	// Get Supabase credentials
+	supabaseURL := os.Getenv("SUPABASE_URL")
+	supabaseKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+	logrus.Printf("Supabase URL: %s", supabaseURL)
+	logrus.Printf("Supabase Key exists: %v", supabaseKey != "")
+
+	// For local development, update the URL
+	if os.Getenv("ENVIRONMENT") == "development" {
+		supabaseURL = "http://host.docker.internal:54321"
+		logrus.Printf("Updated Supabase URL for Docker: %s", supabaseURL)
+	}
+
+	// Initialize Supabase client
+	client, err := supabase.NewClient(supabaseURL, supabaseKey, nil)
 	if err != nil {
-		return err
+		logrus.Printf("Failed to initialize Supabase client: %v", err)
+		return fmt.Errorf("failed to initialize Supabase client: %v", err)
 	}
+	logrus.Printf("Successfully initialized Supabase client")
 
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("SUPABASE_SERVICE_KEY"))
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	// Delete the file from Supabase Storage
+	_, err = client.Storage.RemoveFile("images", []string{filePath})
 	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to delete image: %s", resp.Status)
+		logrus.Printf("Failed to delete file from Supabase Storage: %v", err)
+		return fmt.Errorf("failed to delete from Supabase Storage: %v", err)
 	}
 
+	logrus.Printf("Successfully deleted file from Supabase Storage")
 	return nil
 }

@@ -1,0 +1,123 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# BEM記法のルール
+
+このプロジェクトでは、CSS ModulesとBEM記法を使用しています。
+下記のルールに従ってクラス名を命名してください。
+
+## 命名規則
+
+### ブロック（Block）
+- 一番上の要素は`xxx_block`と命名する
+- 例：`help_block`、`tooltip_block`
+
+### 要素（Element）
+- ブロック内の要素は`ブロック名__要素名`と命名する
+- アンダーバー2つ（`__`）を使用して接続する
+- 例：`help_block__title`、`tooltip_block__content`
+
+### モディファイア（Modifier）
+- 要素のバリエーションは`要素名--バリエーション名`と命名する
+- ハイフン2つ（`--`）を使用して接続する
+- 例：`tooltip_block__content--top`、`tooltip_block__content--bottom`
+
+## 重要なルール
+
+1. **アンダーバーの使用制限**
+   - 一つのクラス名に`__`を2回以上使用しない
+   - 誤：`help_block__section__title`
+   - 正：`help_section_block__title`
+
+2. **ブロックの分割**
+   - 要素が増えすぎた場合は、新しいブロックとして分割する
+   - 例：
+     ```tsx
+     // 誤
+     <div className={styles.help_block__section__content__list__item}>
+     
+     // 正
+     <div className={styles.help_content_block__list__item}>
+     ```
+
+3. **SCSSの記法**
+   - ネストを使用してBEMの構造を表現する
+   - `&__`を使用して要素を記述する
+   - 例：
+     ```scss
+     .help_block {
+       &__title {
+         // スタイル
+       }
+     }
+     ```
+
+## 実装例
+
+### TSX
+```tsx
+<div className={styles.help_block}>
+  <h1 className={styles.help_block__title}>ヘルプセンター</h1>
+  
+  <section className={styles.help_section_block}>
+    <h2 className={styles.help_section_block__title}>セクションタイトル</h2>
+    <div className={styles.help_content_block}>
+      <h3 className={styles.help_content_block__subtitle}>サブタイトル</h3>
+      <ul className={styles.help_content_block__list}>
+        <li className={styles.help_content_block__list__item}>リストアイテム</li>
+      </ul>
+    </div>
+  </section>
+</div>
+```
+
+### SCSS
+```scss
+.help_block {
+  &__title {
+    font-size: 2rem;
+  }
+}
+
+.help_section_block {
+  &__title {
+    font-size: 1.5rem;
+  }
+}
+
+.help_content_block {
+  &__subtitle {
+    font-size: 1.2rem;
+  }
+
+  &__list {
+    &__item {
+      margin-bottom: 0.5rem;
+    }
+  }
+}
+```
+
+## モディファイアの例
+
+```tsx
+<div className={`${styles.tooltip_block__content} ${styles['tooltip_block__content--top']}`}>
+  ツールチップの内容
+</div>
+```
+
+```scss
+.tooltip_block {
+  &__content {
+    &--top {
+      // トップ位置のスタイル
+    }
+    
+    &--bottom {
+      // ボトム位置のスタイル
+    }
+  }
+}
+```

@@ -1,0 +1,126 @@
+@import "@/app/styles/config/breakpoints";
+@import "@/app/styles/config/device";
+
+.my_recipe_block {
+  padding: 32px;
+  @include mq-max("sp") {
+    padding: 20px;
+  }
+
+  &__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    gap: 15px;
+  }
+
+  &__title {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--primary-font-color);
+    @include mq-max("sp") {
+      font-size: 1.5rem;
+    }
+  }
+
+  &__count {
+    font-size: 1.25rem;
+    font-weight: 400;
+    color: var(--primary-font-color);
+    font-family: var(--font-roboto);
+    span {
+      font-size: 1rem;
+      color: var(--primary-font-color);
+      font-family: "Noto Sans JP";
+    }
+  }
+
+  &__content {
+    margin-top: 24px;
+    @include mq-max("sp") {
+      margin-top: 16px;
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    @include mq-max("sp") {
+      gap: 8px;
+    }
+  }
+
+  &__card {
+    aspect-ratio: 2 / 3;
+    cursor: pointer;
+  }
+}
+
+.sort_block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 15px;
+  margin-top: 18px;
+
+  &__box {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  &__genre {
+    select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: #fff;
+      cursor: pointer;
+
+      &:focus {
+        outline: none;
+        border-color: var(--primary-accent-color);
+      }
+    }
+  }
+
+  &__sort {
+    select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: #fff;
+      cursor: pointer;
+
+      &:focus {
+        outline: none;
+        border-color: var(--primary-accent-color);
+      }
+    }
+  }
+
+  &__search {
+    input {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      width: 289px;
+      transition: border-color 0.2s;
+
+      &:focus {
+        outline: none;
+        border-color: var(--primary-accent-color);
+      }
+
+      &::placeholder {
+        color: #999;
+      }
+    }
+  }
+}

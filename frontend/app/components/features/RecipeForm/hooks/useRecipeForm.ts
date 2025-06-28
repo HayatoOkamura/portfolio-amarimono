@@ -1,16 +1,19 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/app/stores/userStore";
+import { useAuth } from "@/app/hooks/useAuth";
 import { useAddRecipe, useUpdateRecipe } from "@/app/hooks/recipes";
 import { RecipeFormData, RecipeFormProps } from "../types/recipeForm";
 import { validateDraft, validateRecipe, VALIDATION_MESSAGES } from "../constants/validationMessages";
 import { createFormData } from "@/app/utils/formDataUtils";
+import { useUnits } from "@/app/hooks/units";
+import toast from "react-hot-toast";
 
 export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProps) => {
   const router = useRouter();
-  const { user } = useUserStore();
+  const { user } = useAuth();
   const addRecipeMutation = useAddRecipe();
   const updateRecipeMutation = useUpdateRecipe();
+  const { data: units } = useUnits();
 
   const [formData, setFormData] = useState<RecipeFormData>({
     name: "",
@@ -24,7 +27,6 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
       carbohydrates: 0,
       fat: 0,
       protein: 0,
-      sugar: 0,
       salt: 0,
     },
     ingredients: [],
@@ -33,7 +35,7 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
     imageUrl: undefined,
     isPublic: true,
     isDraft: false,
-    faq: initialRecipe?.faq || [],
+    faq: initialRecipe?.faq || [{ question: "", answer: "" }],
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +48,9 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
         ingredients: initialRecipe.ingredients?.map(ing => ({
           id: ing.id,
           quantity: ing.quantity,
-          unitId: ing.unitId
+          unitId: ing.unitId,
+          name: ing.name || '',
+          unit: ing.unit || ''
         })) || [],
         faq: initialRecipe.faq || [],
         instructions: initialRecipe.instructions || [{ step: 1, description: "", imageURL: undefined }],
@@ -55,7 +59,6 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
           carbohydrates: 0,
           fat: 0,
           protein: 0,
-          sugar: 0,
           salt: 0,
         }
       };
@@ -83,7 +86,6 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
         carbohydrates: 0,
         fat: 0,
         protein: 0,
-        sugar: 0,
         salt: 0,
       },
       ingredients: [],
@@ -92,7 +94,7 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
       imageUrl: undefined,
       isPublic: true,
       isDraft: false,
-      faq: [],
+      faq: [{ question: "", answer: "" }],
     });
   }, []);
 
@@ -100,39 +102,57 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
     try {
       setIsLoading(true);
       
+      if (!user?.id) {
+        throw new Error("ユーザーIDが見つかりません。ログインしてください。");
+      }
+
       validateRecipe(formData);
 
       const recipeToSubmit = {
         ...formData,
         isDraft: false,
+        ingredients: formData.ingredients.map(ing => {
+          const selectedUnit = units?.find(u => u.name === ing.unit);
+          return {
+            ...ing,
+            unitId: selectedUnit?.id || ing.unitId
+          };
+        })
       };
-      console.log("recipeToSubmit🔥🔥", recipeToSubmit);
 
-      const formDataToSubmit = createFormData(recipeToSubmit, user?.id, isAdmin, false);
+      const formDataToSubmit = createFormData(recipeToSubmit, user.id, isAdmin, false);
 
       if (initialRecipe?.id) {
         await updateRecipeMutation.mutateAsync({
           id: initialRecipe.id,
           formData: formDataToSubmit,
         });
+        if (isAdmin) {
+          router.push("/admin/recipes/");
+        } else {
+          router.push("/user/recipes/");
+        }
       } else {
         await addRecipeMutation.mutateAsync({
           formData: formDataToSubmit,
-          userId: user?.id,
+          userId: user.id,
           isPublic: formData.isPublic,
         });
+        if (isAdmin) {
+          router.push("/admin/recipes/");
+        } else {
+          router.push("/user/recipes/");
+        }
       }
 
-      resetFormData();
-      alert(VALIDATION_MESSAGES.SUCCESS);
-
-      if (isAdmin) {
-        router.push("/admin/recipes");
+      if (!initialRecipe?.id) {
+        resetFormData();
       }
+      toast.success(VALIDATION_MESSAGES.SUCCESS);
     } catch (error) {
       console.error('Error in handleSubmit:', error);
       console.error(VALIDATION_MESSAGES.ERROR, error);
-      alert(error instanceof Error ? error.message : VALIDATION_MESSAGES.ERROR);
+      toast.error(error instanceof Error ? error.message : VALIDATION_MESSAGES.ERROR);
     } finally {
       setIsLoading(false);
     }
@@ -143,41 +163,38 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
       setSaveStatus("saving");
       validateDraft(formData);
 
-      if (user?.id) {
-        const draftRecipe = {
-          ...formData,
-          isDraft: true,
-        };
-
-        const formDataToSubmit = createFormData(draftRecipe, user.id, isAdmin, false);
-        formDataToSubmit.append("is_draft", "true");
-
-        if (initialRecipe?.id) {
-          await updateRecipeMutation.mutateAsync({
-            id: initialRecipe.id,
-            formData: formDataToSubmit,
-          });
-        } else {
-          await addRecipeMutation.mutateAsync({
-            formData: formDataToSubmit,
-            userId: user.id,
-            isPublic: false,
-            isDraft: true,
-          });
-        }
-
-        setSaveStatus("saved");
-        setTimeout(() => setSaveStatus("idle"), 2000);
-        alert(VALIDATION_MESSAGES.DRAFT_SAVED);
-      } else {
-        localStorage.setItem("draftRecipe", JSON.stringify(formData));
-        setSaveStatus("saved");
-        setTimeout(() => setSaveStatus("idle"), 2000);
-        alert(VALIDATION_MESSAGES.DRAFT_SAVED_LOCAL);
+      if (!user?.id) {
+        throw new Error("ユーザーIDが見つかりません。ログインしてください。");
       }
+
+      const draftRecipe = {
+        ...formData,
+        isDraft: true,
+      };
+
+      const formDataToSubmit = createFormData(draftRecipe, user.id, isAdmin, false);
+      formDataToSubmit.append("is_draft", "true");
+
+      if (initialRecipe?.id) {
+        await updateRecipeMutation.mutateAsync({
+          id: initialRecipe.id,
+          formData: formDataToSubmit,
+        });
+      } else {
+        await addRecipeMutation.mutateAsync({
+          formData: formDataToSubmit,
+          userId: user.id,
+          isPublic: false,
+          isDraft: true,
+        });
+      }
+
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+      toast.success(VALIDATION_MESSAGES.DRAFT_SAVED);
     } catch (error) {
       console.error("Failed to save draft:", error);
-      alert(error instanceof Error ? error.message : VALIDATION_MESSAGES.DRAFT_SAVE_ERROR);
+      toast.error(error instanceof Error ? error.message : VALIDATION_MESSAGES.DRAFT_SAVE_ERROR);
       setSaveStatus("idle");
     }
   }, [formData, user?.id, isAdmin, initialRecipe, addRecipeMutation, updateRecipeMutation]);

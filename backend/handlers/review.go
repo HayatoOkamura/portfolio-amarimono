@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 
 	"portfolio-amarimono/models"
@@ -27,14 +26,12 @@ func (h *ReviewHandler) AddReview(c *gin.Context) {
 	var review models.Review
 
 	// リクエストボディを review 構造体に直接バインド
-	if err := c.ShouldBindJSON(&review); err != nil {
-		log.Printf("Failed to parse request body: %v", err)
+	if err := c.ShouldBindJSON(&review); err != nil {	
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format", "details": err.Error()})
 		return
 	}
 
 	if err := h.DB.Create(&review).Error; err != nil {
-		log.Printf("Failed to create review: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add review"})
 		return
 	}
@@ -49,7 +46,6 @@ func (h *ReviewHandler) GetReviewsByRecipeID(c *gin.Context) {
 
 	// レシピIDに紐づくレビューを検索
 	if err := h.DB.Where("recipe_id = ?", recipeID).Find(&reviews).Error; err != nil {
-		log.Printf("Failed to fetch reviews: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch reviews"})
 		return
 	}
@@ -64,7 +60,6 @@ func (h *ReviewHandler) GetReviewsByUserID(c *gin.Context) {
 
 	// ユーザーIDに紐づくレビューを検索
 	if err := h.DB.Where("user_id = ?", userIDStr).Find(&reviews).Error; err != nil {
-		log.Printf("Failed to fetch reviews: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch reviews"})
 		return
 	}

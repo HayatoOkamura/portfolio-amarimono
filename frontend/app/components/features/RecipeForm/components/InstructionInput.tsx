@@ -1,9 +1,12 @@
+"use client";
+
 import React from "react";
 import { useImageUpload } from "../hooks/useImageUpload";
 import { RecipeFormData } from "../types/recipeForm";
 import { VALIDATION_MESSAGES } from "../constants/validationMessages";
 import { imageBaseUrl } from "@/app/utils/api";
 import styles from "./InstructionInput.module.scss";
+import toast from "react-hot-toast";
 import {
   DndContext,
   closestCenter,
@@ -22,6 +25,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { FaCirclePlus } from "react-icons/fa6";
 import { FaGripLines, FaTrash } from "react-icons/fa";
 import { LuImagePlus } from "react-icons/lu";
+import Image from "next/image";
 
 interface SortableItemProps {
   id: string;
@@ -105,7 +109,7 @@ export const InstructionInput = ({
 
   const handleDeleteInstruction = (index: number) => {
     if (instructions.length === 1) {
-      alert(VALIDATION_MESSAGES.MIN_INSTRUCTIONS);
+      toast.error(VALIDATION_MESSAGES.MIN_INSTRUCTIONS);
       return;
     }
 
@@ -152,7 +156,7 @@ export const InstructionInput = ({
                   <div className={styles.instruction_block__image_container}>
                     {instruction.imageURL ? (
                       <>
-                        <img
+                        <Image
                           src={
                             instruction.imageURL instanceof File
                               ? URL.createObjectURL(instruction.imageURL)
@@ -165,6 +169,8 @@ export const InstructionInput = ({
                           }
                           alt={`Step ${instruction.step}`}
                           className={styles.instruction_block__image}
+                          width={100}
+                          height={100}
                         />
                         <div
                           className={styles.instruction_block__image_overlay}

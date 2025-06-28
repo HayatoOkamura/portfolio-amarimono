@@ -26,7 +26,7 @@ export const validateRecipe = (recipe: any) => {
   const requiredFields = [
     { field: recipe.name?.trim(), name: "レシピ名" },
     { field: recipe.summary?.trim(), name: "概要" },
-    { field: recipe.catchphrase?.trim(), name: "キャッチフレーズ" },
+    { field: recipe.catchphrase?.trim(), name: "ひとこと紹介" },
     { field: recipe.genre !== "すべて", name: "ジャンル" },
     { field: recipe.cookingTime > 0, name: "調理時間" },
     { field: recipe.costEstimate > 0, name: "予算" },

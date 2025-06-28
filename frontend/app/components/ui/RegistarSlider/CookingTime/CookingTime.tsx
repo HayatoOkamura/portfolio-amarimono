@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import styles from "./CookingTime.module.scss";
 
 type CookingTimeSelectorProps = {
   cookingTime: number;
@@ -33,21 +34,21 @@ const CookingTimeSelector: React.FC<CookingTimeSelectorProps> = ({
   );
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className={styles.cooking_time_block}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="border p-2 rounded w-full bg-gray-200"
+        className={styles.cooking_time_block__button}
       >
         {cookingTime ? formatTime(cookingTime) : "時間を選択"}
       </button>
 
       {isOpen && (
-        <div className="absolute mt-2 w-full bg-white border rounded shadow-md max-h-60 overflow-y-auto z-10">
+        <div className={styles.cooking_time_block__list}>
           {timeOptions.map((time) => (
             <div
               key={time}
               onClick={() => handleSelectTime(time)}
-              className="p-2 hover:bg-gray-100 cursor-pointer"
+              className={styles.cooking_time_block__item}
             >
               {formatTime(time)}
             </div>

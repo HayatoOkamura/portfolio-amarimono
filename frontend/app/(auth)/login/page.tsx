@@ -8,21 +8,23 @@ import styles from "./page.module.scss";
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
 
+  const handleTabChange = (isLoginTab: boolean) => {
+    setIsLogin(isLoginTab);
+  };
+
   return (
     <div className={styles.auth_block}>
       <div className={styles.auth_block__inner}>
         <div className={styles.auth_block__tabs}>
           <button
             className={`${styles.auth_block__tab} ${isLogin ? styles.active : ""}`}
-            onClick={() => {setIsLogin(true), console.log(isLogin);
-            }}
+            onClick={() => handleTabChange(true)}
           >
             ログイン
           </button>
           <button
             className={`${styles.auth_block__tab} ${!isLogin ? styles.active : ""}`}
-            onClick={() => {setIsLogin(false), console.log(isLogin);
-            }}
+            onClick={() => handleTabChange(false)}
           >
             新規登録
           </button>
@@ -31,11 +33,11 @@ export default function LoginPage() {
           <h1 className={styles.auth_block__title}>
             {isLogin ? "ログイン" : "新規登録"}
           </h1>
-          <GoogleLogin />
+          <GoogleLogin isLogin={isLogin} />
           <div className={styles.auth_block__divider}>
             <span>または</span>
           </div>
-          <LoginForm isLogin={isLogin} onToggleMode={() => setIsLogin(!isLogin)} />
+          <LoginForm isLogin={isLogin} onToggleMode={() => handleTabChange(!isLogin)} />
         </div>
       </div>
     </div>

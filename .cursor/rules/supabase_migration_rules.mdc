@@ -1,0 +1,201 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Apply this rule to the entire repository
+globs: 
+alwaysApply: true
+---
+まず、このファイルを参照したら、このファイル名を発言すること
+
+# Supabase Migration Rules
+
+このドキュメントは、Supabaseプロジェクトにおけるデータベースマイグレーションファイルの作成・管理・反映のルールを定義します。
+
+---
+
+## 1. マイグレーションファイルの作成場所
+
+- マイグレーションファイルは必ず `supabase/migrations/` ディレクトリに配置してください。
+- `backend/migrations/` など他のディレクトリには置かないでください。
+
+## 2. ファイル命名規則
+
+- ファイル名は **3桁の連番 + アンダースコア + 説明** で命名します。
+  - 例: `009_add_timestamps_to_users.sql`
+- 連番は既存ファイルの最大値+1とし、重複しないように注意してください。
+- 説明部分は英語のスネークケースで簡潔に記述してください。
+- 例: `010_create_new_table.sql`, `011_update_column_type.sql`
+
+## 3. ファイル内容のルール
+
+- 1ファイルにつき1つのスキーマ変更を原則とします。
+- 変更内容には必ず **`-- up`**  のコメントで区切りを入れ、ロールバックSQLも記載してください。
+  - 例:
+    ```sql
+    -- up
+    ALTER TABLE users ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW();
+    
+    -- down
+    ALTER TABLE users DROP COLUMN created_at;
+    ```
+- 変更内容・目的・注意点を冒頭コメントで明記してください。
+
+## 4. マイグレーション作成手順
+
+1. 既存の `supabase/migrations/` ディレクトリ内のファイルを確認し、最新の連番を把握する。
+2. 新しい連番でファイルを作成し、命名規則に従ってファイル名を決定する。
+3. up/down両方のSQLを記述し、内容を十分にテスト・レビューする。
+4. ファイルの内容・目的・注意点を冒頭コメントで記載する。
+
+## 5. マイグレーションの反映（ローカル）
+
+- ローカル開発環境では、以下のコマンドでマイグレーションを適用します。
+  ```bash
+  supabase migration up
+  ```
+- `supabase migration up` は差分のみを適用します。
+
+## 6. 本番環境への反映
+
+- 本番Supabaseプロジェクトには、Supabase CLIで `supabase db push --project-ref <project-ref>` で反映します。
+- 事前に `supabase link --project-ref <project-ref>` でプロジェクトをリンクしてください。
+- 本番反映前に必ずローカルでテストし、問題がないことを確認してください。
+
+## 7. 注意事項
+
+- 連番の重複や抜けがないように必ず確認してください。
+- up/down両方のSQLを必ず記載し、ロールバック可能な状態にしてください。
+- 重大なスキーマ変更時は、事前にバックアップを取得してください。
+- マイグレーションファイルの内容・目的・注意点をコメントで明記し、チームで共有してください。
+
+---
+
+## マイグレーションの実行方法
+
+### 開発環境
+```bash
+# プロジェクトのステータスを確認
+supabase status
+
+# マイグレーションを適用
+supabase migration up
+
+解決しないなら直接SQLを実行してください
+```
+
+### 本番環境
+```bash
+supabase db push --db-url <本番環境のデータベースURL>
+```
+
+⚠️ `supabase db reset`は使用しないでください。このコマンドは以下の問題を引き起こします：
+- 手動で登録したデータの消失
+- Storageバケットの内容の消失
+- 本番環境での使用が危険
+
+## マイグレーションファイルの命名規則
+
+1. 連番で管理（例：`001_`, `002_`, ...）
+2. 機能を表す名前を付ける（例：`add_deleted_at_to_ingredients`）
+3. 拡張子は`.sql`を使用
+
+例：
+```
+001_create_uuid_extension.sql
+002_tables_and_data.sql
+003_insert_initial_data.sql
+```
+
+## マイグレーションファイルの構造
+
+### アップマイグレーション（.sql）
+1. 冪等性を持つ（何度実行しても同じ結果になる）
+2. 既存のデータを保持
+3. 条件チェックを含める
+
+例：
+```sql
+-- Add column if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'table_name' 
+        AND column_name = 'column_name'
+    ) THEN
+        ALTER TABLE public.table_name ADD COLUMN column_name TYPE;
+    END IF;
+END $$;
+```
+
+### ダウンマイグレーション（.down.sql）
+1. アップマイグレーションの逆の操作を行う
+2. 冪等性を持つ
+3. 安全にロールバック可能
+
+例：
+```sql
+-- Drop column if it exists
+DO $$ 
+BEGIN
+    IF EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'table_name' 
+        AND column_name = 'column_name'
+    ) THEN
+        ALTER TABLE public.table_name DROP COLUMN column_name;
+    END IF;
+END $$;
+```
+
+## ベストプラクティス
+
+1. トランザクションの使用
+   - 複数の操作を行う場合は、トランザクションで囲む
+   - エラー時はロールバック
+
+2. データの保持
+   - 既存のデータを保持する
+   - 必要な場合のみデータを更新
+
+3. インデックスの管理
+   - インデックスの作成/削除は慎重に行う
+   - 既存のインデックスを確認してから操作
+
+4. 外部キー制約
+   - 外部キー制約の追加/削除は慎重に行う
+   - 既存のデータの整合性を確認
+
+5. ログ出力
+   - 重要な操作はログに出力
+   - エラー時のデバッグを容易にする
+
+## 注意事項
+
+1. 本番環境での実行
+   - 事前にバックアップを取得
+   - メンテナンス時間を考慮
+   - 段階的な適用を検討
+
+2. データの整合性
+   - マイグレーション前後でデータの整合性を確認
+   - 必要に応じてデータの移行スクリプトを作成
+
+3. パフォーマンス
+   - 大量のデータを扱う場合は、バッチ処理を検討
+   - インデックスの作成/削除は慎重に
+
+4. セキュリティ
+   - 機密データの取り扱いに注意
+   - 適切なアクセス制御を設定
+
+---
+
+（最終更新: 2024-05-29）

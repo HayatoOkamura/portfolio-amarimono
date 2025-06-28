@@ -16,13 +16,14 @@ export interface RecipeFormData {
     carbohydrates: number;
     fat: number;
     protein: number;
-    sugar: number;
     salt: number;
   };
   ingredients: Array<{
     id: number;
     quantity: number;
     unitId: number;
+    name: string;
+    unit: string;
   }>;
   instructions: Array<{
     step: number;

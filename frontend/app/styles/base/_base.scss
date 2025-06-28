@@ -1,0 +1,19 @@
+html {
+  font-size: 16px; 
+  font-family: "Noto sans JP", "Roboto", sans-serif;
+}
+
+body {
+  color: var(--primary-font-color);
+  background: var(--primary-bg-color);
+  overflow: hidden;
+}
+
+main {
+  height: calc(100svh - 65px);
+  overflow-y: auto;
+
+  @include mq-max("sp") {
+    height: calc(100svh - 61px);
+  }
+}

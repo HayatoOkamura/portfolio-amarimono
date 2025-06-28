@@ -1,4 +1,3 @@
-/* eslint-disable */
 "use client";
 
 import React from "react";
@@ -11,17 +10,26 @@ import { ImSpoonKnife } from "react-icons/im";
 import { FaListUl } from "react-icons/fa";
 import { BsPencilSquare } from "react-icons/bs";
 import { FaHeart } from "react-icons/fa";
-import { IoLogOut } from "react-icons/io5";
-import { IoLogIn } from "react-icons/io5";
+import { FaCog } from "react-icons/fa";
+import { CgSmartHomeRefrigerator } from "react-icons/cg";
 import { useUserStore } from "@/app/stores/userStore";
+import ClientAuthMenu from "./ClientAuthMenu";
+import { useAuth } from "@/app/hooks/useAuth";
 
-const Header = () => {
-  const { user, signOut } = useUserStore();
-  const pathname = usePathname(); // 現在のパスを取得
+const SideHeader = () => {
+  const { user } = useUserStore();
+  const pathname = usePathname();
+  const { user: authUser, isLoading } = useAuth();
+  const isAdmin = authUser?.role === "admin";
 
   // 現在のパスがリンク先と一致すれば is-active を付与
-  const getActiveClass = (paths: string[]) =>
-    paths.includes(pathname) ? styles["is-active"] : "";
+  const getActiveClass = (paths: string[], exactMatch: boolean = false) => {
+    return paths.some(path => 
+      exactMatch 
+        ? pathname === path 
+        : pathname === path || pathname.startsWith(path + '/')
+    ) ? styles["is-active"] : "";
+  };
 
   return (
     <header className={styles.header_block}>
@@ -48,70 +56,77 @@ const Header = () => {
               <p className={styles.header_block__text}>具材から探す</p>
             </Link>
           </div>
-          <div
-            className={`${styles.header_block__icon} ${getActiveClass([
-              "/user",
-            ])}`}
-          >
-            <Link href="/user/">
-              <FaUserCircle />
-              <p className={styles.header_block__text}>マイページ</p>
-            </Link>
-          </div>
-          <div
-            className={`${styles.header_block__icon} ${getActiveClass([
-              "/recipes/new",
-            ])}`}
-          >
-            <Link href="/recipes/new/">
-              <BsPencilSquare />
-              <p className={styles.header_block__text}>レシピ登録</p>
-            </Link>
-          </div>
-          <div
-            className={`${styles.header_block__icon} ${getActiveClass([
-              "/recipes/my",
-            ])}`}
-          >
-            <Link href="/recipes/my/">
-              <FaListUl />
-              <p className={styles.header_block__text}>レシピ一覧</p>
-            </Link>
-          </div>
-          <div
-            className={`${styles.header_block__icon} ${getActiveClass([
-              "/favorite",
-            ])}`}
-          >
-            <Link href="/favorite/">
-              <FaHeart />
-              <p className={styles.header_block__text}>Favorite</p>
-            </Link>
-          </div>
-          {user ? (
-            <div
-              className={`${styles.header_block__icon} ${styles["header_block__icon--foot"]}`}
-              onClick={signOut}
-            >
-              <a>
-                <IoLogOut />
-                <p className={styles.header_block__text}>Logout</p>
-              </a>
+          {user && (
+            <div className={styles.header_block__group}>
+              <div
+                className={`${styles.header_block__icon} ${getActiveClass([
+                  "/user",
+                ])}`}
+              >
+                <Link href="/user/">
+                  <FaUserCircle />
+                  <p className={styles.header_block__text}>マイページ</p>
+                </Link>
+              </div>
+              <div
+                className={`${styles.header_block__icon} ${
+                  styles["header_block__icon--child"]
+                } ${getActiveClass(["/user/recipes/new"], true)}`}
+              >
+                <Link href="/user/recipes/new/">
+                  <BsPencilSquare />
+                  <p className={styles.header_block__text}>レシピ登録</p>
+                </Link>
+              </div>
+              <div
+                className={`${styles.header_block__icon} ${
+                  styles["header_block__icon--child"]
+                } ${getActiveClass(["/user/recipes"], true)}`}
+              >
+                <Link href="/user/recipes/">
+                  <FaListUl />
+                  <p className={styles.header_block__text}>レシピ一覧</p>
+                </Link>
+              </div>
+              <div
+                className={`${styles.header_block__icon} ${
+                  styles["header_block__icon--child"]
+                } ${getActiveClass(["/user/settings"], true)}`}
+              >
+                <Link href="/user/settings/">
+                  <CgSmartHomeRefrigerator />
+                  <p className={styles.header_block__text}>具材の登録</p>
+                </Link>
+              </div>
+              <div
+                className={`${styles.header_block__icon} ${
+                  styles["header_block__icon--child"]
+                } ${getActiveClass(["/user/favorite"], true)}`}
+              >
+                <Link href="/user/favorite/">
+                  <FaHeart />
+                  <p className={styles.header_block__text}>お気に入り</p>
+                </Link>
+              </div>
             </div>
-          ) : (
+          )}
+          {!isLoading && isAdmin && (
             <div
-              className={`${styles.header_block__icon} ${styles["header_block__icon--foot"]}`}
+              className={`${styles.header_block__icon} ${getActiveClass([
+                "/admin",
+              ], false)}`}
             >
-              <Link href="/login/">
-                <IoLogIn />
-                <p className={styles.header_block__text}>Login</p>
+              <Link href="/admin/">
+                <FaCog />
+                <p className={styles.header_block__text}>管理画面</p>
               </Link>
             </div>
           )}
+          <ClientAuthMenu />
         </div>
       </div>
     </header>
   );
 };
 
-export default Header;
+export default SideHeader;

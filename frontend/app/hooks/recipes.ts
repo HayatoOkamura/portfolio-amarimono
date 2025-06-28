@@ -1,11 +1,13 @@
 /* eslint-disable */
 "use client"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { Recipe, Instruction, Ingredient, Review } from "../types/index";
 import { backendUrl, handleApiResponse } from "../utils/api";
 import useRecipeStore from "@/app/stores/recipeStore";
 import { sortRecipes } from "@/app/utils/sortRecipes";
 import { api } from "@/app/utils/api";
+import { SearchMode } from "@/app/stores/ingredientStore";
+import toast from "react-hot-toast";
 
 interface ApiInstruction {
   stepNumber: number;
@@ -22,6 +24,7 @@ interface ApiIngredient {
       name: string;
       description: string;
       step: number;
+      type: 'presence' | 'quantity';
     } | null;
   };
   quantity_required: number;
@@ -57,7 +60,6 @@ interface ApiRecipe {
     carbohydrates: number;
     fat: number;
     protein: number;
-    sugar: number;
     salt: number;
   } | null;
   nutrition_percentage: {
@@ -65,7 +67,6 @@ interface ApiRecipe {
     carbohydrates: number;
     fat: number;
     protein: number;
-    sugar: number;
     salt: number;
   } | null;
   faq: { question: string; answer: string }[];
@@ -96,7 +97,6 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
     carbohydrates: 0,
     fat: 0,
     protein: 0,
-    sugar: 0,
     salt: 0,
   };
 
@@ -105,6 +105,10 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
     id: recipe.genre_id,
     name: recipe.genre?.name || ''
   } : recipe.genre;
+
+  const isSeasoningUnit = (unitName: string) => {
+    return ['大さじ', '小さじ', '適量', '少々', 'ひとつまみ'].includes(unitName);
+  };
 
   return {
     id: recipe.id,
@@ -118,15 +122,25 @@ export const mapRecipe = (recipe: ApiRecipe): Recipe => {
     ingredients: (recipe.ingredients || []).map((ingredient) => ({
       id: ingredient.ingredient_id,
       name: ingredient.ingredient.name,
+      englishName: ingredient.ingredient.name,
       quantity: ingredient.quantity_required,
       unit: {
         id: ingredient.ingredient.unit?.id || 0,
         name: ingredient.ingredient.unit?.name || "",
         description: ingredient.ingredient.unit?.description || "",
-        step: ingredient.ingredient.unit?.step || 1
+        step: ingredient.ingredient.unit?.step || 1,
+        type: ingredient.ingredient.unit?.name === "presence" ? "presence" : "quantity"
       },
       genre: { id: 0, name: "すべて" },
       imageUrl: null,
+      nutrition: {
+        calories: 0,
+        carbohydrates: 0,
+        fat: 0,
+        protein: 0,
+        salt: 0
+      },
+      gramEquivalent: 0
     })),
     genre: genre,
     imageUrl: recipe.image_url || undefined,
@@ -158,7 +172,6 @@ export const mapRecipes = (data: ApiRecipe[]): Recipe[] => {
     carbohydrates: 0,
     fat: 0,
     protein: 0,
-    sugar: 0,
     salt: 0,
   };
 
@@ -176,18 +189,28 @@ export const mapRecipes = (data: ApiRecipe[]): Recipe[] => {
     ingredients: (recipe.ingredients || []).map((ingredient) => ({
       id: ingredient.ingredient_id,
       name: ingredient.ingredient.name,
+      englishName: ingredient.ingredient.name,
       quantity: ingredient.quantity_required,
       unit: {
         id: ingredient.ingredient.unit?.id || 0,
         name: ingredient.ingredient.unit?.name || "",
         description: ingredient.ingredient.unit?.description || "",
-        step: ingredient.ingredient.unit?.step || 1
+        step: ingredient.ingredient.unit?.step || 1,
+        type: ingredient.ingredient.unit?.name === "presence" ? "presence" : "quantity"
       },
       genre: {
         id: 0,
         name: ''
       },
-      imageUrl: null
+      imageUrl: null,
+      nutrition: {
+        calories: 0,
+        carbohydrates: 0,
+        fat: 0,
+        protein: 0,
+        salt: 0
+      },
+      gramEquivalent: 0
     })),
     cookingTime: recipe.cooking_time,
     reviews: (recipe.reviews || []).map((review) => ({
@@ -219,7 +242,7 @@ export const fetchRecipesService = async (): Promise<Recipe[]> => {
 };
 
 // 具材からレシピを検索
-export const fetchRecipesAPI = async (ingredients: { id: number; quantity: number }[]) => {
+export const fetchRecipesAPI = async (ingredients: { id: number; quantity: number }[], searchMode: SearchMode = 'exact_with_quantity') => {
   if (ingredients.length === 0) {
     throw new Error("具材が選択されていません");
   }
@@ -231,7 +254,19 @@ export const fetchRecipesAPI = async (ingredients: { id: number; quantity: numbe
 
   await new Promise(resolve => setTimeout(resolve, 500))
 
-  const response = await api.post("/api/recipes", transformedIngredients);
+  console.log("🥦", transformedIngredients);
+  console.log("🥦 searchMode:", searchMode);
+
+  const requestBody = {
+    ingredients: transformedIngredients,
+    searchMode: searchMode
+  };
+
+  const response = await api.post("/api/recipes", requestBody);
+
+  console.log("🥦 リクエストURL", api.defaults.baseURL);
+
+  console.log("🥦", response.data);
 
   return Array.isArray(response.data) ? mapRecipes(response.data) : [];
 };
@@ -277,44 +312,26 @@ export const fetchRecipeByIdService = async (id: string) => {
 // 新規レシピの登録
 export const addRecipeService = async (formData: FormData): Promise<Recipe> => {
   try {
-    // FormDataの内容を詳細にログ出力
-    console.log('=== FormData Contents ===');
-    for (const [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(`${key}: File - ${value.name} (${value.type}, ${value.size} bytes)`);
-      } else {
-        console.log(`${key}:`, value);
-      }
-    }
-
     // 画像ファイルの存在確認
     const imageFiles = Array.from(formData.entries())
       .filter(([key, value]) => value instanceof File)
       .map(([key, value]) => ({ key, file: value as File }));
-    
-    console.log('Image files in FormData:', imageFiles);
 
     // 各instructionの詳細を確認
     const instructions = JSON.parse(formData.get('instructions') as string);
-    console.log('Instructions details:', instructions.map((inst: any, index: number) => ({
-      stepNumber: inst.stepNumber,
-      description: inst.description,
-      image_url: inst.image_url,
-      hasImageFile: formData.has(`instruction_image_${index}`)
-    })));
+
+    // formDataの中身ををログ出力
+    formData.forEach((value, key) => {
+      console.log(`${key}: ${value}`);
+    });
+
 
     const response = await api.post("/admin/recipes", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
-      },
-      // リクエストの進捗をログ出力
-      onUploadProgress: (progressEvent) => {
-        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total!);
-        console.log('Upload progress:', percentCompleted, '%');
       }
     });
 
-    console.log('Response data:', response.data);
     
     // レスポンスデータの型チェック
     if (!response.data) {
@@ -323,12 +340,10 @@ export const addRecipeService = async (formData: FormData): Promise<Recipe> => {
 
     // レスポンスデータの構造を確認
     if (response.data.recipe) {
-      console.log('Recipe data from response:', response.data.recipe);
       return mapRecipe(response.data.recipe);
     }
 
     if (typeof response.data === 'object' && 'id' in response.data) {
-      console.log('Direct recipe data from response:', response.data);
       return mapRecipe(response.data);
     }
 
@@ -355,34 +370,15 @@ export const updateRecipeService = async (
   updatedData: FormData
 ): Promise<Recipe> => {
   try {
-    // FormDataの内容を詳細にログ出力
-    console.log('=== FormData Contents Before Processing ===');
-    for (const [key, value] of updatedData.entries()) {
-      if (value instanceof File) {
-        console.log(`${key}: File - ${value.name} (${value.type}, ${value.size} bytes)`);
-      } else {
-        console.log(`${key}:`, value);
-      }
-    }
-
     const ingredientsRaw = updatedData.get("ingredients") as string;
     if (ingredientsRaw) {
-      console.log('=== Raw Ingredients Data ===');
-      console.log('Raw ingredients string:', ingredientsRaw);
-      
       const ingredients = JSON.parse(ingredientsRaw);
-      console.log('=== Parsed Ingredients Data ===');
-      console.log('Parsed ingredients:', ingredients);
       
       // 配列であることを確認し、必要なプロパティが存在することを確認
       if (Array.isArray(ingredients)) {
-        console.log('=== Processing Ingredients Array ===');
-        console.log('Original ingredients array:', ingredients);
-        
         const formattedIngredients = ingredients
           .filter(ing => ing && typeof ing === 'object')
           .map((ing: any) => {
-            console.log('Processing ingredient:', ing);
             return {
               ingredient_id: ing.ingredient_id,
               quantity_required: ing.quantity_required,
@@ -390,17 +386,12 @@ export const updateRecipeService = async (
             };
           });
 
-        console.log('=== Formatted Ingredients ===');
-        console.log('Formatted ingredients:', formattedIngredients);
-
         // 具材データが空でないことを確認
         if (formattedIngredients.length === 0) {
           throw new Error("具材を選択してください");
         }
 
         const newIngredientsString = JSON.stringify(formattedIngredients);
-        console.log('=== New Ingredients String ===');
-        console.log('New ingredients string:', newIngredientsString);
 
         updatedData.delete("ingredients");
         updatedData.append("ingredients", newIngredientsString);
@@ -409,22 +400,9 @@ export const updateRecipeService = async (
       }
     }
 
-    // 最終的なFormDataの内容を確認
-    console.log('=== Final FormData Contents ===');
-    for (const [key, value] of updatedData.entries()) {
-      if (value instanceof File) {
-        console.log(`${key}: File - ${value.name} (${value.type}, ${value.size} bytes)`);
-      } else {
-        console.log(`${key}:`, value);
-      }
-    }
-
-    // リクエストの詳細をログ出力
-    console.log('=== Request Details ===');
-    console.log('URL:', `/admin/recipes/${id}`);
-    console.log('Method: PUT');
-    console.log('Headers:', {
-      "Content-Type": "multipart/form-data",
+    //updatedDataの中身をログ出力
+    updatedData.forEach((value, key) => {
+      console.log(`🚨${key}: ${value}`);
     });
 
     const response = await api.put(`/admin/recipes/${id}`, updatedData, {
@@ -433,18 +411,31 @@ export const updateRecipeService = async (
       },
     });
 
-    console.log('=== Response ===');
-    console.log('Status:', response.status);
-    console.log('Data:', response.data);
+    console.log("🚨🚨🚨 Response data:", response.data);
 
-    return response.data;
-  } catch (error) {
-    console.error("Error in updateRecipeService:", error);
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
+    // レスポンスデータの型チェック
+    if (!response.data) {
+      throw new Error('No data received from server');
     }
-    throw error;
+
+    // レスポンスデータの構造を確認
+    if (response.data.recipe) {
+      return mapRecipe(response.data.recipe);
+    }
+
+    if (typeof response.data === 'object' && 'id' in response.data) {
+      return mapRecipe(response.data);
+    }
+
+    throw new Error('Invalid response format: ' + JSON.stringify(response.data));
+  } catch (error: any) {
+    console.error("Error in updateRecipeService:", error);
+    console.error("Error response:", error.response?.data);
+    console.error("Error status:", error.response?.status);
+    
+    // エラーメッセージの詳細を追加
+    const errorMessage = error.response?.data?.error || error.message || 'Failed to update recipe';
+    throw new Error(`Failed to update recipe: ${errorMessage}`);
   }
 };
 
@@ -468,30 +459,26 @@ export const handleLikeService = async (
     if (response.ok) {
       const data = await response.json();
       setIsLiked((prev) => !prev);
-      alert(data.message);
+      toast.success(data.message || "お気に入りを更新しました");
     } else {
       console.error("Failed to toggle like");
+      toast.error("お気に入りの更新に失敗しました");
     }
   } catch (error) {
     console.error("Error toggling like", error);
+    toast.error("お気に入りの更新に失敗しました");
   }
 };
 
 // ユーザーのレシピ一覧を取得
 const fetchUserRecipes = async (userId: string) => {
-  const res = await fetch(`${backendUrl}/api/user/recipes?userId=${userId}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch user recipes");
+  try {
+    const response = await api.get(`/api/user/recipes?userId=${userId}`);
+    return mapRecipes(response.data.recipes);
+  } catch (error) {
+    console.error("Error in fetchUserRecipes:", error);
+    throw error;
   }
-
-  const data = await res.json();
-  return { recipes: mapRecipes(data.recipes) };
 };
 
 // おすすめレシピを取得
@@ -528,6 +515,14 @@ const fetchUserFavorites = async (userId: string) => {
 };
 
 // Query hooks
+export const useRecipe = (id: string) => {
+  return useQuery({
+    queryKey: recipeKeys.detail(id),
+    queryFn: () => fetchRecipeByIdService(id),
+    enabled: !!id && id !== "recipes",
+  });
+};
+
 export const useRecipes = () => {
   return useQuery({
     queryKey: recipeKeys.lists(),
@@ -535,43 +530,64 @@ export const useRecipes = () => {
   });
 };
 
-export const useFetchRecipesAPI = (ingredients: { id: number; quantity: number }[]) => {
-  return useQuery({
-    queryKey: recipeKeys.list(JSON.stringify(ingredients)),
+export const useFetchRecipesAPI = (
+  ingredients: { id: number; quantity: number }[],
+  searchMode: SearchMode = 'exact_with_quantity',
+  options?: {
+    enabled?: boolean;
+    staleTime?: number;
+    refetchOnMount?: boolean;
+    refetchOnWindowFocus?: boolean;
+    refetchOnReconnect?: boolean;
+  }
+) => {
+  
+  return useQuery<Recipe[], Error>({
+    queryKey: recipeKeys.list(JSON.stringify({ ingredients, searchMode })),
     queryFn: async () => {
-      const validIngredients = ingredients.filter(ing => ing.quantity > 0);
-
+      const validIngredients = ingredients.filter(ing => {
+        return ing && ing.id && ing.quantity > 0;
+      });
+      
       if (validIngredients.length === 0) {
-        return [];
+        throw new Error("具材が選択されていません");
       }
-
+      
       try {
-        const response = await fetchRecipesAPI(validIngredients);
-
+        const response = await fetchRecipesAPI(validIngredients, searchMode);
         return response;
       } catch (error) {
         console.error('Error fetching recipes:', error);
-        return [];
+        throw error;
       }
     },
-    enabled: ingredients.length > 0,
-    staleTime: 5 * 60 * 1000, // 5分間キャッシュを保持
-    gcTime: 30 * 60 * 1000, // 30分間キャッシュを保持
-    refetchOnMount: false, // マウント時の再取得を無効化
-    refetchOnWindowFocus: false, // ウィンドウフォーカス時の再取得を無効化
+    enabled: options?.enabled ?? false,
+    staleTime: options?.staleTime ?? 0,
+    refetchOnMount: options?.refetchOnMount ?? false,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? false,
+    refetchOnReconnect: options?.refetchOnReconnect ?? false
   });
 };
 
-export const useSearchRecipes = (query: string) => {
+export const useSearchRecipes = (
+  query: string,
+  options?: {
+    enabled?: boolean;
+    staleTime?: number;
+    refetchOnMount?: boolean;
+    refetchOnWindowFocus?: boolean;
+    refetchOnReconnect?: boolean;
+    onSuccess?: () => void;
+    onSettled?: () => void;
+  }
+) => {
   return useQuery({
     queryKey: recipeKeys.list(query),
     queryFn: () => {
-      if (!query) {
-        return Promise.resolve([]);
-      }
+      if (!query) return Promise.resolve([]);
       return fetchSearchRecipes(query);
     },
-    enabled: false, // デフォルトで検索を無効化
+    ...options
   });
 };
 
@@ -593,8 +609,9 @@ export const useUserRecipes = (userId: string | undefined) => {
   return useQuery({
     queryKey: recipeKeys.userRecipes(userId || ""),
     queryFn: async () => {
-      if (!userId) return { recipes: [] };
-      return fetchUserRecipes(userId);
+      if (!userId) return [];
+      const response = await fetchUserRecipes(userId);
+      return response;
     },
     enabled: !!userId,
   });
@@ -618,10 +635,6 @@ export const useAddRecipe = () => {
       isPublic?: boolean;
       isDraft?: boolean;
     }) => {
-      console.log('FormData contents⚡️:');
-      for (const [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-      }
       if (userId) {
         formData.append("user_id", userId);
       }
@@ -634,7 +647,6 @@ export const useAddRecipe = () => {
       return addRecipeService(formData);
     },
     onSuccess: (data) => {
-      console.log('Recipe added successfully:', data);
       queryClient.invalidateQueries({ queryKey: recipeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: recipeKeys.userRecipes("") });
     },

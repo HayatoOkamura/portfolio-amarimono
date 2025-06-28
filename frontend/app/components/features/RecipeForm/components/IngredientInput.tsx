@@ -1,4 +1,5 @@
 import { RecipeFormData } from "../types/recipeForm";
+import styles from "./IngredientInput.module.scss";
 
 interface IngredientInputProps {
   ingredients: RecipeFormData["ingredients"];
@@ -24,8 +25,7 @@ export const IngredientInput = ({
   onUpdateIngredients,
 }: IngredientInputProps) => {
   return (
-    <div>
-      <h3 className="text-lg font-semibold mb-2">Select Ingredients</h3>
+    <div className={styles.ingredient_input_block}>
       <ul className="mb-4">
         {availableIngredients.map((ingredient) => {
           const step = ingredient.unit?.step;

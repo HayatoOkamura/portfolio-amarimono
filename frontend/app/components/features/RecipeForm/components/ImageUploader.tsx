@@ -1,7 +1,8 @@
 import { useImageUpload } from "../hooks/useImageUpload";
 import { LuImagePlus } from "react-icons/lu";
 import styles from "./ImageUploader.module.scss";
-
+import Image from "next/image";
+import toast from "react-hot-toast";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface ImageUploaderProps {
@@ -20,7 +21,7 @@ export const ImageUploader = ({ imageUrl, image, onImageChange }: ImageUploaderP
     if (!file) return;
 
     if (file.size > MAX_FILE_SIZE) {
-      alert('画像サイズは10MB以下にしてください');
+      toast.error('画像サイズは10MB以下にしてください');
       return;
     }
 
@@ -35,10 +36,12 @@ export const ImageUploader = ({ imageUrl, image, onImageChange }: ImageUploaderP
       <div className={styles.imageUploader__container}>
         {currentImageUrl ? (
           <div className={styles.imageUploader__imageContainer}>
-            <img
+            <Image
               src={currentImageUrl}
               alt="Current recipe"
               className={styles.imageUploader__image}
+              width={500}
+              height={500}
               onError={(e) => {
                 console.error("Image load error:", {
                   src: e.currentTarget.src,

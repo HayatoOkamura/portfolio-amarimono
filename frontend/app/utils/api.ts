@@ -1,18 +1,74 @@
 import axios from "axios";
+import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 
-// 開発環境と本番環境で異なるURLを使用
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
-export const imageBaseUrl = process.env.NODE_ENV === 'production'
-    ? process.env.NEXT_PUBLIC_IMAGE_BASE_URL
-    : process.env.NEXT_PUBLIC_LOCAL_IMAGE_URL;
+// クライアントサイドとサーバーサイドで異なるURLを使用
+export const backendUrl = typeof window !== 'undefined'
+  ? (() => {
+      // クライアントサイドでは現在のホストに基づいてバックエンドURLを設定
+      const currentHost = window.location.hostname;
+      const currentPort = window.location.port;
+      
+      // 開発環境の場合、同じホストの8080ポートを使用
+      if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+        return 'http://localhost:8080';
+      }
+      
+      // ローカルネットワークの場合（192.168.x.xなど）
+      if (currentHost.match(/^192\.168\./) || currentHost.match(/^10\./) || currentHost.match(/^172\./)) {
+        return `http://${currentHost}:8080`;
+      }
+      
+      // その他の場合は環境変数を使用
+      return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+    })()
+  : process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL || 'http://portfolio-amarimono_backend_1:8080';
 
-// APIクライアントの設定
+export const imageBaseUrl = typeof window !== 'undefined'
+  ? (() => {
+      // クライアントサイドでは現在のホストに基づいて画像URLを設定
+      const currentHost = window.location.hostname;
+      
+      // 開発環境の場合、同じホストの54321ポートを使用
+      if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+        return 'http://localhost:54321/storage/v1/object/public/images';
+      }
+      
+      // ローカルネットワークの場合（192.168.x.xなど）
+      if (currentHost.match(/^192\.168\./) || currentHost.match(/^10\./) || currentHost.match(/^172\./)) {
+        return `http://${currentHost}:54321/storage/v1/object/public/images`;
+      }
+      
+      // その他の場合は環境変数を使用
+      return process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:54321/storage/v1/object/public/images';
+    })()
+  : process.env.NEXT_PUBLIC_LOCAL_IMAGE_URL || 'http://localhost:54321/storage/v1/object/public/images';
+
+// axiosインスタンスの作成
 export const api = axios.create({
   baseURL: backendUrl,
+  withCredentials: true, // クッキーを含めるために必要
   headers: {
     "Content-Type": "application/json",
   },
 });
+
+// リクエストインターセプターの設定
+api.interceptors.request.use(async (config) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    config.headers.Authorization = `Bearer ${session.access_token}`;
+  }
+  return config;
+});
+
+// レスポンスインターセプターの設定
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error);
+    return Promise.reject(error);
+  }
+);
 
 // レスポンスハンドラ
 export const handleApiResponse = async (response: Response) => {
@@ -22,5 +78,3 @@ export const handleApiResponse = async (response: Response) => {
   }
   return response.json();
 };
-
-export { backendUrl };

@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ingredient, Genre, Unit, NewIngredient, EditIngredient } from "../types/index";
 import { api } from "../utils/api";
 import useIngredientStore from "../stores/ingredientStore";
+import axios from "axios";
+import { getUserIngredientDefaults, updateUserIngredientDefault, getIngredientsByCategory } from '../api/ingredients';
 
 // Query keys
 const ingredientKeys = {
@@ -29,9 +31,17 @@ const mapIngredient = (ingredient: any): Ingredient => {
       id: ingredientData.genre?.id || ingredientData.genre_id || 0,
       name: ingredientData.genre?.name || ""
     },
-    unit: ingredientData.unit || { id: 0, name: "", step: 1 },
+    unit: ingredientData.unit || { id: 0, name: "", step: 1, type: 'quantity' },
     imageUrl: ingredientData.image_url || "/pic_recipe_default.webp",
     quantity: ingredientData.quantity || 0,
+    nutrition: ingredientData.nutrition || {
+      calories: 0,
+      carbohydrates: 0,
+      fat: 0,
+      protein: 0,
+      salt: 0
+    },
+    gramEquivalent: ingredientData.gramEquivalent ?? ingredientData.gram_equivalent ?? 100
   };
   return mapped;
 };
@@ -84,34 +94,54 @@ const updateIngredientService = async ({
   id: number;
   data: EditIngredient;
 }): Promise<Ingredient> => {
-  const formData = new FormData();
-  if (data.name) formData.append("name", data.name);
-  if (data.genre) formData.append("genre", JSON.stringify({ id: data.genre.id }));
-  if (data.unit) formData.append("unit", JSON.stringify({ 
-    id: data.unit.id,
-    step: data.unit.step 
-  }));
-  
-  // 画像の処理
-  if (data.imageUrl instanceof File) {
-    formData.append("image", data.imageUrl);
-  } else if (typeof data.imageUrl === "string") {
-    formData.append("image_url", data.imageUrl);
-  }
+  try {
+    const formData = new FormData();
+    if (data.name) formData.append("name", data.name);
+    if (data.genre) formData.append("genre", JSON.stringify({ id: data.genre.id }));
+    if (data.unit) formData.append("unit", JSON.stringify({ 
+      id: data.unit.id,
+      step: data.unit.step 
+    }));
+    if (data.nutrition) formData.append("nutrition", JSON.stringify(data.nutrition));
+    
+    // 画像の処理
+    if (data.imageUrl instanceof File) {
+      formData.append("image", data.imageUrl);
+    } else if (typeof data.imageUrl === "string") {
+      formData.append("image_url", data.imageUrl);
+    }
 
-  const response = await api.patch(`/admin/ingredients/${id}`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-  return response.data;
+    const response = await api.patch(`/admin/ingredients/${id}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return mapIngredient(response.data);
+  } catch (error) {
+    console.error('Error updating ingredient:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Request URL:', error.config?.url);
+      console.error('Request method:', error.config?.method);
+      console.error('Request headers:', error.config?.headers);
+      console.error('Response status:', error.response?.status);
+      console.error('Response data:', error.response?.data);
+    }
+    throw error;
+  }
 };
 
 // Query hooks
-export const useIngredients = () => {
+export const useIngredients = (options?: {
+  initialData?: Ingredient[];
+  staleTime?: number;
+  refetchOnMount?: boolean;
+  refetchOnWindowFocus?: boolean;
+  refetchOnReconnect?: boolean;
+}) => {
   return useQuery({
     queryKey: ingredientKeys.lists(),
     queryFn: fetchIngredientsService,
+    ...options
   });
 };
 
@@ -178,4 +208,52 @@ export const useUpdateIngredientQuantity = () => {
     },
   });
 };
+
+// サーバーサイド用のデータフェッチ関数
+export const fetchIngredientsServer = async (): Promise<Ingredient[]> => {
+  // Docker環境ではbackendサービスに直接接続
+  const baseURL = process.env.ENVIRONMENT === 'development' 
+    ? 'http://portfolio-amarimono_backend_1:8080'  // Docker環境用
+    : process.env.NEXT_PUBLIC_BACKEND_URL || 'https://amarimono-backend.onrender.com';
+
+  const response = await axios.create({ baseURL }).get("/admin/ingredients");
+  const mappedIngredients = mapIngredients(response.data);
+  return mappedIngredients;
+};
+
+// ユーザーの初期設定具材を取得するフック
+export const useUserIngredientDefaults = () => {
+  return useQuery({
+    queryKey: ['userIngredientDefaults'],
+    queryFn: getUserIngredientDefaults,
+  });
+};
+
+// ユーザーの初期設定具材を更新するフック
+export const useUpdateUserIngredientDefault = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateUserIngredientDefault,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userIngredientDefaults'] });
+    },
+  });
+};
+
+// カテゴリ別の具材を取得するフック
+// export const useIngredientsByCategory = (categoryId: number) => {
+//   return useQuery<Ingredient[]>({
+//     queryKey: ['ingredients', categoryId],
+//     queryFn: async () => {
+//       // カテゴリIDが0（すべて）の場合は、すべての具材を取得
+//       if (categoryId === 0) {
+//         const response = await api.get<any[]>('/admin/ingredients');
+//         return mapIngredients(response.data);
+//       }
+//       // それ以外の場合は、カテゴリ別の具材を取得
+//       const response = await api.get<any[]>(`/api/ingredients/by-category?category_id=${categoryId}`);
+//       return mapIngredients(response.data);
+//     },
+//   });
+// };
 

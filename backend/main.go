@@ -15,23 +15,32 @@ import (
 )
 
 func main() {
-	log.SetOutput(os.Stdout)              // 標準出力に変更
-	log.Println("This is a log message.") // 標準出力に表示される
+	log.SetOutput(os.Stdout)
 
 	// Ginをデバッグモードに設定
 	gin.SetMode(gin.DebugMode)
 
-	//Ginフレームワークのデフォルトの設定を使用してルータを作成
+	// Ginフレームワークのデフォルトの設定を使用してルータを作成
 	r := gin.Default()
 
 	// GinのLoggerミドルウェアを使用
 	r.Use(gin.Logger())
 
 	// CORS設定を追加
+	var allowOrigins []string
+	if os.Getenv("ENVIRONMENT") == "production" {
+		// 本番環境では特定のオリジンのみ許可
+		allowOrigins = []string{"https://portfolio-amarimono.vercel.app"}
+	} else {
+		// 開発環境ではローカルネットワークを広く許可
+		allowOrigins = []string{"http://localhost:3000", "http://127.0.0.1:3000", "http://192.168.11.2:3000", "https://portfolio-amarimono.vercel.app"}
+	}
+
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "https://portfolio-amarimono.vercel.app"},
+		AllowOrigins:     allowOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "Accept-Encoding"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "Accept-Encoding", "Cookie"},
+		ExposeHeaders:    []string{"Set-Cookie"},
 		AllowCredentials: true,
 		MaxAge:           12 * 60 * 60, // 12 hours
 	}))
@@ -39,61 +48,74 @@ func main() {
 	// 静的ファイルを提供
 	r.Static("/uploads", "./uploads")
 
-	// DB接続
-	dbConn := db.GetDB()
+	// データベース接続の初期化
+	dbConn, err := db.InitDB()
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+
+	// マイグレーションの実行
+	sqlDB, err := dbConn.DB.DB()
+	if err != nil {
+		log.Fatalf("Failed to get database instance: %v", err)
+	}
+	if err := db.RunMigrations(sqlDB); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
 
 	// Redisクライアントの初期化
-	rdb := redis.NewClient(&redis.Options{
+	redisClient := redis.NewClient(&redis.Options{
 		Addr:     "redis:6379",
-		Password: "", // パスワードがある場合は設定
-		DB:       0,  // 使用するDB番号
+		Password: "",
+		DB:       0,
 	})
+
+	// 認証ハンドラーの初期化
+	authHandler := handlers.NewAuthHandler(dbConn.Supabase, nil)
 
 	// Redis接続の確認
 	ctx := context.Background()
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		log.Printf("❌ Failed to connect to Redis: %v", err)
+	if err := redisClient.Ping(ctx).Err(); err != nil {
 	} else {
-		log.Println("✅ Successfully connected to Redis")
 	}
-
-	// `RecipeHandler` を初期化
-	recipeHandler := handlers.NewRecipeHandler(dbConn.Postgres)
 
 	// ハンドラの初期化
-	likeHandler := handlers.NewLikeHandler(dbConn.Postgres)
-
-	// `UserHandler` を初期化
-	userHandler := handlers.NewUserHandler(dbConn.Postgres)
-
+	recipeHandler := handlers.NewRecipeHandler(dbConn.DB)
+	likeHandler := handlers.NewLikeHandler(dbConn.DB)
+	userHandler := handlers.NewUserHandler(dbConn.DB)
 	adminHandler := &handlers.AdminHandler{
-		DB:          dbConn.Postgres,
-		RedisClient: rdb,
+		DB:          dbConn.DB,
+		RedisClient: redisClient,
 	}
 	genreHandler := &handlers.GenreHandler{
-		DB: dbConn.Postgres,
+		DB: dbConn.DB,
 	}
 	reviewHandler := &handlers.ReviewHandler{
-		DB: dbConn.Postgres,
+		DB: dbConn.DB,
 	}
-
 	recommendationHandler := &handlers.RecommendationHandler{
-		DB: dbConn.Postgres,
+		DB: dbConn.DB,
 	}
-
-	// ハンドラーの初期化
+	userIngredientDefaultHandler := handlers.NewUserIngredientDefaultHandler(dbConn.DB)
 	uploadHandler := handlers.NewUploadHandler()
+	aiUsageHandler := handlers.NewAIUsageHandler(dbConn.DB)
 
-	routes.SetupRoutes(r, recipeHandler, likeHandler, userHandler, genreHandler, adminHandler, reviewHandler, recommendationHandler)
+	// ルートの設定
+	routes.SetupRoutes(r, recipeHandler, likeHandler, userHandler, genreHandler, adminHandler, reviewHandler, recommendationHandler, userIngredientDefaultHandler, aiUsageHandler, dbConn.DB)
+	routes.SetupAuthRoutes(r, authHandler)
 
 	// 画像アップロード用のエンドポイント
 	r.POST("/api/upload", uploadHandler.UploadImage)
+
+	// 栄養素データ取得API
+	r.GET("/api/ingredients/nutrients", handlers.GetNutrientData)
 
 	// サーバーを起動
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-
-	r.Run(":" + port)
+	if err := r.Run("0.0.0.0:" + port); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }

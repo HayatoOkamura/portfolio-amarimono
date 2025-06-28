@@ -34,5 +34,7 @@ type RecipeIngredient struct {
 	RecipeID         uuid.UUID  `json:"recipe_id" gorm:"type:uuid;primaryKey"`
 	IngredientID     int        `json:"ingredient_id" gorm:"primaryKey"`
 	QuantityRequired float64    `json:"quantity_required"`
+	UnitID           int        `json:"unit_id" gorm:"foreignKey:UnitID;references:ID"`
 	Ingredient       Ingredient `json:"ingredient" gorm:"foreignKey:IngredientID;references:ID"`
+	Unit             Unit       `json:"unit" gorm:"foreignKey:UnitID;references:ID"`
 }

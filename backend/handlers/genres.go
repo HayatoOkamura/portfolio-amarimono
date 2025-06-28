@@ -25,10 +25,9 @@ func (h *GenreHandler) ListRecipeGenres(c *gin.Context) {
 // 食材のジャンルをリスト
 func (h *GenreHandler) ListIngredientGenres(c *gin.Context) {
 	var genres []models.IngredientGenre
-	if err := h.DB.Find(&genres).Error; err != nil {
+	if err := h.DB.Order("id").Find(&genres).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch ingredient genres"})
 		return
 	}
-
 	c.JSON(http.StatusOK, genres)
 }

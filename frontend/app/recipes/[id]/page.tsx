@@ -7,6 +7,8 @@ import { fetchRecipeByIdService, handleLikeService, checkLikeStatusService } fro
 import { useUserStore } from "@/app/stores/userStore";
 import { useRouter } from "next/navigation";
 import RecipeDetail from "@/app/components/ui/RecipeDetail/RecipeDetail";
+import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
+import toast from "react-hot-toast";
 
 const RecipeDetailPage = () => {
   const router = useRouter();
@@ -69,49 +71,55 @@ const RecipeDetailPage = () => {
   const handleReviewSubmit = async () => {
     if (!user || !recipe) return;
 
-    const response = await fetch(`${backendUrl}/api/reviews`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userId: user.id,
-        recipeId: recipe.id,
-        rating: reviewValue,
-        comment: reviewText,
-      }),
-    });
+    try {
+      const response = await fetch(`${backendUrl}/api/reviews`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          recipeId: recipe.id,
+          rating: reviewValue,
+          comment: reviewText,
+        }),
+      });
 
-    if (response.ok) {
-      alert("レビューが送信されました");
-      setShowReviewModal(false);
-    } else {
-      alert("レビュー送信に失敗しました");
+      if (response.ok) {
+        toast.success("レビューが送信されました");
+        setShowReviewModal(false);
+        setReviewValue(0);
+        setReviewText("");
+      } else {
+        toast.error("レビュー送信に失敗しました");
+      }
+    } catch (error) {
+      toast.error("レビュー送信に失敗しました");
     }
   };
 
-  if (!recipe) {
-    return <p>Loading...</p>;
-  }
-
   return (
-    <RecipeDetail
-      recipe={recipe}
-      isLiked={isLiked}
-      showLoginModal={showLoginModal}
-      showReviewModal={showReviewModal}
-      reviewValue={reviewValue}
-      reviewText={reviewText}
-      onLike={handleLike}
-      onReview={handleReview}
-      onReviewSubmit={handleReviewSubmit}
-      onReviewTextChange={setReviewText}
-      onReviewValueChange={setReviewValue}
-      onCloseReviewModal={() => setShowReviewModal(false)}
-      onCloseLoginModal={() => setShowLoginModal(false)}
-      onLogin={() => router.push("/login/")}
-      setShowLoginModal={setShowLoginModal}
-    />
+    <PageLoading isLoading={!recipe}>
+      {recipe && (
+        <RecipeDetail
+          recipe={recipe}
+          isLiked={isLiked}
+          showLoginModal={showLoginModal}
+          showReviewModal={showReviewModal}
+          reviewValue={reviewValue}
+          reviewText={reviewText}
+          onLike={handleLike}
+          onReview={handleReview}
+          onReviewSubmit={handleReviewSubmit}
+          onReviewTextChange={setReviewText}
+          onReviewValueChange={setReviewValue}
+          onCloseReviewModal={() => setShowReviewModal(false)}
+          onCloseLoginModal={() => setShowLoginModal(false)}
+          onLogin={() => router.push("/login/")}
+          setShowLoginModal={setShowLoginModal}
+        />
+      )}
+    </PageLoading>
   );
 };
 

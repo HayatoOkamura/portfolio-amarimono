@@ -1,26 +1,44 @@
 "use client";
 
-import { supabase } from "@/app/lib/api/supabase/supabaseClient";
 import { FcGoogle } from "react-icons/fc";
+import { useAuth } from "@/app/hooks/useAuth";
 import styles from "./GoogleLogin.module.scss";
 
-export default function GoogleLogin() {
-  const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/callback`,
-      },
-    });
-    if (error) {
-      alert(error.message);
+interface GoogleLoginProps {
+  isLogin?: boolean;
+}
+
+export default function GoogleLogin({ isLogin = true }: GoogleLoginProps) {
+  const { signInWithGoogle } = useAuth();
+
+  const handleGoogleSignIn = async () => {
+    console.log('🔍 Google sign-in button clicked', { isLogin });
+    try {
+      const error = await signInWithGoogle(isLogin);
+      console.log('🔍 Google sign-in result:', { 
+        hasError: !!error,
+        errorMessage: error?.message,
+        isLogin
+      });
+      
+      if (error) {
+        console.error('Google sign-in error:', error);
+      }
+    } catch (error) {
+      console.error('Unexpected Google sign-in error:', error);
     }
   };
 
   return (
-    <button onClick={handleGoogleLogin} className={styles.google_block}>
-      <FcGoogle className={styles.google_block__icon} />
-      Googleでログイン
-    </button>
+    <div className={styles.google_login}>
+      <button
+        type="button"
+        onClick={handleGoogleSignIn}
+        className={styles.google_login__button}
+      >
+        <FcGoogle className={styles.google_login__icon} />
+        Googleで{isLogin ? "ログイン" : "登録"}
+      </button>
+    </div>
   );
 } 

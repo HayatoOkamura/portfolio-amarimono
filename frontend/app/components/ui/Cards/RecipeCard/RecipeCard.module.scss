@@ -1,17 +1,65 @@
+@import "@/app/styles/config/device";
+@import "@/app/styles/config/breakpoints";
+
 .card_block {
+  background: #fff;
   border-radius: 10px;
   text-align: center;
   height: 100%;
-  background: #fff;
   overflow: hidden;
+  @include mq-max("sp") {
+    border-radius: calc(4 / #{$device_sp} * 100vw);
+  }
+
+  &--small {
+    .card_block__name {
+      font-size: 0.875rem;
+    }
+  }
+
+  &--medium {
+    .card_block__name {
+      font-size: 1rem;
+      @include mq-max("sp") {
+        font-size: 0.875rem;
+      }
+    }
+  }
+
+  &--large {
+    .card_block__name {
+      font-size: 1.5rem;
+    }
+  }
+
+  &:hover {
+    .card_block__img {
+      img {
+        transform: scale(1.1);
+      }
+    }
+  }
+
+  &__link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    height: 100%;
+    transition: transform 0.2s ease;
+  }
+
   &__img {
     width: 100%;
     display: block;
     position: relative;
     aspect-ratio: 1 / 1;
+    overflow: hidden;
+
     img {
       object-fit: cover;
       width: 100%;
+      height: 100%;
+      transition: transform 0.3s ease;
     }
   }
 
@@ -26,11 +74,14 @@
     border-radius: 4px;
     font-size: 0.75rem;
     margin-top: 4px;
+    z-index: 2;
   }
 
   &__contents {
-   
-  padding: 5px 15px;
+    padding: 5px 15px;
+    @include mq-max("sp") {
+      padding: calc(5 / #{$device_sp} * 100vw) calc(8 / #{$device_sp} * 100vw);
+    }
   }
 
   &__name {
@@ -38,6 +89,14 @@
     font-weight: bold;
     color: #323232;
     text-align: left;
+  
+  }
+
+  &__genre {
+    font-size: 0.875rem;
+    color: #666;
+    padding: 0 12px 12px;
+    margin: 0;
   }
 
   &__ingredients {

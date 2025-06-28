@@ -55,7 +55,14 @@ const AdminIngredients = () => {
 
   const filteredIngredients =
     selectedGenre === "すべて"
-      ? ingredients
+      ? [...ingredients].sort((a, b) => {
+          // まずgenre_idでソート
+          if (a.genre.id !== b.genre.id) {
+            return a.genre.id - b.genre.id;
+          }
+          // 同じジャンル内ではidでソート
+          return a.id - b.id;
+        })
       : ingredients.filter((ing) => ing.genre.id === selectedGenre);
 
   const handleAddIngredient = (formData: FormData) => {
@@ -75,7 +82,7 @@ const AdminIngredients = () => {
       if (!unit || !genre) return;
       
       const image = formData.get("image") as File;
-      const imageUrl = image ? image : formData.get("image_url") as string || null;
+      const imageUrl = image ? image : (editingIngredient.imageUrl as string) || null;
 
       const updatedIngredient = {
         ...editingIngredient,
@@ -83,14 +90,9 @@ const AdminIngredients = () => {
         unit,
         genre,
         imageUrl,
+        nutrition: formData.get("nutrition") ? JSON.parse(formData.get("nutrition") as string) : undefined,
       };
 
-      console.log("FormData contents:");
-      for (const [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-      }
-
-      console.log("updatedIngredient", updatedIngredient);
       updateIngredient({
         id: editingIngredient.id,
         data: updatedIngredient
@@ -119,10 +121,10 @@ const AdminIngredients = () => {
       <div className={styles.header}>
         <h1 className={styles.title}>具材管理</h1>
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/admin")}
           className={styles.backButton}
         >
-          トップページに戻る
+          ダッシュボードに戻る
         </button>
       </div>
 

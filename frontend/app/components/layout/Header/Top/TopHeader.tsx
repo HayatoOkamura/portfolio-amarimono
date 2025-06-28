@@ -1,44 +1,89 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import styles from "./TopHeader.module.scss";
-import useRecipeStore from "@/app/stores/recipeStore";
-import { useRouter } from "next/navigation";
-import { useUserStore } from "@/app/stores/userStore";
-import { FaUserCircle } from "react-icons/fa";
-import Image from "next/image";
 import Link from "next/link";
-import { useSearchRecipes, recipeKeys } from "@/app/hooks/recipes";
-import { useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
+import ClientAuthMenu from "./ClientAuthMenu";
+import HamburgerMenu from "../HamburgerMenu/HamburgerMenu";
+import MobileMenuModal from "../MobileMenuModal/MobileMenuModal";
+import { useRouter } from "next/navigation";
+import useRecipeStore from "@/app/stores/recipeStore";
+import { ResponsiveWrapper } from "@/app/components/common/ResponsiveWrapper";
+import { useSearchRecipes } from "@/app/hooks/recipes";
 
-const Header = () => {
-  const { user } = useUserStore();
-  const { setQuery, query, setSearchType, setSearchExecuted } = useRecipeStore();
+const TopHeader = () => {
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const { refetch } = useSearchRecipes(query);
+  const { setSearchType, setQuery, setSearchExecuted, setRecipes } = useRecipeStore();
+  const [searchInput, setSearchInput] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // レシピ検索
+  const { refetch } = useSearchRecipes(searchInput, {
+    enabled: false
+  });
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      setSearchType("name"); // 検索タイプを"name"に設定
-      setSearchExecuted(true); // 検索が実行されたことを設定
-      await queryClient.removeQueries({ queryKey: recipeKeys.list(query) }); // キャッシュをクリア
-    await refetch();
-      router.push(`/recipes?query=${query}`);
+    if (!searchInput.trim()) return;
+
+    setSearchType("name");
+    setQuery(searchInput);
+    setSearchExecuted(true);
+
+    try {
+      const result = await refetch();
+      if (result.isError) {
+        console.error('レシピの取得に失敗しました:', result.error);
+        alert('レシピの取得に失敗しました。もう一度お試しください。');
+        return;
+      }
+
+      if (!result.isSuccess || !result.data) {
+        console.error('レシピデータが取得できませんでした');
+        alert('レシピデータが取得できませんでした。もう一度お試しください。');
+        return;
+      }
+
+      // バックエンド側で正規化検索が実装されたので、結果をそのまま使用
+      setRecipes(result.data);
+      router.push("/recipes");
+    } catch (error) {
+      console.error('Search error:', error);
+      alert('レシピの検索中にエラーが発生しました。もう一度お試しください。');
     }
+  };
+
+  const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
   };
 
   return (
     <header className={styles.header_block}>
       <div className={styles.header_block__inner}>
+        <ResponsiveWrapper
+          breakpoint="tab"
+          renderBelow={
+            <div className={styles.header_block__logo}>
+              <Link href="/">
+                <Image
+                  src="/images/common/logo.svg"
+                  alt="あまりもの ロゴ"
+                  width={100}
+                  height={100}
+                  priority
+                />
+              </Link>
+            </div>
+          }
+        >
+          <></>
+        </ResponsiveWrapper>
         <div className={styles.search_block}>
           <form onSubmit={handleSearch} className={styles.search_block__form}>
             <input
               type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               placeholder="レシピを検索（料理名を入力してください）"
               className={styles.search_block__input}
             />
@@ -47,40 +92,26 @@ const Header = () => {
             </button>
           </form>
         </div>
-        {user ? (
-          <div className={styles.user_block}>
-            <Link href="/user/">
-              <div className={styles.user_block__icon}>
-                {user.profileImage ? (
-                  <Image
-                    fill
-                    src={user.profileImage}
-                    alt="User Profile"
-                    className={styles.user_block__icon_img}
-                    unoptimized
-                  />
-                ) : (
-                  <FaUserCircle />
-                )}
-              </div>
-              <p className={styles.user_block__name}>
-                {user.username || "ゲスト"}
-              </p>
-            </Link>
-          </div>
-        ) : (
-          <div className={styles.user_block}>
-            <div className={styles.user_block__icon}>
-              <Link href="/login/">
-                <FaUserCircle />
-              </Link>
-            </div>
-            <p className={styles.user_block__name}>ゲスト</p>
-          </div>
-        )}
+        <ResponsiveWrapper
+          breakpoint="tab"
+          renderBelow={
+             <></>
+          }
+        >
+          <ClientAuthMenu />
+        </ResponsiveWrapper>
       </div>
+      <ResponsiveWrapper
+        breakpoint="tab"
+        renderBelow={
+          <HamburgerMenu onClick={toggleModal} isOpen={isModalOpen} />
+        }
+      >
+        <></>
+      </ResponsiveWrapper>
+      <MobileMenuModal isOpen={isModalOpen} onClose={toggleModal} />
     </header>
   );
 };
 
-export default Header;
+export default TopHeader;

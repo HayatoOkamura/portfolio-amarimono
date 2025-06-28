@@ -1,15 +1,21 @@
+@import "@/app/styles/config/breakpoints";
+@import "@/app/styles/config/device";
+
+
 .instruction_block {
   margin-top: 20px;
   &__container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
+    @include mq-max("sp") {
+      grid-template-columns: 1fr;
+    }
   }
 
   &__step {
     display: flex;
     flex-direction: column;
-    background: #fff;
     position: relative;
 
     &[data-dragging="true"] {
@@ -57,7 +63,7 @@
     border: none;
     cursor: pointer;
     // color: var(--accent-color);
-    color: #DE616A;
+    color: #de616a;
     padding: 0.25rem;
     border-radius: 0.25rem;
     transition: background-color 0.2s;
@@ -68,8 +74,9 @@
   }
 
   &__textarea {
-    border: 1px solid #e5e7eb;
-    padding: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 10px;
     width: 100%;
     color: #374151;
     resize: vertical;
@@ -89,11 +96,12 @@
     aspect-ratio: 1 / 1;
     overflow: hidden;
     margin-top: 6px;
+    background: #fff;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
   }
 
   &__placeholder {
-    border: 2px dashed #d1d5db;
-    border-radius: 8px;
     padding: 1.5rem;
     text-align: center;
     width: 100%;
@@ -107,6 +115,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    pointer-events: none;
   }
 
   &__icon {
@@ -185,7 +194,7 @@
     font-size: 1rem;
 
     &:hover {
-      opacity: .7;
+      opacity: 0.7;
     }
 
     svg {
@@ -194,4 +203,4 @@
       color: var(--primary-accent-color);
     }
   }
-} 
+}

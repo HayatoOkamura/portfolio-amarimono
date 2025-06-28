@@ -1,0 +1,73 @@
+@import "@/app/styles/config/breakpoints";
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #323232;
+  @include mq-max("sp") {
+    font-size: 1.5rem;
+  }
+}
+
+.message {
+  font-size: 1.2rem;
+  color: #666;
+  line-height: 1.6;
+  margin-top: 32px;
+  @include mq-max("sp") {
+    font-size: 1rem;
+    margin-top: 24px;
+  }
+}
+
+.buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 48px;
+  @include mq-max("sp") {
+    margin-top: 24px;
+  }
+}
+
+.button {
+  padding: 1rem 3rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  @include mq-max("sp") {
+    padding: 12px 24px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+  }
+
+  &__yes {
+    background: #de616a;
+    color: white;
+
+    &:hover {
+      background: darken(#de616a, 10%);
+    }
+  }
+
+  &__no {
+    background: #f8ecec;
+    color: #de616a;
+    border: 2px solid #de616a;
+
+    &:hover {
+      background: darken(#f8ecec, 5%);
+    }
+  }
+} 

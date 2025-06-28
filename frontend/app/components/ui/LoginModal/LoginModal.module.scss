@@ -1,0 +1,84 @@
+@import "@/app/styles/config/breakpoints";
+@import "@/app/styles/config/device";
+
+.login_modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+
+  &__inner {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    position: relative;
+    width: 90%;
+    max-width: 400px;
+  }
+
+  &__close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    span {
+      display: block;
+      width: 100%;
+      height: 2px;
+      background-color: #333;
+      position: absolute;
+
+      &:first-child {
+        transform: rotate(45deg);
+      }
+
+      &:last-child {
+        transform: rotate(-45deg);
+      }
+    }
+  }
+
+  &__title {
+    font-size: 1.5rem;
+    text-align: center;
+    @include mq-max("sp") {
+      font-size: 1.25rem;
+    }
+  }
+
+  &__login {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--primary-accent-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: opacity 0.2s;
+    margin-top: 32px;
+    @include mq-max("sp") {
+      font-size: 1rem;
+      margin-top: 24px;
+    }
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+} 
