@@ -29,7 +29,8 @@ WORKDIR /app
 # golang-migrateとアプリケーションのバイナリをコピー
 COPY --from=builder /usr/local/bin/migrate /usr/local/bin/migrate
 COPY --from=builder /app/main /app/main
-COPY --from=builder /app/db/migrations /app/db/migrations
+# migrationsディレクトリが存在する場合のみコピー
+COPY --from=builder /app/db/migrations* /app/db/ 2>/dev/null || true
 
 # 環境変数の設定
 ENV USE_SUPABASE=true
