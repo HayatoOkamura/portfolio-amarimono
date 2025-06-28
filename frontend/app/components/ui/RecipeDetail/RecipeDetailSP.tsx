@@ -451,4 +451,6 @@ const RecipeDetailSP = memo(
   }
 );
 
+RecipeDetailSP.displayName = 'RecipeDetailSP';
+
 export default RecipeDetailSP;
