@@ -452,7 +452,6 @@ Client Components (CSR)
 
 #### 使用方法
 
-
 1. スクリプトの実行：
    ```bash
    python convert_food_data.py
