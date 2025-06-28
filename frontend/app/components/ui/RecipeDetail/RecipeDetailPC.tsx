@@ -417,4 +417,6 @@ const RecipeDetailPC = memo(
   }
 );
 
+RecipeDetailPC.displayName = 'RecipeDetailPC';
+
 export default RecipeDetailPC; 
