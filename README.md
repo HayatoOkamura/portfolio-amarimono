@@ -679,6 +679,7 @@ DO UPDATE SET role = 'admin';
 -- ユーザーテーブルに管理者フラグを追加
 ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT false;
 
+
 -- 管理者ログテーブル
 CREATE TABLE admin_logs (
     id SERIAL PRIMARY KEY,
