@@ -43,7 +43,7 @@ const ResponsivePieChart = ({ value, type }: { value: number; type: NutritionTyp
         className={styles.svg} 
         viewBox="0 0 150 150" 
         preserveAspectRatio="xMidYMid meet"
-        style={{ width: '100%', height: '100%', maxWidth: '150px', maxHeight: '150px' }}
+        style={{ width: '100%', height: '100%' }}
       >
         <circle 
           className={styles.base} 

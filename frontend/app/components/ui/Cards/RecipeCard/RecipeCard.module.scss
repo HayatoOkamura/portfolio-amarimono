@@ -21,7 +21,7 @@
     .card_block__name {
       font-size: 1rem;
       @include mq-max("sp") {
-        font-size: calc(12 / #{$device_sp} * 100vw);
+        font-size: 0.875rem;
       }
     }
   }
@@ -40,6 +40,14 @@
     }
   }
 
+  &__link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    height: 100%;
+    transition: transform 0.2s ease;
+  }
+
   &__img {
     width: 100%;
     display: block;
@@ -50,6 +58,7 @@
     img {
       object-fit: cover;
       width: 100%;
+      height: 100%;
       transition: transform 0.3s ease;
     }
   }

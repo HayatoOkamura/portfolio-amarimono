@@ -17,6 +17,7 @@ import { Recipe } from "@/app/types/index";
 import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
 import { withAuth } from "@/app/components/auth/withAuth";
 import { useUserStore } from "@/app/stores/userStore";
+import { ResponsiveWrapper } from "../components/common/ResponsiveWrapper";
 
 interface User {
   id: string;
@@ -33,9 +34,14 @@ interface User {
 // ユーザープロフィールコンポーネント
 const UserProfile = () => {
   const { user } = useUserStore();
-  const { likeCount, loading: isLikeCountLoading } = useUserLikeCount(user?.id || '');
-  const { averageRating, loading: isRatingLoading } = useUserRecipeAverageRating(user?.id || '');
-  const { data: recipes, isLoading: isRecipesLoading } = useRecommendedRecipes(user?.id || '');
+  const { likeCount, loading: isLikeCountLoading } = useUserLikeCount(
+    user?.id || ""
+  );
+  const { averageRating, loading: isRatingLoading } =
+    useUserRecipeAverageRating(user?.id || "");
+  const { data: recipes, isLoading: isRecipesLoading } = useRecommendedRecipes(
+    user?.id || ""
+  );
   const [recipeCount, setRecipeCount] = useState(0);
   const [imageError, setImageError] = useState(false);
 
@@ -76,38 +82,72 @@ const UserProfile = () => {
             )}
           </div>
           <div className={styles.profile_block__detail}>
-            <h1 className={styles.profile_block__name}>{user.username || "名前未設定"}</h1>
+            <h1 className={styles.profile_block__name}>
+              {user.username || "名前未設定"}
+            </h1>
             <p className={styles.profile_block__email}>{user.email}</p>
-            <div className={styles.profile_block__list}>
-              <div className={styles.item_block}>
-                <div className={styles.item_block__icon}>
-                  <ImSpoonKnife />
+            <ResponsiveWrapper breakpoint="sp" renderBelow={null}>
+              <div className={styles.profile_block__list}>
+                <div className={styles.item_block}>
+                  <div className={styles.item_block__icon}>
+                    <ImSpoonKnife />
+                  </div>
+                  <div className={styles.item_block__num}>{recipeCount}</div>
+                  <div className={styles.item_block__text}>レシピ投稿数</div>
                 </div>
-                <div className={styles.item_block__num}>{recipeCount}</div>
-                <div className={styles.item_block__text}>レシピ投稿数</div>
-              </div>
-              <div className={styles.item_block}>
-                <div className={styles.item_block__icon}>
-                  <FaHeart />
+                <div className={styles.item_block}>
+                  <div className={styles.item_block__icon}>
+                    <FaHeart />
+                  </div>
+                  <div className={styles.item_block__num}>{likeCount}</div>
+                  <div className={styles.item_block__text}>合計いいね数</div>
                 </div>
-                <div className={styles.item_block__num}>{likeCount}</div>
-                <div className={styles.item_block__text}>合計いいね数</div>
-              </div>
-              <div className={styles.item_block}>
-                <div className={styles.item_block__icon}>
-                  <FaStar />
+                <div className={styles.item_block}>
+                  <div className={styles.item_block__icon}>
+                    <FaStar />
+                  </div>
+                  <div className={styles.item_block__num}>
+                    {averageRating?.toFixed(1) ?? "0.0"}
+                  </div>
+                  <div className={styles.item_block__text}>レビュー平均</div>
                 </div>
-                <div className={styles.item_block__num}>{averageRating?.toFixed(1) ?? "0.0"}</div>
-                <div className={styles.item_block__text}>レビュー平均</div>
               </div>
-            </div>
+            </ResponsiveWrapper>
             <div className={styles.profile_block__btn}>
               <Link href="/user/edit">プロフィールを編集</Link>
             </div>
           </div>
         </div>
+
+        <ResponsiveWrapper breakpoint="sp" renderAbove={null}>
+          <div className={styles.profile_block__list}>
+            <div className={styles.item_block}>
+              <div className={styles.item_block__icon}>
+                <ImSpoonKnife />
+              </div>
+              <div className={styles.item_block__num}>{recipeCount}</div>
+              <div className={styles.item_block__text}>レシピ投稿数</div>
+            </div>
+            <div className={styles.item_block}>
+              <div className={styles.item_block__icon}>
+                <FaHeart />
+              </div>
+              <div className={styles.item_block__num}>{likeCount}</div>
+              <div className={styles.item_block__text}>合計いいね数</div>
+            </div>
+            <div className={styles.item_block}>
+              <div className={styles.item_block__icon}>
+                <FaStar />
+              </div>
+              <div className={styles.item_block__num}>
+                {averageRating?.toFixed(1) ?? "0.0"}
+              </div>
+              <div className={styles.item_block__text}>レビュー平均</div>
+            </div>
+          </div>
+        </ResponsiveWrapper>
         <div className={styles.recommend_block}>
-          <h2 className={styles.recommend_block__title}>おすすめレシピ</h2>
+          <h2 className={styles.recommend_block__title}>あなたにおすすめのレシピ</h2>
           {recipes && recipes.length > 0 ? (
             <div className={styles.recommend_block__inner}>
               <div className={styles.recommend_block__contents}>
@@ -117,13 +157,17 @@ const UserProfile = () => {
                       recipe={recipe}
                       isFavoritePage={false}
                       path="/recipes/"
+                      isLink={true}
+                      href={`/recipes/${recipe.id}`}
                     />
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <div>おすすめのレシピはありません</div>
+            <div className={styles.recommend_block__no_recipe}>
+              おすすめのレシピはありません
+            </div>
           )}
         </div>
       </div>

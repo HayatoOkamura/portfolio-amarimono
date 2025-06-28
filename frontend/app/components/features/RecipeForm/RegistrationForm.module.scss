@@ -6,8 +6,9 @@
   padding-bottom: 100px;
 
   @include mq-max("sp") {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    flex-direction: column;
+    padding: 20px 20px 100px;
+
   }
 
   .side_block {
@@ -15,16 +16,17 @@
     width: 100%;
     flex-shrink: 1.7;
     @include mq-max("sp") {
-      grid-column: 1 / 2;
+      max-width: 100%;
+      margin-top: 22px;
     }
+  }
 
-    .instructions_block {
-      margin-top: 12px;
+  .instructions_block {
+    margin-top: 12px;
 
-      &__title {
-        font-size: 1.25rem;
-        font-weight: 600;
-      }
+    &__title {
+      font-size: 1.25rem;
+      font-weight: 600;
     }
   }
 
@@ -32,7 +34,7 @@
     max-width: 815px;
     width: 100%;
     @include mq-max("tab") {
-      grid-column: 2 / 3;
+      max-width: 100%;
     }
   }
 
@@ -58,7 +60,6 @@
     &__item {
       display: flex;
       align-items: center;
-      gap: 12px;
       border-radius: 5px;
 
       &--add {
@@ -82,7 +83,8 @@
         font-weight: 600;
         font-size: 1rem;
         @include mq-max("sp") {
-          padding: 8px 10px 9px;
+          padding: 8px 25px 9px;
+
         }
       }
     }
@@ -101,8 +103,9 @@
     }
 
     &__label {
-      font-size: 0.875rem;
-      color: #4b5563;
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--primary-font-color);
     }
   }
 
@@ -110,6 +113,10 @@
     display: flex;
     gap: 30px;
     margin-top: 30px;
+
+    @include mq-max("sp") {
+      flex-direction: column;
+    }
   }
 
   .detail_block {
@@ -267,9 +274,14 @@
     }
 
     &__selected {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
       gap: 8px;
+
+      @include mq-max("sp") {
+        width: 100%;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      }
     }
 
     .select_ingredient_block {
@@ -279,9 +291,13 @@
       border: 1px solid #e5e7eb;
       border-radius: 0.5rem;
       background-color: white;
+      gap: 12px;
+      @include mq-max("sp") {
+        gap: 18px;
+        justify-content: center;
+      }
 
       &__image {
-        margin-right: 1rem;
         img {
           border-radius: 0.5rem;
         }
@@ -397,9 +413,7 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  transition:
-    background-color 0.3s,
-    color 0.3s;
+  transition: background-color 0.3s, color 0.3s;
 
   &:hover {
     background-color: #fff;
@@ -458,7 +472,7 @@
 
 .generate_button {
   padding: 8px 16px;
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 4px;

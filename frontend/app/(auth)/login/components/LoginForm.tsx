@@ -73,7 +73,7 @@ export default function LoginForm({ isLogin, onToggleMode }: { isLogin: boolean;
         />
       </div>
       <div className={styles.form_block__group}>
-        <label htmlFor="password">パスワード</label>
+        <label htmlFor="password" className={styles.form_block__label}>パスワード</label>
         <input
           id="password"
           type="password"

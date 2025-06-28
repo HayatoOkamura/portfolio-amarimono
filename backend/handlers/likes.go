@@ -26,11 +26,11 @@ func (h *LikeHandler) ToggleUserLike(c *gin.Context) {
 
 	// UUIDのバリデーション
 	if _, err := uuid.Parse(userID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ユーザーIDの形式が無効です"})
 		return
 	}
 	if _, err := uuid.Parse(recipeID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid recipe ID format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "レシピIDの形式が無効です"})
 		return
 	}
 
@@ -40,18 +40,18 @@ func (h *LikeHandler) ToggleUserLike(c *gin.Context) {
 	if result.RowsAffected > 0 {
 		// いいねが既に存在する場合は削除
 		if err := h.DB.Delete(&like).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove like"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "お気に入りの削除に失敗しました"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "Like removed"})
+		c.JSON(http.StatusOK, gin.H{"message": "お気に入りから削除しました"})
 	} else {
 		// いいねがない場合は新規追加
 		newLike := models.Like{UserID: userID, RecipeID: recipeID}
 		if err := h.DB.Create(&newLike).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add like"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "お気に入りの追加に失敗しました"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "Like added"})
+		c.JSON(http.StatusOK, gin.H{"message": "お気に入りに追加しました"})
 	}
 }
 
@@ -60,18 +60,18 @@ func (h *LikeHandler) GetUserLikes(c *gin.Context) {
 	userID := c.Param("user_id")
 	// UUIDのバリデーション
 	if _, err := uuid.Parse(userID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ユーザーIDの形式が無効です"})
 		return
 	}
 
 	var likes []models.Like
 	if err := h.DB.Where("user_id = ?", userID).Find(&likes).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch likes"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "お気に入りの取得に失敗しました"})
 		return
 	}
 
 	if len(likes) == 0 {
-		c.JSON(http.StatusOK, gin.H{"message": "No liked recipes found", "recipes": []models.Recipe{}})
+		c.JSON(http.StatusOK, gin.H{"message": "お気に入りのレシピが見つかりません", "recipes": []models.Recipe{}})
 		return
 	}
 

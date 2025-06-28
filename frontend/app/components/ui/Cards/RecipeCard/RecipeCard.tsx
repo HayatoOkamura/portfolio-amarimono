@@ -1,11 +1,11 @@
 "use client";
 import React, { useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { imageBaseUrl } from "@/app/utils/api";
 import styles from "./RecipeCard.module.scss";
 import { backendUrl } from "@/app/utils/api";
 import { Recipe } from "@/app/types/index";
-import Link from "next/link";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -13,6 +13,8 @@ interface RecipeCardProps {
   path: string;
   className?: string;
   size?: 'small' | 'medium' | 'large';
+  isLink?: boolean;
+  href?: string;
 }
 
 const RecipeCard: React.FC<RecipeCardProps> = ({
@@ -21,6 +23,8 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   path,
   className,
   size = 'medium',
+  isLink = false,
+  href,
 }) => {
   // ジャンル表示用の文字列を取得
   const getGenreText = () => {
@@ -41,7 +45,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
     return "すべて";
   };
 
-  return (
+  const cardContent = (
     <div className={`${styles.card_block} ${styles[`card_block--${size}`]} ${className || ''}`}>
       <div className={styles.card_block__img}>
         {recipe.isDraft && (
@@ -63,6 +67,18 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
       </div>
     </div>
   );
+
+  // リンクが必要な場合はLinkコンポーネントでラップ
+  if (isLink && href) {
+    return (
+      <Link href={href} className={styles.card_block__link}>
+        {cardContent}
+      </Link>
+    );
+  }
+
+  // リンクが不要な場合は通常のdivを返す
+  return cardContent;
 };
 
 export default RecipeCard;

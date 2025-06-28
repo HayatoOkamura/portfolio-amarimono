@@ -9,6 +9,7 @@ import { useRecipeActions } from '@/app/hooks/useRecipeActions';
 import { useState } from 'react';
 import { PageLoading } from '@/app/components/ui/Loading/PageLoading';
 import { withAuth } from '@/app/components/auth/withAuth';
+import toast from 'react-hot-toast';
 
 function MyRecipeDetailContent() {
   const { id } = useParams();
@@ -60,15 +61,15 @@ function MyRecipeDetailContent() {
                 }),
               });
               if (response.ok) {
-                alert('レビューが送信されました');
+                toast.success('レビューが送信されました');
                 setShowReviewModal(false);
                 setReviewValue(0);
                 setReviewText('');
               } else {
-                alert('レビュー送信に失敗しました');
+                toast.error('レビュー送信に失敗しました');
               }
             } catch (error) {
-              alert('レビュー送信に失敗しました');
+              toast.error('レビュー送信に失敗しました');
             }
           }}
           onReviewTextChange={setReviewText}

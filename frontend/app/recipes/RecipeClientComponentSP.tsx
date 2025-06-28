@@ -487,6 +487,248 @@ const RecipeClientComponentSP = () => {
                             </p>
                           </div>
                         </div>
+                        {/* 栄養情報 */}
+                        {persistedSelectedRecipe.nutrition && (
+                          <>
+                            <ul className={styles.nutrition_block}>
+                              <li className={styles.nutrition_block__item}>
+                                <div className={styles.nutrition_block__title}>
+                                  カロリー
+                                  <FaFire />
+                                </div>
+                                <div
+                                  className={styles.nutrition_block__contents}
+                                >
+                                  <div
+                                    className={styles.nutrition_block__texts}
+                                  >
+                                    <p className={styles.nutrition_block__num}>
+                                      {persistedSelectedRecipe.nutrition &&
+                                        persistedSelectedRecipe.nutrition.calories.toFixed(
+                                          1
+                                        )}
+                                      <br />
+                                      <span>kcal</span>
+                                    </p>
+                                  </div>
+                                  <div
+                                    className={
+                                      styles.nutrition_block__pie_chart
+                                    }
+                                  >
+                                    <ResponsivePieChart
+                                      key={`${persistedSelectedRecipe.id}-calories`}
+                                      value={
+                                        persistedSelectedRecipe.nutritionPercentage
+                                          ? persistedSelectedRecipe
+                                              .nutritionPercentage.calories
+                                          : 0
+                                      }
+                                      type="calories"
+                                    />
+                                  </div>
+                                </div>
+                              </li>
+                              <li className={styles.nutrition_block__item}>
+                                <p className={styles.nutrition_block__title}>
+                                  炭水化物
+                                  <BiSolidBowlRice />
+                                </p>
+                                <div
+                                  className={styles.nutrition_block__contents}
+                                >
+                                  <div
+                                    className={styles.nutrition_block__texts}
+                                  >
+                                    <p className={styles.nutrition_block__num}>
+                                      {persistedSelectedRecipe.nutrition &&
+                                        persistedSelectedRecipe.nutrition.carbohydrates.toFixed(
+                                          1
+                                        )}
+                                      <span>g</span>
+                                    </p>
+                                  </div>
+                                  <div
+                                    className={
+                                      styles.nutrition_block__pie_chart
+                                    }
+                                  >
+                                    <ResponsivePieChart
+                                      key={`${persistedSelectedRecipe.id}-carbohydrates`}
+                                      value={
+                                        persistedSelectedRecipe.nutritionPercentage
+                                          ? persistedSelectedRecipe
+                                              .nutritionPercentage.carbohydrates
+                                          : 0
+                                      }
+                                      type="carbohydrates"
+                                    />
+                                  </div>
+                                </div>
+                              </li>
+                              <li className={styles.nutrition_block__item}>
+                                <p className={styles.nutrition_block__title}>
+                                  脂質
+                                  <FaTint />
+                                </p>
+                                <div
+                                  className={styles.nutrition_block__contents}
+                                >
+                                  <div
+                                    className={styles.nutrition_block__texts}
+                                  >
+                                    <p className={styles.nutrition_block__num}>
+                                      {persistedSelectedRecipe.nutrition &&
+                                        persistedSelectedRecipe.nutrition.fat.toFixed(
+                                          1
+                                        )}
+                                      <span>g</span>
+                                    </p>
+                                  </div>
+                                  <div
+                                    className={
+                                      styles.nutrition_block__pie_chart
+                                    }
+                                  >
+                                    <ResponsivePieChart
+                                      key={`${persistedSelectedRecipe.id}-fat`}
+                                      value={
+                                        persistedSelectedRecipe.nutritionPercentage
+                                          ? persistedSelectedRecipe
+                                              .nutritionPercentage.fat
+                                          : 0
+                                      }
+                                      type="fat"
+                                    />
+                                  </div>
+                                </div>
+                              </li>
+                              <li className={styles.nutrition_block__item}>
+                                <p className={styles.nutrition_block__title}>
+                                  タンパク質
+                                  <GiMeat />
+                                </p>
+                                <div
+                                  className={styles.nutrition_block__contents}
+                                >
+                                  <div
+                                    className={styles.nutrition_block__texts}
+                                  >
+                                    <p className={styles.nutrition_block__num}>
+                                      {persistedSelectedRecipe.nutrition &&
+                                        persistedSelectedRecipe.nutrition.protein.toFixed(
+                                          1
+                                        )}
+                                      <span>g</span>
+                                    </p>
+                                  </div>
+                                  <div
+                                    className={
+                                      styles.nutrition_block__pie_chart
+                                    }
+                                  >
+                                    <ResponsivePieChart
+                                      key={`${persistedSelectedRecipe.id}-protein`}
+                                      value={
+                                        persistedSelectedRecipe.nutritionPercentage
+                                          ? persistedSelectedRecipe
+                                              .nutritionPercentage.protein
+                                          : 0
+                                      }
+                                      type="protein"
+                                    />
+                                  </div>
+                                </div>
+                              </li>
+                              <li className={styles.nutrition_block__item}>
+                                <p className={styles.nutrition_block__title}>
+                                  塩分
+                                  <TbSalt />
+                                </p>
+                                <div
+                                  className={styles.nutrition_block__contents}
+                                >
+                                  <div
+                                    className={styles.nutrition_block__texts}
+                                  >
+                                    <p className={styles.nutrition_block__num}>
+                                      {persistedSelectedRecipe.nutrition &&
+                                        persistedSelectedRecipe.nutrition.salt.toFixed(
+                                          1
+                                        )}
+                                      <span>g</span>
+                                    </p>
+                                  </div>
+                                  <div
+                                    className={
+                                      styles.nutrition_block__pie_chart
+                                    }
+                                  >
+                                    <ResponsivePieChart
+                                      key={`${persistedSelectedRecipe.id}-salt`}
+                                      value={
+                                        persistedSelectedRecipe.nutritionPercentage
+                                          ? persistedSelectedRecipe
+                                              .nutritionPercentage.salt
+                                          : 0
+                                      }
+                                      type="salt"
+                                    />
+                                  </div>
+                                </div>
+                              </li>
+                            </ul>
+                          </>
+                        )}
+                        <div className={styles.nutrition_block__disclaimer}>
+                          <p>※ 栄養成分値は参考値です。</p>
+                          <p>※ 各具材の栄養成分値を基に計算しています。</p>
+                          <p>
+                            ※ データソース:
+                            文部科学省「日本食品標準成分表2020年版（八訂）」
+                          </p>
+                          <p>
+                            ※
+                            実際の調理方法や具材の量によって栄養成分値は変動する可能性があります。
+                          </p>
+                        </div>
+                        {/* 材料リスト */}
+                        <div className={styles.ingredients_block}>
+                          <h3 className={styles.ingredients_block__title}>
+                            材料
+                          </h3>
+                          <ul className={styles.ingredients_block__list}>
+                            {persistedSelectedRecipe.ingredients.map(
+                              (ingredient: Ingredient, idx: number) => (
+                                <li
+                                  key={idx}
+                                  className={styles.ingredients_block__item}
+                                >
+                                  <p>{getIngredientName(ingredient.id)}</p>
+                                  <p>
+                                    {["大さじ", "小さじ"].includes(
+                                      ingredient.unit.name
+                                    )
+                                      ? `${ingredient.unit.name}${
+                                          Number.isInteger(ingredient.quantity)
+                                            ? ingredient.quantity
+                                            : Number(
+                                                ingredient.quantity
+                                              ).toFixed(1)
+                                        }`
+                                      : `${
+                                          Number.isInteger(ingredient.quantity)
+                                            ? ingredient.quantity
+                                            : Number(
+                                                ingredient.quantity
+                                              ).toFixed(1)
+                                        }${ingredient.unit.name}`}
+                                  </p>
+                                </li>
+                              )
+                            )}
+                          </ul>
+                        </div>
                       </div>
                     )}
 

@@ -1,6 +1,12 @@
+@import "@/app/styles/config/breakpoints";
+@import "@/app/styles/config/device";
+
 .google_login {
   width: 100%;
   margin: 1.5rem 0;
+  @include mq-max("sp") {
+    margin: 0px;
+  }
 
   &__button {
     display: flex;
@@ -11,10 +17,14 @@
     background-color: #fff;
     border: 1px solid #e0e0e0;
     border-radius: 4px;
-    font-size: 16px;
+    font-size: 1rem;
     color: #333;
     cursor: pointer;
     transition: all 0.2s ease;
+    @include mq-max("sp") {
+      font-size: 0.875rem;
+      padding: 10px;
+    }
 
     &:hover {
       background-color: #f5f5f5;
@@ -35,5 +45,10 @@
     width: 20px;
     height: 20px;
     margin-right: 10px;
+    @include mq-max("sp") {
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+    }
   }
 } 

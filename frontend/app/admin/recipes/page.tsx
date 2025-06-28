@@ -57,7 +57,10 @@ const AdminRecipes = () => {
       <div className={styles.head_block}>
         <div className={styles.head_block__title_box}>
           <h2 className={styles.head_block__title}>レシピ一覧</h2>
-          <p className={styles.head_block__sum}>{sortedRecipes.length}<span>件</span></p>
+          <p className={styles.head_block__sum}>
+            {sortedRecipes.length}
+            <span>件</span>
+          </p>
         </div>
         <div className={styles.head_block__btn}>
           <Link href="/admin/recipes/new">レシピを追加</Link>
@@ -65,20 +68,20 @@ const AdminRecipes = () => {
       </div>
 
       <div className={styles.sort_block}>
-        <div className={styles.sort_block__genre}>
-          <select
-            value={selectedGenre}
-            onChange={(e) => setSelectedGenre(e.target.value)}
-          >
-            <option value="すべて">すべて</option>
-            {recipeGenres.map((genre) => (
-              <option key={genre.id} value={genre.name}>
-                {genre.name}
-              </option>
-            ))}
-          </select>
-        </div>
         <div className={styles.sort_block__box}>
+          <div className={styles.sort_block__genre}>
+            <select
+              value={selectedGenre}
+              onChange={(e) => setSelectedGenre(e.target.value)}
+            >
+              <option value="すべて">すべて</option>
+              {recipeGenres.map((genre) => (
+                <option key={genre.id} value={genre.name}>
+                  {genre.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className={styles.sort_block__sort}>
             <RecipeSort
               onSortChange={(sortBy: string) => {
@@ -86,14 +89,14 @@ const AdminRecipes = () => {
               }}
             />
           </div>
-          <div className={styles.sort_block__search}>
-            <input
-              type="text"
-              placeholder="レシピ名で検索..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+        </div>
+        <div className={styles.sort_block__search}>
+          <input
+            type="text"
+            placeholder="レシピ名で検索..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
       </div>
 
@@ -120,7 +123,6 @@ const AdminRecipes = () => {
                       : "/images/common/pic_recipe_default.webp"
                   }
                   alt={recipe.name}
-                  className={styles.recipes_block}
                   width={200}
                   height={200}
                 />

@@ -1,3 +1,6 @@
+@import "@/app/styles/config/breakpoints";
+@import "@/app/styles/config/device";
+
 .modal_block {
   &__header {
     display: flex;
@@ -34,7 +37,6 @@
 
   &__search_container {
     position: relative;
-    margin-bottom: 1rem;
   }
 
   &__search_input {
@@ -65,7 +67,10 @@
   }
 
   &__genre {
-    margin-top: 12px;
+    margin-top: 16px;
+    @include mq-max("sp") {
+      margin-top: 32px;
+    }
   }
 
   &__genre_title {
@@ -81,6 +86,9 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
     margin-top: 12px;
+    @include mq-max("sp") {
+      background: #fff;
+    }
 
     &::-webkit-scrollbar {
       display: none;
@@ -90,6 +98,9 @@
   &__ingredients {
     margin-top: 32px;
     padding: 10px;
+    @include mq-max("sp") {
+      padding: 0 10px 10px;
+    }
   }
 
   &__ingredients_title {
@@ -105,5 +116,10 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 12px;
+    @include mq-max("sp") {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 5px;
+      max-height: 80svh;
+    }
   }
 }

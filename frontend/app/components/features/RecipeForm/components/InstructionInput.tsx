@@ -6,6 +6,7 @@ import { RecipeFormData } from "../types/recipeForm";
 import { VALIDATION_MESSAGES } from "../constants/validationMessages";
 import { imageBaseUrl } from "@/app/utils/api";
 import styles from "./InstructionInput.module.scss";
+import toast from "react-hot-toast";
 import {
   DndContext,
   closestCenter,
@@ -25,6 +26,7 @@ import { FaCirclePlus } from "react-icons/fa6";
 import { FaGripLines, FaTrash } from "react-icons/fa";
 import { LuImagePlus } from "react-icons/lu";
 import Image from "next/image";
+
 interface SortableItemProps {
   id: string;
   children: React.ReactNode;
@@ -107,7 +109,7 @@ export const InstructionInput = ({
 
   const handleDeleteInstruction = (index: number) => {
     if (instructions.length === 1) {
-      alert(VALIDATION_MESSAGES.MIN_INSTRUCTIONS);
+      toast.error(VALIDATION_MESSAGES.MIN_INSTRUCTIONS);
       return;
     }
 

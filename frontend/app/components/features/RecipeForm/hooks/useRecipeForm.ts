@@ -6,6 +6,7 @@ import { RecipeFormData, RecipeFormProps } from "../types/recipeForm";
 import { validateDraft, validateRecipe, VALIDATION_MESSAGES } from "../constants/validationMessages";
 import { createFormData } from "@/app/utils/formDataUtils";
 import { useUnits } from "@/app/hooks/units";
+import toast from "react-hot-toast";
 
 export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProps) => {
   const router = useRouter();
@@ -147,11 +148,11 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
       if (!initialRecipe?.id) {
         resetFormData();
       }
-      alert(VALIDATION_MESSAGES.SUCCESS);
+      toast.success(VALIDATION_MESSAGES.SUCCESS);
     } catch (error) {
       console.error('Error in handleSubmit:', error);
       console.error(VALIDATION_MESSAGES.ERROR, error);
-      alert(error instanceof Error ? error.message : VALIDATION_MESSAGES.ERROR);
+      toast.error(error instanceof Error ? error.message : VALIDATION_MESSAGES.ERROR);
     } finally {
       setIsLoading(false);
     }
@@ -190,10 +191,10 @@ export const useRecipeForm = ({ isAdmin = false, initialRecipe }: RecipeFormProp
 
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
-      alert(VALIDATION_MESSAGES.DRAFT_SAVED);
+      toast.success(VALIDATION_MESSAGES.DRAFT_SAVED);
     } catch (error) {
       console.error("Failed to save draft:", error);
-      alert(error instanceof Error ? error.message : VALIDATION_MESSAGES.DRAFT_SAVE_ERROR);
+      toast.error(error instanceof Error ? error.message : VALIDATION_MESSAGES.DRAFT_SAVE_ERROR);
       setSaveStatus("idle");
     }
   }, [formData, user?.id, isAdmin, initialRecipe, addRecipeMutation, updateRecipeMutation]);

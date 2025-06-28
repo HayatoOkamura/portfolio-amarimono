@@ -1,9 +1,16 @@
+@import "@/app/styles/config/breakpoints";
+@import "@/app/styles/config/device";
+
+
 .instruction_block {
   margin-top: 20px;
   &__container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
+    @include mq-max("sp") {
+      grid-template-columns: 1fr;
+    }
   }
 
   &__step {

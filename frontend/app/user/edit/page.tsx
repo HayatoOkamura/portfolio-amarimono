@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
+import { useState, useEffect } from "react";
 import styles from "./edit.module.scss";
 import { useUserStore } from "@/app/stores/userStore";
 import { updateUserProfile, useUser } from "@/app/hooks/user";
 import { useRouter, useSearchParams } from "next/navigation";
-import { LuImagePlus } from "react-icons/lu";
 import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
 import { imageBaseUrl } from "@/app/utils/api";
 import { withAuth } from "@/app/components/auth/withAuth";
 import { toast } from "react-hot-toast";
+import { useImageUpload } from "@/app/components/features/RecipeForm/hooks/useImageUpload";
+import { LuImagePlus } from "react-icons/lu";
+import Image from "next/image";
 
 interface User {
   id: string;
@@ -26,15 +27,19 @@ interface User {
 
 function EditProfileContent() {
   const { user: authUser, isLoading: isAuthLoading } = useUserStore();
-  const { user: userDetails, loading: isUserLoading, error: userError } = useUser(authUser?.id);
+  const {
+    user: userDetails,
+    loading: isUserLoading,
+    error: userError,
+  } = useUser(authUser?.id);
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSetupMode = searchParams.get("setup") === "true";
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { handleImageChange, getImageUrl } = useImageUpload();
 
   const [username, setUsername] = useState("");
-  const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<File | undefined>(undefined);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(undefined);
   const [age, setAge] = useState<number | "">("");
   const [gender, setGender] = useState("未設定");
   const [updating, setUpdating] = useState(false);
@@ -48,7 +53,7 @@ function EditProfileContent() {
       setAge(userDetails.age || "");
       setGender(userDetails.gender || "未設定");
       if (userDetails.profileImage) {
-        setPreviewImage(`${imageBaseUrl}/${userDetails.profileImage}`);
+        setProfileImageUrl(userDetails.profileImage);
       }
     }
   }, [userDetails]);
@@ -57,17 +62,20 @@ function EditProfileContent() {
     e.preventDefault();
     if (!authUser) return;
 
+    setUpdating(true);
+    setError("");
+
     try {
       const formData = new FormData();
-      formData.append('username', username);
-      formData.append('age', age.toString());
-      formData.append('gender', gender);
+      formData.append("username", username);
+      formData.append("age", age.toString());
+      formData.append("gender", gender);
       if (profileImage) {
-        formData.append('image', profileImage);
+        formData.append("image", profileImage);
       }
 
       await updateUserProfile(authUser.id, formData);
-      toast.success('プロフィールを更新しました');
+      toast.success("プロフィールを更新しました");
       if (isSetupMode) {
         alert("プロフィールの設定が完了しました");
         router.push("/");
@@ -75,29 +83,24 @@ function EditProfileContent() {
         router.push("/user");
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('プロフィールの更新に失敗しました');
+      console.error("Error updating profile:", error);
+      setError("プロフィールの更新に失敗しました");
+      toast.error("プロフィールの更新に失敗しました");
+    } finally {
+      setUpdating(false);
     }
   };
 
   // 画像アップロード処理
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setProfileImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setPreviewImage(result);
-      };
-      reader.readAsDataURL(file);
+  const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const result = await handleImageChange(e);
+    if (result) {
+      setProfileImage(result.image);
+      setProfileImageUrl(result.imageUrl);
     }
   };
 
-  // 画像クリックでファイル選択を開く
-  const handleImageClick = () => {
-    fileInputRef.current?.click();
-  };
+  const currentImageUrl = getImageUrl(profileImageUrl, profileImage);
 
   if (showAuthError) {
     return (
@@ -106,12 +109,13 @@ function EditProfileContent() {
           <div className={styles.error_container}>
             <h2 className={styles.error_title}>認証エラー</h2>
             <p className={styles.error_message}>
-              ユーザー情報の取得に失敗しました。<br />
+              ユーザー情報の取得に失敗しました。
+              <br />
               再度ログインしてください。
             </p>
             <button
               className={styles.error_button}
-              onClick={() => router.push('/login')}
+              onClick={() => router.push("/login")}
             >
               ログインページへ
             </button>
@@ -125,55 +129,75 @@ function EditProfileContent() {
     <PageLoading isLoading={isAuthLoading || isUserLoading}>
       <div className={styles.edit_block}>
         <div className={styles.edit_block__inner}>
-          <h1 className={styles.edit_block__title}>{isSetupMode ? "プロフィール設定" : "プロフィール編集"}</h1>
-          <p className={styles.edit_block__description}>{isSetupMode && "アカウントの基本情報を設定してください"}</p>
+          <h1 className={styles.edit_block__title}>
+            {isSetupMode ? "プロフィール設定" : "プロフィール編集"}
+          </h1>
+          {isSetupMode && (
+            <div className={styles.edit_block__description}>
+              <p>アカウントの基本情報を設定してください</p>
+              <p>設定した情報は、ユーザーのプロフィールに表示されます</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className={styles.edit_block__form}>
             <div className={styles.edit_block__head}>
               {/* プロフィール画像のアップロード */}
-              <div
-                className={styles.edit_block__img_wrap}
-                onClick={handleImageClick}
-              >
-                <div className={styles.edit_block__img}>
-                  {previewImage ? (
+              <div className={styles.edit_block__img_wrap}>
+                {currentImageUrl ? (
+                  <div className={styles.edit_block__img_container}>
                     <Image
-                      src={previewImage}
+                      src={currentImageUrl}
                       alt="Profile"
-                      width={100}
-                      height={100}
+                      width={200}
+                      height={200}
+                      className={styles.edit_block__img}
                     />
-                  ) : (
-                    <div className={styles.edit_block__placeholder}>
-                      <div className={styles.edit_block__icon}>
+                    <div className={styles.edit_block__img_overlay}>
+                      <span className={styles.edit_block__img_overlay_text}>
+                        画像を変更
+                      </span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfileImageChange}
+                      className={styles.edit_block__img_input}
+                    />
+                  </div>
+                ) : (
+                  <div className={styles.edit_block__img_placeholder}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfileImageChange}
+                      className={styles.edit_block__img_input}
+                    />
+                    <div className={styles.edit_block__img_placeholder_content}>
+                      <div className={styles.edit_block__img_icon}>
                         <LuImagePlus />
                       </div>
-                      <div className={styles.edit_block__uploadText}>
-                        <label className={styles.edit_block__uploadLabel}>
-                          プロフィール画像をアップロード
+                      <div className={styles.edit_block__img_upload_text}>
+                        <label className={styles.edit_block__img_upload_label}>
+                          プロフィール画像を<br />アップロード
                         </label>
                       </div>
-                      <p className={styles.edit_block__fileInfo}>
+                      <p className={styles.edit_block__img_file_info}>
                         PNG, JPG, GIF up to 10MB
                       </p>
                     </div>
-                  )}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                  />
-                </div>
+                  </div>
+                )}
               </div>
               <div className={styles.edit_block__detail}>
                 <div className={styles.item_block}>
                   <div className={styles.item_block__sub}>
-                    <label className={styles.item_block__title}>ユーザー名</label>
+                    <label className={styles.item_block__title}>
+                      ユーザー名
+                    </label>
                     <input
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
+                      placeholder="ユーザー名を入力してください"
                       required
                       minLength={2}
                       maxLength={20}
@@ -191,6 +215,9 @@ function EditProfileContent() {
                           e.target.value === "" ? "" : Number(e.target.value)
                         )
                       }
+                      placeholder="年齢を入力してください"
+                      min="1"
+                      max="120"
                     />
                   </div>
                   <div className={styles.item_block__sub}>
@@ -207,9 +234,7 @@ function EditProfileContent() {
                   </div>
                 </div>
                 {(error || userError) && (
-                  <div className={styles.form_error}>
-                    {error || userError}
-                  </div>
+                  <div className={styles.form_error}>{error || userError}</div>
                 )}
                 <button
                   className={styles.edit_block__btn}
@@ -219,8 +244,8 @@ function EditProfileContent() {
                   {updating
                     ? "更新中..."
                     : isSetupMode
-                      ? "プロフィールを設定"
-                      : "更新"}
+                    ? "プロフィールを設定"
+                    : "プロフィールを更新"}
                 </button>
               </div>
             </div>

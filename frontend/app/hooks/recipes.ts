@@ -7,6 +7,7 @@ import useRecipeStore from "@/app/stores/recipeStore";
 import { sortRecipes } from "@/app/utils/sortRecipes";
 import { api } from "@/app/utils/api";
 import { SearchMode } from "@/app/stores/ingredientStore";
+import toast from "react-hot-toast";
 
 interface ApiInstruction {
   stepNumber: number;
@@ -458,12 +459,14 @@ export const handleLikeService = async (
     if (response.ok) {
       const data = await response.json();
       setIsLiked((prev) => !prev);
-      alert(data.message);
+      toast.success(data.message || "お気に入りを更新しました");
     } else {
       console.error("Failed to toggle like");
+      toast.error("お気に入りの更新に失敗しました");
     }
   } catch (error) {
     console.error("Error toggling like", error);
+    toast.error("お気に入りの更新に失敗しました");
   }
 };
 

@@ -1,3 +1,5 @@
+@import "@/app/styles/config/breakpoints";
+
 .admin {
   &__container {
     max-width: 1200px;
@@ -8,26 +10,45 @@
   &__title {
     font-size: 2rem;
     font-weight: bold;
-    margin-bottom: 2rem;
     color: #333;
+    @include mq-max("sp") {
+      font-size: 24px;
+    }
   }
 
   &__user_info {
     background-color: #f5f5f5;
     padding: 1.5rem;
     border-radius: 8px;
-    margin-bottom: 2rem;
+    margin-top: 32px;
+    @include mq-max("sp") {
+      margin-top: 18px;
+    }
 
     &_title {
       font-size: 1.5rem;
       font-weight: bold;
-      margin-bottom: 1rem;
       color: #333;
+      @include mq-max("sp") {
+        font-size: 1.125rem;
+      }
     }
 
     &_text {
-      margin: 0.5rem 0;
+      margin: 16px 0;
       color: #666;
+      font-size: 1rem;
+      @include mq-max("sp") {
+        margin: 16px 0 0 0;
+        font-size: 0.875rem;
+      }
+
+      + .admin__user_info_text {
+        margin: 8px 0;
+        @include mq-max("sp") {
+          margin: 8px 0 0 0;
+        }
+      }
     }
   }
 
@@ -36,18 +57,23 @@
     padding: 1.5rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-top: 32px;
 
     &_title {
       font-size: 1.5rem;
       font-weight: bold;
-      margin-bottom: 1rem;
       color: #333;
+      @include mq-max("sp") {
+        font-size: 1.125rem;
+        
+      }
     }
 
     &_list {
       list-style: none;
       padding: 0;
       margin: 0;
+      margin-top: 16px;
     }
 
     &_item {

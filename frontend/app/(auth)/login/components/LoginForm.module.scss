@@ -1,3 +1,6 @@
+@import "@/app/styles/config/breakpoints";
+@import "@/app/styles/config/device";
+
 .form_block {
   display: flex;
   flex-direction: column;
@@ -7,7 +10,10 @@
   &__group {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 8px;
+    @include mq-max("sp") {
+      gap: 5px;
+    }
 
     input {
       padding: 8px 12px;
@@ -15,6 +21,9 @@
       border: 1px solid #e5e7eb;
       font-size: 16px;
       color: #374151;
+      @include mq-max("sp") {
+        font-size: 0.875rem;
+      }
     }
   }
 
@@ -22,6 +31,9 @@
     font-size: 0.875rem;
     font-weight: 500;
     color: #374151;
+    @include mq-max("sp") {
+      // font-size: 0.875rem;
+    }
   }
 
   &__input {
@@ -84,6 +96,9 @@
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.2s;
+    @include mq-max("sp") {
+      font-size: 0.875rem;
+    }
 
     &:hover {
       background-color: #DE616A;
@@ -96,10 +111,14 @@
   }
 
   &__toggle {
-    margin-top: 1.5rem;
+    margin-top: 24px;
     text-align: center;
     font-size: 0.875rem;
     color: #6b7280;
+    @include mq-max("sp") {
+      // font-size: 0.875rem;
+      margin-top: 0px;
+    }
   }
 
   &__link_button {
