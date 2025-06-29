@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/supabase-community/supabase-go"
@@ -30,10 +31,12 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("database environment variables are not properly set")
 	}
 
-	// Direct connectionを使用した接続文字列（IPv4接続を強制）
+	// Transaction Poolerを使用した接続文字列（IPv4接続を保証）
+	// Direct Connectionの代わりにPoolerを使用
+	poolerHost := fmt.Sprintf("%s.pooler.supabase.com", dbHost[:strings.Index(dbHost, ".")])
 	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend family=ipv4",
-		dbHost, dbPort, dbUser, dbPassword, dbName,
+		"host=%s port=6543 user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
+		poolerHost, dbUser, dbPassword, dbName,
 	)
 
 	// GORMの初期化
@@ -51,11 +54,11 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("failed to get database instance: %v", err)
 	}
 
-	// 接続プールの最適化（IPv4接続問題に対処）
-	sqlDB.SetMaxIdleConns(2)                   // アイドル接続数をさらに減らす
+	// 接続プールの最適化（Pooler使用時の設定）
+	sqlDB.SetMaxIdleConns(2)                   // アイドル接続数を制限
 	sqlDB.SetMaxOpenConns(10)                  // 最大接続数を制限
-	sqlDB.SetConnMaxLifetime(30 * time.Minute) // 接続の最大生存時間を短縮
-	sqlDB.SetConnMaxIdleTime(10 * time.Minute) // アイドル接続の最大生存時間を短縮
+	sqlDB.SetConnMaxLifetime(30 * time.Minute) // 接続の最大生存時間
+	sqlDB.SetConnMaxIdleTime(10 * time.Minute) // アイドル接続の最大生存時間
 
 	// 接続テスト
 	if err := sqlDB.Ping(); err != nil {
