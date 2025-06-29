@@ -32,7 +32,7 @@ func InitDB() (*DBConfig, error) {
 
 	// Direct connectionを使用した接続文字列（IPv4接続を強制）
 	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend family=ipv4",
 		dbHost, dbPort, dbUser, dbPassword, dbName,
 	)
 
