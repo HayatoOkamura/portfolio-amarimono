@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { supabase } from '@/app/lib/api/supabase/supabaseClient'
 
+// 動的ルートとして明示的に設定（静的生成を無効化）
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const cookieStore = cookies();
