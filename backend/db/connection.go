@@ -174,19 +174,27 @@ func extractProjectRef(host string) string {
 	parts := strings.Split(host, ".")
 	log.Printf("   📝 分割された部分: %v", parts)
 
-	if len(parts) < 2 {
+	if len(parts) < 3 {
 		log.Printf("   ❌ ホスト名の形式が不正: %s", host)
 		return ""
 	}
 
-	// 最初の部分からプロジェクトリファレンスIDを抽出
-	projectRef := parts[0]
-	log.Printf("   🔍 最初の部分: %s", projectRef)
+	var projectRef string
 
-	// "db"プレフィックスを除去
-	if strings.HasPrefix(projectRef, "db") {
-		projectRef = strings.TrimPrefix(projectRef, "db")
-		log.Printf("   🔄 'db'プレフィックスを除去: %s", projectRef)
+	// db.qmrjsqeigdkizkrpiahs.supabase.co の形式の場合
+	if parts[0] == "db" && len(parts) >= 3 {
+		projectRef = parts[1] // 2番目の部分がプロジェクトリファレンスID
+		log.Printf("   🔍 2番目の部分（プロジェクトリファレンスID）: %s", projectRef)
+	} else {
+		// その他の形式の場合
+		projectRef = parts[0]
+		log.Printf("   🔍 最初の部分: %s", projectRef)
+
+		// "db"プレフィックスを除去
+		if strings.HasPrefix(projectRef, "db") {
+			projectRef = strings.TrimPrefix(projectRef, "db")
+			log.Printf("   🔄 'db'プレフィックスを除去: %s", projectRef)
+		}
 	}
 
 	// 空文字列チェック
