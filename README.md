@@ -31,7 +31,7 @@ Amarimonoは、最新の技術を使用して構築されたフルスタック�
 - **コンテナ化**: Docker
 - **オーケストレーション**: Docker Compose
 - **データベース**: Supabase
-- **開発環境**: Supabase (ローカル開発用)
+- **開発環境**: Supabase CLI (ローカル開発用)
 
 ## 📋 必要条件
 

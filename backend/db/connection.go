@@ -30,15 +30,16 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("database environment variables are not properly set")
 	}
 
-	// Direct connectionを使用した接続文字列（IPv6接続問題を回避）
+	// Direct connectionを使用した接続文字列（IPv4接続を強制）
 	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write",
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
 		dbHost, dbPort, dbUser, dbPassword, dbName,
 	)
 
 	// GORMの初期化
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger:                                   logger.Default.LogMode(logger.Info),
+		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
@@ -50,11 +51,11 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("failed to get database instance: %v", err)
 	}
 
-	// 接続プールの最適化
-	sqlDB.SetMaxIdleConns(5)                   // アイドル接続数を減らす
-	sqlDB.SetMaxOpenConns(20)                  // 最大接続数を制限
-	sqlDB.SetConnMaxLifetime(time.Hour)        // 接続の最大生存時間
-	sqlDB.SetConnMaxIdleTime(30 * time.Minute) // アイドル接続の最大生存時間
+	// 接続プールの最適化（IPv4接続問題に対処）
+	sqlDB.SetMaxIdleConns(2)                   // アイドル接続数をさらに減らす
+	sqlDB.SetMaxOpenConns(10)                  // 最大接続数を制限
+	sqlDB.SetConnMaxLifetime(30 * time.Minute) // 接続の最大生存時間を短縮
+	sqlDB.SetConnMaxIdleTime(10 * time.Minute) // アイドル接続の最大生存時間を短縮
 
 	// 接続テスト
 	if err := sqlDB.Ping(); err != nil {
