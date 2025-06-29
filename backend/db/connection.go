@@ -30,9 +30,9 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("database environment variables are not properly set")
 	}
 
-	// 接続文字列の構築（SSL接続を有効化）
+	// Transaction poolerを使用した接続文字列（IPv4 compatible）
 	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write",
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write pgbouncer=true",
 		dbHost, dbPort, dbUser, dbPassword, dbName,
 	)
 
