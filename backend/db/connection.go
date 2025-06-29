@@ -31,9 +31,20 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("database environment variables are not properly set")
 	}
 
-	// Transaction Poolerを使用した接続文字列（IPv4接続を保証）
-	// Direct Connectionの代わりにPoolerを使用
-	poolerHost := fmt.Sprintf("%s.pooler.supabase.com", dbHost[:strings.Index(dbHost, ".")])
+	// SupabaseプロジェクトのリファレンスIDを抽出
+	// dbHost: db.qmrjsqeigdkizkrpiahs.supabase.co
+	// リファレンスID: qmrjsqeigdkizkrpiahs
+	parts := strings.Split(dbHost, ".")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid database host format: %s", dbHost)
+	}
+	projectRef := parts[0] // "db" を除いた部分を取得
+	if strings.HasPrefix(projectRef, "db.") {
+		projectRef = strings.TrimPrefix(projectRef, "db.")
+	}
+
+	// Transaction Poolerを使用した接続文字列
+	poolerHost := fmt.Sprintf("%s.pooler.supabase.com", projectRef)
 	dsn := fmt.Sprintf(
 		"host=%s port=6543 user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
 		poolerHost, dbUser, dbPassword, dbName,
