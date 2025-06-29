@@ -3,7 +3,6 @@ package db
 import (
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/supabase-community/supabase-go"
@@ -31,29 +30,15 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("database environment variables are not properly set")
 	}
 
-	// SupabaseプロジェクトのリファレンスIDを抽出
-	// dbHost: db.qmrjsqeigdkizkrpiahs.supabase.co
-	// リファレンスID: qmrjsqeigdkizkrpiahs
-	parts := strings.Split(dbHost, ".")
-	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid database host format: %s", dbHost)
-	}
-	projectRef := parts[0] // "db" を除いた部分を取得
-	if strings.HasPrefix(projectRef, "db.") {
-		projectRef = strings.TrimPrefix(projectRef, "db.")
-	}
-
-	// Transaction Poolerを使用した接続文字列
-	poolerHost := fmt.Sprintf("%s.pooler.supabase.com", projectRef)
+	// 接続文字列の構築
 	dsn := fmt.Sprintf(
-		"host=%s port=6543 user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
-		poolerHost, dbUser, dbPassword, dbName,
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write",
+		dbHost, dbPort, dbUser, dbPassword, dbName,
 	)
 
 	// GORMの初期化
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger:                                   logger.Default.LogMode(logger.Info),
-		DisableForeignKeyConstraintWhenMigrating: true,
+		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
@@ -65,11 +50,11 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("failed to get database instance: %v", err)
 	}
 
-	// 接続プールの最適化（Pooler使用時の設定）
-	sqlDB.SetMaxIdleConns(2)                   // アイドル接続数を制限
-	sqlDB.SetMaxOpenConns(10)                  // 最大接続数を制限
-	sqlDB.SetConnMaxLifetime(30 * time.Minute) // 接続の最大生存時間
-	sqlDB.SetConnMaxIdleTime(10 * time.Minute) // アイドル接続の最大生存時間
+	// 接続プールの最適化
+	sqlDB.SetMaxIdleConns(5)                   // アイドル接続数を減らす
+	sqlDB.SetMaxOpenConns(20)                  // 最大接続数を制限
+	sqlDB.SetConnMaxLifetime(time.Hour)        // 接続の最大生存時間
+	sqlDB.SetConnMaxIdleTime(30 * time.Minute) // アイドル接続の最大生存時間
 
 	// 接続テスト
 	if err := sqlDB.Ping(); err != nil {
