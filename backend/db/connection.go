@@ -67,6 +67,17 @@ func InitDB() (*DBConfig, error) {
 		projectRef := extractProjectRef(dbHost)
 		log.Printf("   🆔 抽出されたプロジェクトリファレンスID: %s", projectRef)
 
+		// 空文字列チェック
+		if projectRef == "" {
+			log.Println("❌ プロジェクトリファレンスIDの抽出に失敗しました")
+			log.Printf("   🔸 元のホスト名: %s", dbHost)
+			log.Println("💡 考えられる原因:")
+			log.Println("   1. ホスト名の形式が不正")
+			log.Println("   2. プロジェクトリファレンスIDが含まれていない")
+			log.Println("   3. 環境変数の設定が間違っている")
+			return nil, fmt.Errorf("failed to extract project reference ID from host: %s", dbHost)
+		}
+
 		// Poolerホストの構築
 		finalHost = fmt.Sprintf("%s.pooler.supabase.com", projectRef)
 		finalPort = "6543" // Poolerの標準ポート
@@ -168,11 +179,20 @@ func extractProjectRef(host string) string {
 		return ""
 	}
 
-	// "db"プレフィックスを除去
+	// 最初の部分からプロジェクトリファレンスIDを抽出
 	projectRef := parts[0]
+	log.Printf("   🔍 最初の部分: %s", projectRef)
+
+	// "db"プレフィックスを除去
 	if strings.HasPrefix(projectRef, "db") {
 		projectRef = strings.TrimPrefix(projectRef, "db")
 		log.Printf("   🔄 'db'プレフィックスを除去: %s", projectRef)
+	}
+
+	// 空文字列チェック
+	if projectRef == "" {
+		log.Printf("   ❌ プロジェクトリファレンスIDが空です")
+		return ""
 	}
 
 	log.Printf("   ✅ 抽出されたリファレンスID: %s", projectRef)
