@@ -185,6 +185,7 @@ psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f database_dumps/b
 1. `dump-db.sh`スクリプトを使用してデータベースダンプを作成
 2. プロンプトに従ってSupabaseにリストア
 
+
 ## 📚 APIドキュメント
 
 バックエンドサービスが実行されている場合、`http://localhost:8080/docs`でAPIドキュメントを利用できます。
