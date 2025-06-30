@@ -54,13 +54,18 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	// マイグレーションの実行
-	sqlDB, err := dbConn.DB.DB()
-	if err != nil {
-		log.Fatalf("Failed to get database instance: %v", err)
-	}
-	if err := db.RunMigrations(sqlDB); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
+	// マイグレーションの実行（本番環境ではスキップ）
+	if os.Getenv("ENVIRONMENT") != "production" {
+		sqlDB, err := dbConn.DB.DB()
+		if err != nil {
+			log.Fatalf("Failed to get database instance: %v", err)
+		}
+		if err := db.RunMigrations(sqlDB); err != nil {
+			log.Fatalf("Failed to run migrations: %v", err)
+		}
+		log.Println("✅ マイグレーションが完了しました")
+	} else {
+		log.Println("ℹ️ 本番環境のため、マイグレーションはスキップされました（Supabaseを使用）")
 	}
 
 	// Redisクライアントの初期化
