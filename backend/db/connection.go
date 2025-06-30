@@ -55,11 +55,14 @@ func InitDB() (*DBConfig, error) {
 	log.Println("🔧 プロジェクトリファレンスIDの抽出中...")
 	var finalHost string
 	var finalPort string
+	var finalUser string
+	var usePooler string
 
 	if strings.Contains(dbHost, "pooler.supabase.com") {
 		log.Println("   📝 既にPoolerホストが設定されています")
 		finalHost = dbHost
 		finalPort = dbPort
+		finalUser = dbUser
 	} else {
 		log.Println("   📝 Direct ConnectionホストからリファレンスIDを抽出します")
 
@@ -79,16 +82,19 @@ func InitDB() (*DBConfig, error) {
 		}
 
 		// Pooler接続の有効性を確認するための環境変数
-		usePooler := os.Getenv("USE_POOLER")
+		usePooler = os.Getenv("USE_POOLER")
 		if usePooler == "true" {
 			// Poolerホストの構築
 			finalHost = fmt.Sprintf("%s.pooler.supabase.com", projectRef)
-			finalPort = "6543" // Poolerの標準ポート
+			finalPort = "6543"                                 // Poolerの標準ポート
+			finalUser = fmt.Sprintf("postgres.%s", projectRef) // Pooler接続用のユーザー名
 			log.Printf("   🔄 Poolerホストに変換: %s", finalHost)
+			log.Printf("   🔄 Poolerユーザー名に変換: %s", finalUser)
 		} else {
 			log.Println("   🔧 Pooler接続が無効化されているため、Direct Connectionを使用します")
 			finalHost = dbHost
 			finalPort = dbPort
+			finalUser = dbUser
 		}
 	}
 
@@ -98,11 +104,22 @@ func InitDB() (*DBConfig, error) {
 
 	// 接続文字列の構築
 	log.Println("🔧 接続文字列を構築中...")
+
+	// IPv4/IPv6両方に対応するパラメータを追加（family=ipv4を削除）
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
-		finalHost, finalPort, dbUser, dbPassword, dbName,
+		finalHost, finalPort, finalUser, dbPassword, dbName,
 	)
 	log.Printf("   📝 DSN: %s", maskDSN(dsn))
+
+	// 接続先の詳細情報をログ出力
+	log.Println("🔍 接続先の詳細情報:")
+	log.Printf("   🏠 ホスト: %s", finalHost)
+	log.Printf("   🚪 ポート: %s", finalPort)
+	log.Printf("   🔒 SSLモード: require")
+	log.Printf("   🌐 ファミリー: IPv4/IPv6自動選択")
+	log.Printf("   ⏱️ タイムアウト: 10秒")
+	log.Printf("   📝 セッション属性: read-write")
 
 	// GORMの初期化
 	log.Println("⚙️ GORMの初期化中...")
@@ -111,19 +128,71 @@ func InitDB() (*DBConfig, error) {
 	})
 	if err != nil {
 		log.Printf("❌ GORMの初期化に失敗しました: %v", err)
-		log.Println("🔍 エラーの詳細分析:")
-		log.Printf("   🔸 接続先: %s:%s", finalHost, finalPort)
-		log.Printf("   🔸 ユーザー: %s", dbUser)
-		log.Printf("   🔸 データベース: %s", dbName)
-		log.Printf("   🔸 SSLモード: require")
-		log.Println("💡 考えられる原因:")
-		log.Println("   1. プロジェクトリファレンスIDが間違っている")
-		log.Println("   2. SupabaseでPooler接続が有効になっていない")
-		log.Println("   3. 認証情報が間違っている")
-		log.Println("   4. プロジェクトが存在しない")
-		return nil, fmt.Errorf("failed to connect to database: %v", err)
+
+		// Pooler接続が失敗した場合のフォールバック処理
+		if strings.Contains(dbHost, "pooler.supabase.com") || (usePooler == "true" && strings.Contains(finalHost, "pooler.supabase.com")) {
+			log.Println("🔄 Pooler接続が失敗しました。Direct Connectionにフォールバックします...")
+
+			// Direct Connection用の設定に変更
+			fallbackHost := strings.Replace(dbHost, "pooler.supabase.com", "supabase.co", 1)
+			if !strings.Contains(fallbackHost, "supabase.co") {
+				// 元のホストがpoolerでない場合は、プロジェクトリファレンスIDから構築
+				projectRef := extractProjectRef(dbHost)
+				if projectRef != "" {
+					fallbackHost = fmt.Sprintf("db.%s.supabase.co", projectRef)
+				}
+			}
+
+			fallbackPort := "5432"                                              // Direct Connectionの標準ポート
+			fallbackUser := strings.Replace(dbUser, "postgres.", "postgres", 1) // プロジェクトリファレンスIDを除去
+
+			log.Printf("   🔄 フォールバック接続情報:")
+			log.Printf("      🏠 ホスト: %s", fallbackHost)
+			log.Printf("      🚪 ポート: %s", fallbackPort)
+			log.Printf("      👤 ユーザー: %s", fallbackUser)
+
+			// フォールバック用のDSNを構築
+			fallbackDSN := fmt.Sprintf(
+				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
+				fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
+			)
+
+			log.Printf("   📝 フォールバックDSN: %s", maskDSN(fallbackDSN))
+
+			// フォールバック接続を試行
+			database, err = gorm.Open(postgres.Open(fallbackDSN), &gorm.Config{
+				Logger: logger.Default.LogMode(logger.Info),
+			})
+			if err != nil {
+				log.Printf("❌ フォールバック接続も失敗しました: %v", err)
+				log.Println("🔍 エラーの詳細分析:")
+				log.Printf("   🔸 接続先: %s:%s", fallbackHost, fallbackPort)
+				log.Printf("   🔸 ユーザー: %s", fallbackUser)
+				log.Printf("   🔸 データベース: %s", dbName)
+				log.Printf("   🔸 SSLモード: require")
+				log.Println("💡 考えられる原因:")
+				log.Println("   1. プロジェクトリファレンスIDが間違っている")
+				log.Println("   2. SupabaseでPooler接続が有効になっていない")
+				log.Println("   3. 認証情報が間違っている")
+				log.Println("   4. プロジェクトが存在しない")
+				log.Println("   5. IPアドレスが許可リストに含まれていない")
+				return nil, fmt.Errorf("failed to connect to database (both pooler and direct): %v", err)
+			}
+			log.Println("✅ フォールバック接続が成功しました")
+		} else {
+			log.Println("🔍 エラーの詳細分析:")
+			log.Printf("   🔸 接続先: %s:%s", finalHost, finalPort)
+			log.Printf("   🔸 ユーザー: %s", finalUser)
+			log.Printf("   🔸 データベース: %s", dbName)
+			log.Printf("   🔸 SSLモード: require")
+			log.Println("💡 考えられる原因:")
+			log.Println("   1. プロジェクトリファレンスIDが間違っている")
+			log.Println("   2. SupabaseでPooler接続が有効になっていない")
+			log.Println("   3. 認証情報が間違っている")
+			log.Println("   4. プロジェクトが存在しない")
+			return nil, fmt.Errorf("failed to connect to database: %v", err)
+		}
 	}
-	log.Println("✅ GORMの初期化が完了しました")
 
 	// 接続プールの設定
 	log.Println("🏊 接続プールの設定中...")
