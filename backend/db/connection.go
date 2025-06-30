@@ -78,11 +78,18 @@ func InitDB() (*DBConfig, error) {
 			return nil, fmt.Errorf("failed to extract project reference ID from host: %s", dbHost)
 		}
 
-		// Poolerホストの構築
-		finalHost = fmt.Sprintf("%s.pooler.supabase.com", projectRef)
-		finalPort = "6543" // Poolerの標準ポート
-
-		log.Printf("   🔄 Poolerホストに変換: %s", finalHost)
+		// Pooler接続の有効性を確認するための環境変数
+		usePooler := os.Getenv("USE_POOLER")
+		if usePooler == "true" {
+			// Poolerホストの構築
+			finalHost = fmt.Sprintf("%s.pooler.supabase.com", projectRef)
+			finalPort = "6543" // Poolerの標準ポート
+			log.Printf("   🔄 Poolerホストに変換: %s", finalHost)
+		} else {
+			log.Println("   🔧 Pooler接続が無効化されているため、Direct Connectionを使用します")
+			finalHost = dbHost
+			finalPort = dbPort
+		}
 	}
 
 	log.Println("🔧 最終接続情報:")
