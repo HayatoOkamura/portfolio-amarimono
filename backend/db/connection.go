@@ -105,18 +105,36 @@ func InitDB() (*DBConfig, error) {
 	// 接続文字列の構築
 	log.Println("🔧 接続文字列を構築中...")
 
-	// IPv4/IPv6両方に対応するパラメータを追加（family=ipv4を削除）
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
-		finalHost, finalPort, finalUser, dbPassword, dbName,
-	)
+	// 環境に応じてDSNを構築
+	environment := os.Getenv("ENVIRONMENT")
+	var dsn string
+
+	if environment == "development" {
+		// 開発環境用：以前の動作していたシンプルなDSN
+		log.Println("   🔧 開発環境のため、シンプルなDSNを使用")
+		dsn = fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write",
+			finalHost, finalPort, finalUser, dbPassword, dbName,
+		)
+	} else {
+		// 本番環境用：完全なDSN（本番環境対応のパラメータを含む）
+		log.Println("   🔧 本番環境のため、完全なDSNを使用")
+		dsn = fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
+			finalHost, finalPort, finalUser, dbPassword, dbName,
+		)
+	}
 	log.Printf("   📝 DSN: %s", maskDSN(dsn))
 
 	// 接続先の詳細情報をログ出力
 	log.Println("🔍 接続先の詳細情報:")
 	log.Printf("   🏠 ホスト: %s", finalHost)
 	log.Printf("   🚪 ポート: %s", finalPort)
-	log.Printf("   🔒 SSLモード: require")
+	if environment == "development" {
+		log.Printf("   🔒 SSLモード: disable")
+	} else {
+		log.Printf("   🔒 SSLモード: require")
+	}
 	log.Printf("   🌐 ファミリー: IPv4/IPv6自動選択")
 	log.Printf("   ⏱️ タイムアウト: 10秒")
 	log.Printf("   📝 セッション属性: read-write")
@@ -152,10 +170,18 @@ func InitDB() (*DBConfig, error) {
 			log.Printf("      👤 ユーザー: %s", fallbackUser)
 
 			// フォールバック用のDSNを構築
-			fallbackDSN := fmt.Sprintf(
-				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
-				fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
-			)
+			var fallbackDSN string
+			if environment == "development" {
+				fallbackDSN = fmt.Sprintf(
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write",
+					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
+				)
+			} else {
+				fallbackDSN = fmt.Sprintf(
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
+					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
+				)
+			}
 
 			log.Printf("   📝 フォールバックDSN: %s", maskDSN(fallbackDSN))
 
@@ -169,7 +195,11 @@ func InitDB() (*DBConfig, error) {
 				log.Printf("   🔸 接続先: %s:%s", fallbackHost, fallbackPort)
 				log.Printf("   🔸 ユーザー: %s", fallbackUser)
 				log.Printf("   🔸 データベース: %s", dbName)
-				log.Printf("   🔸 SSLモード: require")
+				if environment == "development" {
+					log.Printf("   🔸 SSLモード: disable")
+				} else {
+					log.Printf("   🔸 SSLモード: require")
+				}
 				log.Println("💡 考えられる原因:")
 				log.Println("   1. プロジェクトリファレンスIDが間違っている")
 				log.Println("   2. SupabaseでPooler接続が有効になっていない")
@@ -184,7 +214,11 @@ func InitDB() (*DBConfig, error) {
 			log.Printf("   🔸 接続先: %s:%s", finalHost, finalPort)
 			log.Printf("   🔸 ユーザー: %s", finalUser)
 			log.Printf("   🔸 データベース: %s", dbName)
-			log.Printf("   🔸 SSLモード: require")
+			if environment == "development" {
+				log.Printf("   🔸 SSLモード: disable")
+			} else {
+				log.Printf("   🔸 SSLモード: require")
+			}
 			log.Println("💡 考えられる原因:")
 			log.Println("   1. プロジェクトリファレンスIDが間違っている")
 			log.Println("   2. SupabaseでPooler接続が有効になっていない")
