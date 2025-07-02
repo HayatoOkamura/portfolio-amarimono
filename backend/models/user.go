@@ -1,6 +1,7 @@
 package models
 
 import (
+	"log"
 	"time"
 
 	"gorm.io/gorm"
@@ -27,25 +28,49 @@ func (User) TableName() string {
 
 // CreateUser ユーザーを作成する
 func CreateUser(db *gorm.DB, user *User) error {
-	return db.Create(user).Error
+	log.Printf("🔍 CreateUser - Creating user with ID: %s", user.ID)
+	err := db.Create(user).Error
+	if err != nil {
+		log.Printf("🔍 CreateUser - Error creating user: %v", err)
+	} else {
+		log.Printf("🔍 CreateUser - User created successfully: %s", user.ID)
+	}
+	return err
 }
 
 // GetUserByID IDからユーザーを取得する
 func GetUserByID(db *gorm.DB, id string) (*User, error) {
+	log.Printf("🔍 GetUserByID - Searching for user with ID: %s", id)
 	var user User
 	err := db.First(&user, "id = ?", id).Error
 	if err != nil {
+		log.Printf("🔍 GetUserByID - Error finding user: %v", err)
 		return nil, err
 	}
+	log.Printf("🔍 GetUserByID - User found: %s", user.ID)
 	return &user, nil
 }
 
 // UpdateUser ユーザー情報を更新する
 func UpdateUser(db *gorm.DB, user *User) error {
-	return db.Save(user).Error
+	log.Printf("🔍 UpdateUser - Updating user with ID: %s", user.ID)
+	err := db.Save(user).Error
+	if err != nil {
+		log.Printf("🔍 UpdateUser - Error updating user: %v", err)
+	} else {
+		log.Printf("🔍 UpdateUser - User updated successfully: %s", user.ID)
+	}
+	return err
 }
 
 // DeleteUser ユーザーを削除する
 func DeleteUser(db *gorm.DB, id string) error {
-	return db.Delete(&User{}, "id = ?", id).Error
+	log.Printf("🔍 DeleteUser - Deleting user with ID: %s", id)
+	err := db.Delete(&User{}, "id = ?", id).Error
+	if err != nil {
+		log.Printf("🔍 DeleteUser - Error deleting user: %v", err)
+	} else {
+		log.Printf("🔍 DeleteUser - User deleted successfully: %s", id)
+	}
+	return err
 }

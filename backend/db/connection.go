@@ -143,6 +143,10 @@ func InitDB() (*DBConfig, error) {
 	log.Println("⚙️ GORMの初期化中...")
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
+		// Prepared Statementの重複エラーを防ぐための設定
+		PrepareStmt: false, // Prepared Statementを無効化
+		// その他の最適化設定
+		SkipDefaultTransaction: true, // デフォルトトランザクションをスキップ
 	})
 	if err != nil {
 		log.Printf("❌ GORMの初期化に失敗しました: %v", err)
@@ -188,6 +192,10 @@ func InitDB() (*DBConfig, error) {
 			// フォールバック接続を試行
 			database, err = gorm.Open(postgres.Open(fallbackDSN), &gorm.Config{
 				Logger: logger.Default.LogMode(logger.Info),
+				// Prepared Statementの重複エラーを防ぐための設定
+				PrepareStmt: false, // Prepared Statementを無効化
+				// その他の最適化設定
+				SkipDefaultTransaction: true, // デフォルトトランザクションをスキップ
 			})
 			if err != nil {
 				log.Printf("❌ フォールバック接続も失敗しました: %v", err)
@@ -236,12 +244,22 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("failed to get database instance: %v", err)
 	}
 
-	// 接続プールの最適化
-	sqlDB.SetMaxIdleConns(5)                   // アイドル接続数を減らす
-	sqlDB.SetMaxOpenConns(20)                  // 最大接続数を制限
-	sqlDB.SetConnMaxLifetime(time.Hour)        // 接続の最大生存時間
-	sqlDB.SetConnMaxIdleTime(30 * time.Minute) // アイドル接続の最大生存時間
-	log.Println("✅ 接続プールの設定が完了しました")
+	// 接続プールの最適化（本番環境対応）
+	if environment == "development" {
+		// 開発環境用の設定
+		sqlDB.SetMaxIdleConns(5)                   // アイドル接続数を減らす
+		sqlDB.SetMaxOpenConns(20)                  // 最大接続数を制限
+		sqlDB.SetConnMaxLifetime(time.Hour)        // 接続の最大生存時間
+		sqlDB.SetConnMaxIdleTime(30 * time.Minute) // アイドル接続の最大生存時間
+		log.Println("✅ 開発環境用の接続プール設定が完了しました")
+	} else {
+		// 本番環境用の設定（Supabase最適化）
+		sqlDB.SetMaxIdleConns(2)                   // アイドル接続数を最小限に
+		sqlDB.SetMaxOpenConns(10)                  // 最大接続数を制限
+		sqlDB.SetConnMaxLifetime(30 * time.Minute) // 接続の最大生存時間を短縮
+		sqlDB.SetConnMaxIdleTime(10 * time.Minute) // アイドル接続の最大生存時間を短縮
+		log.Println("✅ 本番環境用の接続プール設定が完了しました")
+	}
 
 	// 接続テスト
 	log.Println("🧪 接続テストを実行中...")

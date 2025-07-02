@@ -7,6 +7,8 @@ import (
 	"portfolio-amarimono/handlers/utils"
 	"portfolio-amarimono/models"
 
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -24,28 +26,40 @@ func NewUserHandler(db *gorm.DB) *UserHandler {
 
 // CreateUser handles user creation
 func (h *UserHandler) CreateUser(c *gin.Context) {
+	// デバッグ情報の追加
+	log.Printf("🔍 CreateUser called - Headers: %v", c.Request.Header)
+	log.Printf("🔍 CreateUser called - Method: %s", c.Request.Method)
+	log.Printf("🔍 CreateUser called - Content-Type: %s", c.GetHeader("Content-Type"))
+
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
+		log.Printf("🔍 CreateUser - JSON binding error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user data"})
 		return
 	}
 
+	log.Printf("🔍 CreateUser - User data received: %+v", user)
+
 	// ユーザーIDの検証
 	if user.ID == "" {
+		log.Printf("🔍 CreateUser - User ID is empty")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
 		return
 	}
 
 	// メールアドレスの検証
 	if user.Email == "" {
+		log.Printf("🔍 CreateUser - Email is empty")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email is required"})
 		return
 	}
 
 	// 画像ファイルの処理
 	if file, err := c.FormFile("image"); err == nil {
+		log.Printf("🔍 CreateUser - Image file found: %s", file.Filename)
 		// ファイルサイズのチェック（10MB制限）
 		if file.Size > 10*1024*1024 {
+			log.Printf("🔍 CreateUser - Image file too large: %d bytes", file.Size)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Image file size exceeds 10MB limit"})
 			return
 		}
@@ -53,11 +67,13 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		// 画像を保存
 		imagePath, err := utils.SaveImage(c, file, "users/"+user.ID, "")
 		if err != nil {
+			log.Printf("🔍 CreateUser - Failed to save image: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
 			return
 		}
 		user.ProfileImage = &imagePath
 	} else {
+		log.Printf("🔍 CreateUser - No image file provided: %v", err)
 		// 画像が選択されていない場合は、既存のimageUrlを使用
 		imageUrl := c.PostForm("image_url")
 		if imageUrl != "" {
@@ -65,30 +81,41 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		}
 	}
 
+	log.Printf("🔍 CreateUser - Checking existing user with ID: %s", user.ID)
+
 	// 既存のユーザーを確認
 	existingUser, err := models.GetUserByID(h.DB, user.ID)
 	if err != nil {
+		log.Printf("🔍 CreateUser - GetUserByID error: %v", err)
 		if err == gorm.ErrRecordNotFound {
+			log.Printf("🔍 CreateUser - User not found, creating new user")
 			// ユーザーが存在しない場合は新規作成
 			if err := models.CreateUser(h.DB, &user); err != nil {
+				log.Printf("🔍 CreateUser - Failed to create user: %v", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 				return
 			}
+			log.Printf("🔍 CreateUser - User created successfully: %s", user.ID)
 			c.JSON(http.StatusCreated, user)
 			return
 		}
 		// その他のエラーの場合
+		log.Printf("🔍 CreateUser - Database error checking existing user: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check existing user"})
 		return
 	}
 
+	log.Printf("🔍 CreateUser - Existing user found, updating: %s", existingUser.ID)
+
 	// ユーザーが既に存在する場合は更新
 	user.CreatedAt = existingUser.CreatedAt // 作成日時は保持
 	if err := models.UpdateUser(h.DB, &user); err != nil {
+		log.Printf("🔍 CreateUser - Failed to update user: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
 		return
 	}
 
+	log.Printf("🔍 CreateUser - User updated successfully: %s", user.ID)
 	c.JSON(http.StatusOK, user)
 }
 
@@ -128,7 +155,7 @@ func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
 
 	// 既存のユーザーを取得
 	existingUser, err := models.GetUserByID(h.DB, userID)
-	if err != nil {	
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
