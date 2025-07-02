@@ -122,17 +122,17 @@ func InitDB() (*DBConfig, error) {
 	var dsn string
 
 	if environment == "development" {
-		// 開発環境用：prepared statementを無効化したDSN
-		log.Println("   🔧 開発環境のため、prepared statementを無効化したDSNを使用")
+		// 開発環境用：prepared statementを完全無効化したDSN
+		log.Println("   🔧 開発環境のため、prepared statementを完全無効化したDSNを使用")
 		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0",
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0",
 			finalHost, finalPort, finalUser, dbPassword, dbName,
 		)
 	} else {
-		// 本番環境用：完全なDSN（本番環境対応のパラメータを含む）
-		log.Println("   🔧 本番環境のため、完全なDSNを使用")
+		// 本番環境用：prepared statementを完全無効化したDSN（本番環境対応のパラメータを含む）
+		log.Println("   🔧 本番環境のため、prepared statementを完全無効化したDSNを使用")
 		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0",
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0",
 			finalHost, finalPort, finalUser, dbPassword, dbName,
 		)
 	}
@@ -154,11 +154,15 @@ func InitDB() (*DBConfig, error) {
 	// GORMの初期化
 	log.Println("⚙️ GORMの初期化中...")
 	log.Printf("🔧 GORM設定:")
-	log.Printf("   📝 PrepareStmt: false")
+	log.Printf("   📝 PrepareStmt: false (prepared statement無効化)")
 	log.Printf("   📝 SkipDefaultTransaction: true")
 	log.Printf("   📝 QueryFields: true")
 	log.Printf("   📝 DryRun: false")
 	log.Printf("   📝 DisableForeignKeyConstraintWhenMigrating: true")
+	log.Printf("🔧 PostgreSQL設定:")
+	log.Printf("   📝 statement_cache_mode: describe")
+	log.Printf("   📝 prepared_statement_cache_size: 0")
+	log.Printf("   📝 max_prepared_statements: 0")
 
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
@@ -202,12 +206,12 @@ func InitDB() (*DBConfig, error) {
 			var fallbackDSN string
 			if environment == "development" {
 				fallbackDSN = fmt.Sprintf(
-					"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0",
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0",
 					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
 				)
 			} else {
 				fallbackDSN = fmt.Sprintf(
-					"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0",
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0",
 					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
 				)
 			}
@@ -306,13 +310,15 @@ func InitDB() (*DBConfig, error) {
 		log.Printf("⚠️ PostgreSQL設定の確認に失敗: %v", err)
 	} else {
 		defer rows.Close()
+		log.Println("   📋 現在のPostgreSQL設定:")
 		for rows.Next() {
 			if err := rows.Scan(&settingName, &setting); err != nil {
 				log.Printf("⚠️ 設定値の読み取りに失敗: %v", err)
 			} else {
-				log.Printf("   📝 %s: %s", settingName, setting)
+				log.Printf("      📝 %s: %s", settingName, setting)
 			}
 		}
+		log.Println("   ✅ PostgreSQL設定の確認が完了しました")
 	}
 
 	// Supabaseクライアントの初期化
