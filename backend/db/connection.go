@@ -147,6 +147,10 @@ func InitDB() (*DBConfig, error) {
 		PrepareStmt: false, // Prepared Statementを無効化
 		// その他の最適化設定
 		SkipDefaultTransaction: true, // デフォルトトランザクションをスキップ
+		// 本番環境での追加設定
+		DisableForeignKeyConstraintWhenMigrating: true, // 外部キー制約を無効化
+		// クエリの最適化
+		QueryFields: true, // フィールドを明示的に指定
 	})
 	if err != nil {
 		log.Printf("❌ GORMの初期化に失敗しました: %v", err)
@@ -196,6 +200,10 @@ func InitDB() (*DBConfig, error) {
 				PrepareStmt: false, // Prepared Statementを無効化
 				// その他の最適化設定
 				SkipDefaultTransaction: true, // デフォルトトランザクションをスキップ
+				// 本番環境での追加設定
+				DisableForeignKeyConstraintWhenMigrating: true, // 外部キー制約を無効化
+				// クエリの最適化
+				QueryFields: true, // フィールドを明示的に指定
 			})
 			if err != nil {
 				log.Printf("❌ フォールバック接続も失敗しました: %v", err)

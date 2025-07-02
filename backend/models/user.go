@@ -2,6 +2,7 @@ package models
 
 import (
 	"log"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -42,13 +43,29 @@ func CreateUser(db *gorm.DB, user *User) error {
 func GetUserByID(db *gorm.DB, id string) (*User, error) {
 	log.Printf("🔍 GetUserByID - Searching for user with ID: %s", id)
 	var user User
-	err := db.First(&user, "id = ?", id).Error
-	if err != nil {
-		log.Printf("🔍 GetUserByID - Error finding user: %v", err)
-		return nil, err
+
+	// リトライ機能付きでクエリを実行
+	var err error
+	for retry := 0; retry < 3; retry++ {
+		err = db.First(&user, "id = ?", id).Error
+		if err == nil {
+			log.Printf("🔍 GetUserByID - User found: %s", user.ID)
+			return &user, nil
+		}
+
+		// prepared statementエラーの場合はリトライ
+		if retry < 2 && (err.Error() == "ERROR: prepared statement \"stmtcache_\" already exists (SQLSTATE 42P05)" ||
+			strings.Contains(err.Error(), "prepared statement") && strings.Contains(err.Error(), "already exists")) {
+			log.Printf("🔍 GetUserByID - Prepared statement error, retrying... (attempt %d/3)", retry+1)
+			time.Sleep(100 * time.Millisecond) // 少し待機
+			continue
+		}
+
+		break
 	}
-	log.Printf("🔍 GetUserByID - User found: %s", user.ID)
-	return &user, nil
+
+	log.Printf("🔍 GetUserByID - Error finding user: %v", err)
+	return nil, err
 }
 
 // UpdateUser ユーザー情報を更新する

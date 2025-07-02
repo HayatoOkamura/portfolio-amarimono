@@ -2,12 +2,34 @@ import { NextResponse } from 'next/server'
 import { backendUrl } from '@/app/utils/api'
 import { supabase } from '@/app/lib/api/supabase/supabaseClient'
 
+// 重複リクエスト防止用のMap
+const pendingRequests = new Map<string, Promise<any>>();
+
 // デバッグログ用の関数
 const debugLog = (message: string, data?: any) => {
   const timestamp = new Date().toISOString();
   const requestId = Math.random().toString(36).substring(7);
   console.log(`[${timestamp}] [${requestId}] 🔍 ${message}`, data ? JSON.stringify(data, null, 2) : '');
   return requestId;
+};
+
+// 重複リクエストを防ぐためのヘルパー関数
+const executeWithDebounce = async (key: string, operation: () => Promise<any>) => {
+  // 既に実行中のリクエストがある場合はそれを返す
+  if (pendingRequests.has(key)) {
+    debugLog('Duplicate request detected, waiting for existing request', { key });
+    return await pendingRequests.get(key);
+  }
+
+  // 新しいリクエストを作成
+  const promise = operation().finally(() => {
+    // 完了後にMapから削除
+    pendingRequests.delete(key);
+  });
+
+  // Mapに保存
+  pendingRequests.set(key, promise);
+  return promise;
 };
 
 export async function POST(request: Request) {
@@ -46,108 +68,128 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'メール認証が完了していません' }, { status: 403 });
     }
 
-    // バックエンドからユーザー情報を取得
-    const apiUrl = `${backendUrl}/api/users/${authUser.id}`;
-    debugLog('Fetching user from backend', { url: apiUrl, requestId });
-    
-    const response = await fetch(apiUrl, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      signal: AbortSignal.timeout(5000),
-    });
+    // 重複リクエスト防止のためのキー
+    const syncKey = `sync_${authUser.id}`;
 
-    debugLog('Backend response received', { 
-      status: response.status,
-      ok: response.ok,
-      requestId
-    });
-
-    // ユーザーが存在する場合はその情報を返す
-    if (response.ok) {
-      const user = await response.json();
-      debugLog('User retrieved successfully', { userId: user.id, requestId });
-      return NextResponse.json(user);
-    }
-
-    // 404エラーの場合（ユーザーが存在しない場合）は新規作成を試みる
-    if (response.status === 404) {
-      debugLog('User not found in backend, attempting creation', { requestId });
+    // デバウンス機能付きで同期処理を実行
+    const result = await executeWithDebounce(syncKey, async () => {
+      // バックエンドからユーザー情報を取得
+      const apiUrl = `${backendUrl}/api/users/${authUser.id}`;
+      debugLog('Fetching user from backend', { url: apiUrl, requestId });
       
-      const userData = {
-        id: authUser.id,
-        email: authUser.email || '',
-        username: '',
-        age: 0,
-        gender: "未設定"
-      };
-
-      debugLog('Creating new user', { userData, requestId });
-
-      const createResponse = await fetch(`${backendUrl}/api/users`, {
-        method: 'POST',
+      const response = await fetch(apiUrl, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(userData),
+        signal: AbortSignal.timeout(5000),
       });
 
-      debugLog('User creation response', {
-        status: createResponse.status,
-        ok: createResponse.ok,
+      debugLog('Backend response received', { 
+        status: response.status,
+        ok: response.ok,
         requestId
       });
 
-      if (createResponse.ok) {
-        const newUser = await createResponse.json();
-        debugLog('User created successfully', { userId: newUser.id, requestId });
-        return NextResponse.json(newUser);
+      // ユーザーが存在する場合はその情報を返す
+      if (response.ok) {
+        const user = await response.json();
+        debugLog('User retrieved successfully', { userId: user.id, requestId });
+        return { success: true, user };
       }
 
-      // 重複エラーの場合は、ユーザーが既に作成されていると判断
-      const responseText = await createResponse.text();
-      debugLog('User creation failed', {
-        status: createResponse.status,
-        responseText,
-        requestId
-      });
+      // 404エラーの場合（ユーザーが存在しない場合）は新規作成を試みる
+      if (response.status === 404) {
+        debugLog('User not found in backend, attempting creation', { requestId });
+        
+        const userData = {
+          id: authUser.id,
+          email: authUser.email || '',
+          username: '',
+          age: 0,
+          gender: "未設定"
+        };
 
-      if (createResponse.status === 500 && responseText.includes('duplicate key')) {
-        // 重複エラーの場合は、ユーザー情報を再取得
-        const retryResponse = await fetch(apiUrl, {
+        debugLog('Creating new user', { userData, requestId });
+
+        const createResponse = await fetch(`${backendUrl}/api/users`, {
+          method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          }
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData),
         });
 
-        if (retryResponse.ok) {
-          const retryUser = await retryResponse.json();
-          debugLog('User retrieved after duplicate error', { userId: retryUser.id, requestId });
-          return NextResponse.json(retryUser);
+        debugLog('User creation response', {
+          status: createResponse.status,
+          ok: createResponse.ok,
+          requestId
+        });
+
+        if (createResponse.ok) {
+          const newUser = await createResponse.json();
+          debugLog('User created successfully', { userId: newUser.id, requestId });
+          return { success: true, user: newUser };
         }
+
+        // 重複エラーの場合は、ユーザーが既に作成されていると判断
+        const responseText = await createResponse.text();
+        debugLog('User creation failed', {
+          status: createResponse.status,
+          responseText,
+          requestId
+        });
+
+        if (createResponse.status === 500 && responseText.includes('duplicate key')) {
+          // 重複エラーの場合は、ユーザー情報を再取得
+          const retryResponse = await fetch(apiUrl, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (retryResponse.ok) {
+            const retryUser = await retryResponse.json();
+            debugLog('User retrieved after duplicate error', { userId: retryUser.id, requestId });
+            return { success: true, user: retryUser };
+          }
+        }
+
+        return { 
+          success: false, 
+          error: 'ユーザーの作成に失敗しました',
+          details: responseText,
+          status: 500
+        };
       }
 
-      return NextResponse.json({ 
-        error: 'ユーザーの作成に失敗しました',
-        details: responseText
-      }, { status: 500 });
-    }
+      // その他のエラーの場合
+      const errorText = await response.text();
+      debugLog('Backend error', {
+        status: response.status,
+        errorText,
+        requestId
+      });
 
-    // その他のエラーの場合
-    const errorText = await response.text();
-    debugLog('Backend error', {
-      status: response.status,
-      errorText,
-      requestId
+      return { 
+        success: false,
+        error: 'ユーザー情報の取得に失敗しました',
+        details: errorText,
+        status: response.status
+      };
     });
 
-    return NextResponse.json({ 
-      error: 'ユーザー情報の取得に失敗しました',
-      details: errorText
-    }, { status: response.status });
+    // 結果を返す
+    if (result.success) {
+      return NextResponse.json(result.user);
+    } else {
+      return NextResponse.json({ 
+        error: result.error,
+        details: result.details
+      }, { status: result.status });
+    }
 
   } catch (error) {
     debugLog('Unexpected error in sync', {
