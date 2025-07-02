@@ -29,7 +29,7 @@ export async function createClient() {
               }),
               // 本番環境では本番用の設定
               ...(!isDevelopment && {
-                domain: process.env.NEXT_PUBLIC_SITE_URL,
+                domain: process.env.NEXT_PUBLIC_SITE_URL || 'portfolio-amarimono.vercel.app',
                 secure: true,
               }),
             })
@@ -50,7 +50,7 @@ export async function createClient() {
               }),
               // 本番環境では本番用の設定
               ...(!isDevelopment && {
-                domain: process.env.NEXT_PUBLIC_SITE_URL,
+                domain: process.env.NEXT_PUBLIC_SITE_URL || 'portfolio-amarimono.vercel.app',
                 secure: true,
               }),
             })

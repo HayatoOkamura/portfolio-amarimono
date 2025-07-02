@@ -264,6 +264,9 @@ export function useAuth() {
   const signInWithGoogle = async (isLogin: boolean = true) => {
     try {
       console.log('🔍 Starting Google sign in process', { isLogin });
+      console.log('🔍 Environment:', process.env.ENVIRONMENT);
+      console.log('🔍 Window location origin:', window.location.origin);
+      console.log('🔍 NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
       
       if (isLogin) {
         // ログイン時は直接認証を実行

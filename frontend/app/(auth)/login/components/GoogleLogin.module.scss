@@ -3,10 +3,6 @@
 
 .google_login {
   width: 100%;
-  margin: 1.5rem 0;
-  @include mq-max("sp") {
-    margin: 0px;
-  }
 
   &__button {
     display: flex;

@@ -10,6 +10,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+// 環境判定
+const isDevelopment = process.env.ENVIRONMENT === 'development';
+
 // クッキー操作のヘルパー関数
 const getCookie = (name: string): string | null => {
   const value = `; ${document.cookie}`;
@@ -21,11 +24,20 @@ const getCookie = (name: string): string | null => {
 const setCookie = (name: string, value: string, days = 7) => {
   const expires = new Date();
   expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;secure;samesite=lax`;
+  
+  // 環境に応じてクッキー設定を変更
+  const domain = isDevelopment ? '' : `;domain=${process.env.NEXT_PUBLIC_SITE_URL || 'portfolio-amarimono.vercel.app'}`;
+  const secure = isDevelopment ? '' : ';secure';
+  
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/${domain}${secure};samesite=lax`;
 };
 
 const removeCookie = (name: string) => {
-  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;secure;samesite=lax`;
+  // 環境に応じてクッキー設定を変更
+  const domain = isDevelopment ? '' : `;domain=${process.env.NEXT_PUBLIC_SITE_URL || 'portfolio-amarimono.vercel.app'}`;
+  const secure = isDevelopment ? '' : ';secure';
+  
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/${domain}${secure};samesite=lax`;
 };
 
 // クライアントサイドでのみ実行されるようにする
