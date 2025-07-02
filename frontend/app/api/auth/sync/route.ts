@@ -6,26 +6,69 @@ import { supabase } from '@/app/lib/api/supabase/supabaseClient'
 const pendingRequests = new Map<string, Promise<any>>();
 
 // デバッグログ用の関数
-const debugLog = (message: string, data?: any) => {
+const debugLog = (message: string, data?: any, requestId?: string) => {
   const timestamp = new Date().toISOString();
-  const requestId = Math.random().toString(36).substring(7);
-  console.log(`[${timestamp}] [${requestId}] 🔍 ${message}`, data ? JSON.stringify(data, null, 2) : '');
-  return requestId;
+  const logId = requestId || Math.random().toString(36).substring(7);
+  console.log(`[${timestamp}] [${logId}] 🔍 ${message}`, data ? JSON.stringify(data, null, 2) : '');
+  return logId;
+};
+
+// 重複リクエストの統計情報
+const requestStats = {
+  total: 0,
+  duplicates: 0,
+  successful: 0,
+  failed: 0
 };
 
 // 重複リクエストを防ぐためのヘルパー関数
-const executeWithDebounce = async (key: string, operation: () => Promise<any>) => {
+const executeWithDebounce = async (key: string, operation: () => Promise<any>, requestId: string) => {
+  requestStats.total++;
+  
   // 既に実行中のリクエストがある場合はそれを返す
   if (pendingRequests.has(key)) {
-    debugLog('Duplicate request detected, waiting for existing request', { key });
+    requestStats.duplicates++;
+    debugLog('Duplicate request detected, waiting for existing request', { 
+      key, 
+      pendingRequestsCount: pendingRequests.size,
+      stats: requestStats
+    }, requestId);
     return await pendingRequests.get(key);
   }
 
+  debugLog('Starting new request', { 
+    key, 
+    pendingRequestsCount: pendingRequests.size,
+    stats: requestStats
+  }, requestId);
+
   // 新しいリクエストを作成
-  const promise = operation().finally(() => {
-    // 完了後にMapから削除
-    pendingRequests.delete(key);
-  });
+  const promise = operation()
+    .then((result) => {
+      requestStats.successful++;
+      debugLog('Request completed successfully', { 
+        key, 
+        stats: requestStats
+      }, requestId);
+      return result;
+    })
+    .catch((error) => {
+      requestStats.failed++;
+      debugLog('Request failed', { 
+        key, 
+        error: error.message,
+        stats: requestStats
+      }, requestId);
+      throw error;
+    })
+    .finally(() => {
+      // 完了後にMapから削除
+      pendingRequests.delete(key);
+      debugLog('Request removed from pending queue', { 
+        key, 
+        pendingRequestsCount: pendingRequests.size
+      }, requestId);
+    });
 
   // Mapに保存
   pendingRequests.set(key, promise);
@@ -33,23 +76,23 @@ const executeWithDebounce = async (key: string, operation: () => Promise<any>) =
 };
 
 export async function POST(request: Request) {
-  const requestId = debugLog('Sync request started');
+  const requestId = debugLog('Sync request started', undefined, undefined);
   
   try {
     // Authorizationヘッダーからアクセストークンを取得
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      debugLog('Invalid Authorization header', { authHeader, requestId });
+      debugLog('Invalid Authorization header', { authHeader, requestId }, requestId);
       return NextResponse.json({ error: '認証情報が不正です' }, { status: 401 });
     }
     const accessToken = authHeader.split(' ')[1];
     
     // Supabaseからユーザー情報を取得
-    debugLog('Fetching user from Supabase', { requestId });
+    debugLog('Fetching user from Supabase', { requestId }, requestId);
     const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(accessToken);
     
     if (userError || !authUser) {
-      debugLog('Supabase user fetch error', { error: userError, requestId });
+      debugLog('Supabase user fetch error', { error: userError, requestId }, requestId);
       return NextResponse.json({ 
         error: 'ユーザー情報の取得に失敗しました',
         details: userError?.message 
@@ -60,11 +103,11 @@ export async function POST(request: Request) {
       userId: authUser.id,
       email: authUser.email,
       requestId
-    });
+    }, requestId);
 
     // メール認証が完了していない場合はエラーを返す
     if (!authUser.email_confirmed_at) {
-      debugLog('Email not confirmed', { userId: authUser.id, requestId });
+      debugLog('Email not confirmed', { userId: authUser.id, requestId }, requestId);
       return NextResponse.json({ error: 'メール認証が完了していません' }, { status: 403 });
     }
 
@@ -75,7 +118,7 @@ export async function POST(request: Request) {
     const result = await executeWithDebounce(syncKey, async () => {
       // バックエンドからユーザー情報を取得
       const apiUrl = `${backendUrl}/api/users/${authUser.id}`;
-      debugLog('Fetching user from backend', { url: apiUrl, requestId });
+      debugLog('Fetching user from backend', { url: apiUrl, requestId }, requestId);
       
       const response = await fetch(apiUrl, {
         headers: {
@@ -89,18 +132,18 @@ export async function POST(request: Request) {
         status: response.status,
         ok: response.ok,
         requestId
-      });
+      }, requestId);
 
       // ユーザーが存在する場合はその情報を返す
       if (response.ok) {
         const user = await response.json();
-        debugLog('User retrieved successfully', { userId: user.id, requestId });
+        debugLog('User retrieved successfully', { userId: user.id, requestId }, requestId);
         return { success: true, user };
       }
 
       // 404エラーの場合（ユーザーが存在しない場合）は新規作成を試みる
       if (response.status === 404) {
-        debugLog('User not found in backend, attempting creation', { requestId });
+        debugLog('User not found in backend, attempting creation', { requestId }, requestId);
         
         const userData = {
           id: authUser.id,
@@ -110,7 +153,7 @@ export async function POST(request: Request) {
           gender: "未設定"
         };
 
-        debugLog('Creating new user', { userData, requestId });
+        debugLog('Creating new user', { userData, requestId }, requestId);
 
         const createResponse = await fetch(`${backendUrl}/api/users`, {
           method: 'POST',
@@ -125,11 +168,11 @@ export async function POST(request: Request) {
           status: createResponse.status,
           ok: createResponse.ok,
           requestId
-        });
+        }, requestId);
 
         if (createResponse.ok) {
           const newUser = await createResponse.json();
-          debugLog('User created successfully', { userId: newUser.id, requestId });
+          debugLog('User created successfully', { userId: newUser.id, requestId }, requestId);
           return { success: true, user: newUser };
         }
 
@@ -139,7 +182,7 @@ export async function POST(request: Request) {
           status: createResponse.status,
           responseText,
           requestId
-        });
+        }, requestId);
 
         if (createResponse.status === 500 && responseText.includes('duplicate key')) {
           // 重複エラーの場合は、ユーザー情報を再取得
@@ -179,7 +222,7 @@ export async function POST(request: Request) {
         details: errorText,
         status: response.status
       };
-    });
+    }, requestId);
 
     // 結果を返す
     if (result.success) {
