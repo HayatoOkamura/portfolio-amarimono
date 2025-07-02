@@ -216,9 +216,15 @@ export const fetchIngredientsServer = async (): Promise<Ingredient[]> => {
     ? 'http://portfolio-amarimono_backend_1:8080'  // Docker環境用
     : process.env.NEXT_PUBLIC_BACKEND_URL || 'https://amarimono-backend.onrender.com';
 
-  const response = await axios.create({ baseURL }).get("/admin/ingredients");
-  const mappedIngredients = mapIngredients(response.data);
-  return mappedIngredients;
+  try {
+    const response = await axios.create({ baseURL }).get("/admin/ingredients");
+    const mappedIngredients = mapIngredients(response.data);
+    return mappedIngredients;
+  } catch (error) {
+    console.error('Error fetching ingredients on server side:', error);
+    // エラーが発生した場合は空配列を返す（ビルドを失敗させない）
+    return [];
+  }
 };
 
 // ユーザーの初期設定具材を取得するフック
