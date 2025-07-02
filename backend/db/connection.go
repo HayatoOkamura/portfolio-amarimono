@@ -29,6 +29,19 @@ func InitDB() (*DBConfig, error) {
 	dbUser := os.Getenv("SUPABASE_DB_USER")
 	dbPassword := os.Getenv("SUPABASE_DB_PASSWORD")
 	dbName := os.Getenv("SUPABASE_DB_NAME")
+	environment := os.Getenv("ENVIRONMENT")
+
+	// 環境変数の詳細ログ
+	log.Println("🔍 環境変数の詳細:")
+	log.Printf("   🌍 ENVIRONMENT: %s", environment)
+	log.Printf("   🏠 DB_HOST: %s", dbHost)
+	log.Printf("   🚪 DB_PORT: %s", dbPort)
+	log.Printf("   👤 DB_USER: %s", dbUser)
+	log.Printf("   🔑 DB_PASSWORD: %s", maskPassword(dbPassword))
+	log.Printf("   📊 DB_NAME: %s", dbName)
+	log.Printf("   🔧 USE_POOLER: %s", os.Getenv("USE_POOLER"))
+	log.Printf("   🔧 SUPABASE_URL: %s", os.Getenv("SUPABASE_URL"))
+	log.Printf("   🔧 SUPABASE_SERVICE_ROLE_KEY: %s", maskPassword(os.Getenv("SUPABASE_SERVICE_ROLE_KEY")))
 
 	// 環境変数の検証
 	log.Println("🔍 環境変数の検証中...")
@@ -106,21 +119,20 @@ func InitDB() (*DBConfig, error) {
 	log.Println("🔧 接続文字列を構築中...")
 
 	// 環境に応じてDSNを構築
-	environment := os.Getenv("ENVIRONMENT")
 	var dsn string
 
 	if environment == "development" {
-		// 開発環境用：以前の動作していたシンプルなDSN
-		log.Println("   🔧 開発環境のため、シンプルなDSNを使用")
+		// 開発環境用：prepared statementを無効化したDSN
+		log.Println("   🔧 開発環境のため、prepared statementを無効化したDSNを使用")
 		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write",
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0",
 			finalHost, finalPort, finalUser, dbPassword, dbName,
 		)
 	} else {
 		// 本番環境用：完全なDSN（本番環境対応のパラメータを含む）
 		log.Println("   🔧 本番環境のため、完全なDSNを使用")
 		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0",
 			finalHost, finalPort, finalUser, dbPassword, dbName,
 		)
 	}
@@ -141,6 +153,13 @@ func InitDB() (*DBConfig, error) {
 
 	// GORMの初期化
 	log.Println("⚙️ GORMの初期化中...")
+	log.Printf("🔧 GORM設定:")
+	log.Printf("   📝 PrepareStmt: false")
+	log.Printf("   📝 SkipDefaultTransaction: true")
+	log.Printf("   📝 QueryFields: true")
+	log.Printf("   📝 DryRun: false")
+	log.Printf("   📝 DisableForeignKeyConstraintWhenMigrating: true")
+
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 		// Prepared Statementの重複エラーを防ぐための設定
@@ -151,6 +170,8 @@ func InitDB() (*DBConfig, error) {
 		DisableForeignKeyConstraintWhenMigrating: true, // 外部キー制約を無効化
 		// クエリの最適化
 		QueryFields: true, // フィールドを明示的に指定
+		// 本番環境での追加設定
+		DryRun: false, // ドライランを無効化
 	})
 	if err != nil {
 		log.Printf("❌ GORMの初期化に失敗しました: %v", err)
@@ -181,12 +202,12 @@ func InitDB() (*DBConfig, error) {
 			var fallbackDSN string
 			if environment == "development" {
 				fallbackDSN = fmt.Sprintf(
-					"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write",
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0",
 					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
 				)
 			} else {
 				fallbackDSN = fmt.Sprintf(
-					"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0",
 					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
 				)
 			}
@@ -276,6 +297,23 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("failed to ping database: %v", err)
 	}
 	log.Println("✅ 接続テストが成功しました")
+
+	// PostgreSQLの設定を確認
+	log.Println("🔍 PostgreSQLの設定を確認中...")
+	var settingName, setting string
+	rows, err := sqlDB.Query("SELECT name, setting FROM pg_settings WHERE name IN ('prepared_statement_cache_size', 'statement_cache_mode', 'max_prepared_statements')")
+	if err != nil {
+		log.Printf("⚠️ PostgreSQL設定の確認に失敗: %v", err)
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			if err := rows.Scan(&settingName, &setting); err != nil {
+				log.Printf("⚠️ 設定値の読み取りに失敗: %v", err)
+			} else {
+				log.Printf("   📝 %s: %s", settingName, setting)
+			}
+		}
+	}
 
 	// Supabaseクライアントの初期化
 	log.Println("🔌 Supabaseクライアントの初期化中...")
