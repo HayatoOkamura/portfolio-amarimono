@@ -267,6 +267,8 @@ export function useAuth() {
       console.log('🔍 Environment:', process.env.ENVIRONMENT);
       console.log('🔍 Window location origin:', window.location.origin);
       console.log('🔍 NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
+      console.log('🔍 NEXT_PUBLIC_PROD_SUPABASE_URL:', process.env.NEXT_PUBLIC_PROD_SUPABASE_URL);
+      console.log('🔍 NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY exists:', !!process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY);
       
       if (isLogin) {
         // ログイン時は直接認証を実行

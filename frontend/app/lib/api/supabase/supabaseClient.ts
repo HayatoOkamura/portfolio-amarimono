@@ -4,6 +4,16 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_PROD_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY;
 
+// デバッグ情報
+if (typeof window !== 'undefined') {
+  console.log('🔍 Supabase Client Debug Info:', {
+    supabaseUrl: supabaseUrl,
+    supabaseAnonKeyExists: !!supabaseAnonKey,
+    environment: process.env.ENVIRONMENT,
+    isDevelopment: process.env.ENVIRONMENT === 'development'
+  });
+}
+
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
     'Missing required Supabase environment variables. Please check your .env.local file.'
@@ -24,20 +34,17 @@ const getCookie = (name: string): string | null => {
 const setCookie = (name: string, value: string, days = 7) => {
   const expires = new Date();
   expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;secure;samesite=lax`;
   
-  // 環境に応じてクッキー設定を変更
-  const domain = isDevelopment ? '' : `;domain=${process.env.NEXT_PUBLIC_SITE_URL || 'portfolio-amarimono.vercel.app'}`;
-  const secure = isDevelopment ? '' : ';secure';
-  
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/${domain}${secure};samesite=lax`;
+  // デバッグ情報
+  console.log('🔍 Cookie set:', { name, valueLength: value.length, expires: expires.toUTCString() });
 };
 
 const removeCookie = (name: string) => {
-  // 環境に応じてクッキー設定を変更
-  const domain = isDevelopment ? '' : `;domain=${process.env.NEXT_PUBLIC_SITE_URL || 'portfolio-amarimono.vercel.app'}`;
-  const secure = isDevelopment ? '' : ';secure';
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;secure;samesite=lax`;
   
-  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/${domain}${secure};samesite=lax`;
+  // デバッグ情報
+  console.log('🔍 Cookie removed:', { name });
 };
 
 // クライアントサイドでのみ実行されるようにする
@@ -64,7 +71,9 @@ const createSupabaseClient = () => {
       storage: {
         getItem: (key: string): string | null => {
           try {
-            return getCookie(key);
+            const value = getCookie(key);
+            console.log('🔍 Storage getItem:', { key, hasValue: !!value, valueLength: value?.length });
+            return value;
           } catch (error) {
             console.error('Error getting cookie:', error);
             return null;
@@ -72,6 +81,7 @@ const createSupabaseClient = () => {
         },
         setItem: (key: string, value: string): void => {
           try {
+            console.log('🔍 Storage setItem:', { key, valueLength: value.length });
             setCookie(key, value);
           } catch (error) {
             console.error('Error setting cookie:', error);
@@ -79,6 +89,7 @@ const createSupabaseClient = () => {
         },
         removeItem: (key: string): void => {
           try {
+            console.log('🔍 Storage removeItem:', { key });
             removeCookie(key);
           } catch (error) {
             console.error('Error removing cookie:', error);

@@ -13,6 +13,18 @@ const debugLog = (message: string, data?: any) => {
   console.log(`[${timestamp}] 🔍 ${message}`, data ? JSON.stringify(data, null, 2) : '');
 };
 
+// 環境変数のデバッグ関数
+const debugEnvironment = () => {
+  debugLog('Environment variables check', {
+    ENVIRONMENT: process.env.ENVIRONMENT,
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    NEXT_PUBLIC_PROD_SUPABASE_URL: process.env.NEXT_PUBLIC_PROD_SUPABASE_URL,
+    NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY_EXISTS: !!process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY,
+    WINDOW_LOCATION_ORIGIN: typeof window !== 'undefined' ? window.location.origin : 'server-side',
+    WINDOW_LOCATION_HREF: typeof window !== 'undefined' ? window.location.href : 'server-side'
+  });
+};
+
 // トークンの保存関数
 const saveTokens = (session: any) => {
   debugLog('Saving tokens', { 
@@ -60,6 +72,9 @@ export default function Callback() {
     const checkAuth = async () => {
       debugLog('Callback page mounted');
       debugLog('Current URL', { url: window.location.href });
+      
+      // 環境変数のデバッグ
+      debugEnvironment();
 
       if (isCheckingRef.current || hasCompletedRef.current) {
         debugLog('Already checking or completed');
@@ -71,6 +86,7 @@ export default function Callback() {
         debugLog('Starting auth check');
 
         // セッションの確認
+        debugLog('Attempting to get session...');
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         debugLog('Session check result', {
@@ -78,8 +94,19 @@ export default function Callback() {
           hasError: !!sessionError,
           error: sessionError?.message,
           userId: session?.user?.id,
-          email: session?.user?.email
+          email: session?.user?.email,
+          emailConfirmedAt: session?.user?.email_confirmed_at,
+          sessionAccessToken: !!session?.access_token,
+          sessionRefreshToken: !!session?.refresh_token
         });
+
+        if (sessionError) {
+          debugLog('Session error details', { 
+            error: sessionError,
+            errorMessage: sessionError.message,
+            errorStatus: sessionError.status
+          });
+        }
 
         if (sessionError || !session) {
           debugLog('No valid session found', { error: sessionError });
