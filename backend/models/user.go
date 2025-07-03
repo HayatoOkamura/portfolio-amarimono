@@ -46,18 +46,24 @@ func GetUserByID(db *gorm.DB, id string) (*User, error) {
 
 	// リトライ機能付きでクエリを実行
 	var err error
-	for retry := 0; retry < 3; retry++ {
-		err = db.First(&user, "id = ?", id).Error
+	for retry := 0; retry < 5; retry++ {
+		// 新しいセッションでクエリを実行
+		tx := db.Session(&gorm.Session{
+			PrepareStmt:            false,
+			SkipDefaultTransaction: true,
+		})
+
+		err = tx.First(&user, "id = ?", id).Error
 		if err == nil {
 			log.Printf("🔍 GetUserByID - User found: %s", user.ID)
 			return &user, nil
 		}
 
 		// prepared statementエラーの場合はリトライ
-		if retry < 2 && (err.Error() == "ERROR: prepared statement \"stmtcache_\" already exists (SQLSTATE 42P05)" ||
+		if retry < 4 && (err.Error() == "ERROR: prepared statement \"stmtcache_\" already exists (SQLSTATE 42P05)" ||
 			strings.Contains(err.Error(), "prepared statement") && strings.Contains(err.Error(), "already exists")) {
-			log.Printf("🔍 GetUserByID - Prepared statement error, retrying... (attempt %d/3)", retry+1)
-			time.Sleep(100 * time.Millisecond) // 少し待機
+			log.Printf("🔍 GetUserByID - Prepared statement error, retrying... (attempt %d/5)", retry+1)
+			time.Sleep(200 * time.Millisecond) // 待機時間を増加
 			continue
 		}
 
@@ -74,18 +80,24 @@ func UpdateUser(db *gorm.DB, user *User) error {
 
 	// リトライ機能付きでクエリを実行
 	var err error
-	for retry := 0; retry < 3; retry++ {
-		err = db.Save(user).Error
+	for retry := 0; retry < 5; retry++ {
+		// 新しいセッションでクエリを実行
+		tx := db.Session(&gorm.Session{
+			PrepareStmt:            false,
+			SkipDefaultTransaction: true,
+		})
+
+		err = tx.Save(user).Error
 		if err == nil {
 			log.Printf("🔍 UpdateUser - User updated successfully: %s", user.ID)
 			return nil
 		}
 
 		// prepared statementエラーの場合はリトライ
-		if retry < 2 && (err.Error() == "ERROR: prepared statement \"stmtcache_\" already exists (SQLSTATE 42P05)" ||
+		if retry < 4 && (err.Error() == "ERROR: prepared statement \"stmtcache_\" already exists (SQLSTATE 42P05)" ||
 			strings.Contains(err.Error(), "prepared statement") && strings.Contains(err.Error(), "already exists")) {
-			log.Printf("🔍 UpdateUser - Prepared statement error, retrying... (attempt %d/3)", retry+1)
-			time.Sleep(100 * time.Millisecond) // 少し待機
+			log.Printf("🔍 UpdateUser - Prepared statement error, retrying... (attempt %d/5)", retry+1)
+			time.Sleep(200 * time.Millisecond) // 待機時間を増加
 			continue
 		}
 

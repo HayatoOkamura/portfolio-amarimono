@@ -125,14 +125,14 @@ func InitDB() (*DBConfig, error) {
 		// 開発環境用：prepared statementを完全無効化したDSN
 		log.Println("   🔧 開発環境のため、prepared statementを完全無効化したDSNを使用")
 		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 prefer_simple_protocol=true",
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 prefer_simple_protocol=true binary_parameters=no",
 			finalHost, finalPort, finalUser, dbPassword, dbName,
 		)
 	} else {
 		// 本番環境用：prepared statementを完全無効化したDSN（本番環境対応のパラメータを含む）
 		log.Println("   🔧 本番環境のため、prepared statementを完全無効化したDSNを使用")
 		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0",
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 binary_parameters=no",
 			finalHost, finalPort, finalUser, dbPassword, dbName,
 		)
 	}
@@ -178,6 +178,8 @@ func InitDB() (*DBConfig, error) {
 		DryRun: false, // ドライランを無効化
 		// 追加の設定
 		DisableAutomaticPing: true, // 自動pingを無効化
+		// さらに追加の設定
+		AllowGlobalUpdate: false, // グローバル更新を無効化
 	})
 	if err != nil {
 		log.Printf("❌ GORMの初期化に失敗しました: %v", err)
@@ -208,12 +210,12 @@ func InitDB() (*DBConfig, error) {
 			var fallbackDSN string
 			if environment == "development" {
 				fallbackDSN = fmt.Sprintf(
-					"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 prefer_simple_protocol=true",
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 prefer_simple_protocol=true binary_parameters=no",
 					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
 				)
 			} else {
 				fallbackDSN = fmt.Sprintf(
-					"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0",
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 binary_parameters=no",
 					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
 				)
 			}
@@ -233,6 +235,8 @@ func InitDB() (*DBConfig, error) {
 				QueryFields: true, // フィールドを明示的に指定
 				// 追加の設定
 				DisableAutomaticPing: true, // 自動pingを無効化
+				// さらに追加の設定
+				AllowGlobalUpdate: false, // グローバル更新を無効化
 			})
 			if err != nil {
 				log.Printf("❌ フォールバック接続も失敗しました: %v", err)
@@ -306,6 +310,31 @@ func InitDB() (*DBConfig, error) {
 	}
 	log.Println("✅ 接続テストが成功しました")
 
+	// セッション設定を強制適用
+	log.Println("🔧 セッション設定を強制適用中...")
+	_, err = sqlDB.Exec("SET statement_cache_mode = 'describe'")
+	if err != nil {
+		log.Printf("⚠️ statement_cache_mode設定に失敗: %v", err)
+	} else {
+		log.Println("   ✅ statement_cache_mode = 'describe' を設定")
+	}
+
+	_, err = sqlDB.Exec("SET prepared_statement_cache_size = 0")
+	if err != nil {
+		log.Printf("⚠️ prepared_statement_cache_size設定に失敗: %v", err)
+	} else {
+		log.Println("   ✅ prepared_statement_cache_size = 0 を設定")
+	}
+
+	_, err = sqlDB.Exec("SET max_prepared_statements = 0")
+	if err != nil {
+		log.Printf("⚠️ max_prepared_statements設定に失敗: %v", err)
+	} else {
+		log.Println("   ✅ max_prepared_statements = 0 を設定")
+	}
+
+	log.Println("✅ セッション設定の強制適用が完了しました")
+
 	// PostgreSQLの設定を確認
 	log.Println("🔍 PostgreSQLの設定を確認中...")
 	var settingName, setting string
@@ -323,6 +352,51 @@ func InitDB() (*DBConfig, error) {
 			}
 		}
 		log.Println("   ✅ PostgreSQL設定の確認が完了しました")
+	}
+
+	// 追加のデバッグ情報
+	log.Println("🔍 接続情報の詳細確認:")
+	var version, applicationName string
+	err = sqlDB.QueryRow("SELECT version()").Scan(&version)
+	if err != nil {
+		log.Printf("⚠️ バージョン確認に失敗: %v", err)
+	} else {
+		log.Printf("   📝 PostgreSQL Version: %s", version)
+	}
+
+	err = sqlDB.QueryRow("SELECT application_name FROM pg_stat_activity WHERE pid = pg_backend_pid() LIMIT 1").Scan(&applicationName)
+	if err != nil {
+		log.Printf("⚠️ アプリケーション名確認に失敗: %v", err)
+	} else {
+		log.Printf("   📝 Application Name: %s", applicationName)
+	}
+
+	// 現在のセッション設定を確認
+	log.Println("🔍 現在のセッション設定:")
+	var sessionSettings []struct {
+		Name  string
+		Value string
+	}
+	rows, err = sqlDB.Query("SHOW ALL")
+	if err != nil {
+		log.Printf("⚠️ セッション設定確認に失敗: %v", err)
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var name, value, description string
+			if err := rows.Scan(&name, &value, &description); err != nil {
+				continue
+			}
+			if name == "prepared_statement_cache_size" || name == "statement_cache_mode" || name == "max_prepared_statements" || name == "prefer_simple_protocol" {
+				sessionSettings = append(sessionSettings, struct {
+					Name  string
+					Value string
+				}{Name: name, Value: value})
+			}
+		}
+		for _, setting := range sessionSettings {
+			log.Printf("   📝 Session %s: %s", setting.Name, setting.Value)
+		}
 	}
 
 	// Supabaseクライアントの初期化
