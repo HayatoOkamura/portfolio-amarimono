@@ -1,7 +1,9 @@
 package models
 
 import (
+	"fmt"
 	"log"
+	"runtime"
 	"strings"
 	"time"
 
@@ -27,9 +29,26 @@ func (User) TableName() string {
 	return "users"
 }
 
-// CreateUser ユーザーを作成する
+// getCallerInfo は呼び出し元の情報を取得する
+func getCallerInfo() string {
+	pc, file, line, ok := runtime.Caller(2) // 2つ前の呼び出し元を取得
+	if !ok {
+		return "unknown"
+	}
+	fn := runtime.FuncForPC(pc)
+	if fn == nil {
+		return "unknown"
+	}
+	// ファイル名からディレクトリ部分を除去
+	parts := strings.Split(file, "/")
+	fileName := parts[len(parts)-1]
+	return fmt.Sprintf("%s:%d %s", fileName, line, fn.Name())
+}
+
+// CreateUser ユーザーを新規作成する（同期処理は含まない）
 func CreateUser(db *gorm.DB, user *User) error {
-	log.Printf("🔍 CreateUser - Creating user with ID: %s", user.ID)
+	log.Printf("🔍 CreateUser - Creating new user with ID: %s", user.ID)
+	log.Printf("🔍 CreateUser - Called from: %s", getCallerInfo())
 	err := db.Create(user).Error
 	if err != nil {
 		log.Printf("🔍 CreateUser - Error creating user: %v", err)
@@ -39,18 +58,45 @@ func CreateUser(db *gorm.DB, user *User) error {
 	return err
 }
 
-// GetUserByID IDからユーザーを取得する
+// SyncUser ユーザー情報を同期する（存在しない場合は作成、存在する場合は更新）
+func SyncUser(db *gorm.DB, user *User) error {
+	log.Printf("🔍 SyncUser - Syncing user with ID: %s", user.ID)
+	log.Printf("🔍 SyncUser - Called from: %s", getCallerInfo())
+
+	// 既存のユーザーを確認
+	existingUser, err := GetUserByID(db, user.ID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			log.Printf("🔍 SyncUser - User not found, creating new user: %s", user.ID)
+			// ユーザーが存在しない場合は新規作成
+			return CreateUser(db, user)
+		}
+		// その他のエラーの場合
+		log.Printf("🔍 SyncUser - Error checking existing user: %v", err)
+		return err
+	}
+
+	log.Printf("🔍 SyncUser - Existing user found, updating: %s", existingUser.ID)
+
+	// ユーザーが既に存在する場合は更新
+	user.CreatedAt = existingUser.CreatedAt // 作成日時は保持
+	return UpdateUser(db, user)
+}
+
+// GetUserByID IDからユーザーを取得する（純粋な取得のみ、同期処理は含まない）
 func GetUserByID(db *gorm.DB, id string) (*User, error) {
 	log.Printf("🔍 GetUserByID - Searching for user with ID: %s", id)
+	log.Printf("🔍 GetUserByID - Called from: %s", getCallerInfo())
 	var user User
 
 	// リトライ機能付きでクエリを実行
 	var err error
 	for retry := 0; retry < 5; retry++ {
-		// 新しいセッションでクエリを実行
+		// 新しいセッションでクエリを実行（より強力な設定）
 		tx := db.Session(&gorm.Session{
-			PrepareStmt:            false,
-			SkipDefaultTransaction: true,
+			PrepareStmt:              false,
+			SkipDefaultTransaction:   true,
+			DisableNestedTransaction: true,
 		})
 
 		err = tx.First(&user, "id = ?", id).Error
@@ -60,10 +106,13 @@ func GetUserByID(db *gorm.DB, id string) (*User, error) {
 		}
 
 		// prepared statementエラーの場合はリトライ
-		if retry < 4 && (err.Error() == "ERROR: prepared statement \"stmtcache_\" already exists (SQLSTATE 42P05)" ||
-			strings.Contains(err.Error(), "prepared statement") && strings.Contains(err.Error(), "already exists")) {
+		if retry < 4 && (strings.Contains(err.Error(), "prepared statement") && strings.Contains(err.Error(), "already exists")) {
 			log.Printf("🔍 GetUserByID - Prepared statement error, retrying... (attempt %d/5)", retry+1)
-			time.Sleep(200 * time.Millisecond) // 待機時間を増加
+			log.Printf("🔍 GetUserByID - Error details: %v", err)
+			log.Printf("🔍 GetUserByID - User ID: %s", id)
+			// 待機時間を指数関数的に増加
+			waitTime := time.Duration(100*(retry+1)) * time.Millisecond
+			time.Sleep(waitTime)
 			continue
 		}
 
@@ -74,17 +123,18 @@ func GetUserByID(db *gorm.DB, id string) (*User, error) {
 	return nil, err
 }
 
-// UpdateUser ユーザー情報を更新する
+// UpdateUser ユーザー情報を更新する（既存ユーザーの更新のみ）
 func UpdateUser(db *gorm.DB, user *User) error {
 	log.Printf("🔍 UpdateUser - Updating user with ID: %s", user.ID)
 
 	// リトライ機能付きでクエリを実行
 	var err error
 	for retry := 0; retry < 5; retry++ {
-		// 新しいセッションでクエリを実行
+		// 新しいセッションでクエリを実行（より強力な設定）
 		tx := db.Session(&gorm.Session{
-			PrepareStmt:            false,
-			SkipDefaultTransaction: true,
+			PrepareStmt:              false,
+			SkipDefaultTransaction:   true,
+			DisableNestedTransaction: true,
 		})
 
 		err = tx.Save(user).Error
@@ -94,10 +144,11 @@ func UpdateUser(db *gorm.DB, user *User) error {
 		}
 
 		// prepared statementエラーの場合はリトライ
-		if retry < 4 && (err.Error() == "ERROR: prepared statement \"stmtcache_\" already exists (SQLSTATE 42P05)" ||
-			strings.Contains(err.Error(), "prepared statement") && strings.Contains(err.Error(), "already exists")) {
+		if retry < 4 && (strings.Contains(err.Error(), "prepared statement") && strings.Contains(err.Error(), "already exists")) {
 			log.Printf("🔍 UpdateUser - Prepared statement error, retrying... (attempt %d/5)", retry+1)
-			time.Sleep(200 * time.Millisecond) // 待機時間を増加
+			// 待機時間を指数関数的に増加
+			waitTime := time.Duration(100*(retry+1)) * time.Millisecond
+			time.Sleep(waitTime)
 			continue
 		}
 
@@ -108,7 +159,7 @@ func UpdateUser(db *gorm.DB, user *User) error {
 	return err
 }
 
-// DeleteUser ユーザーを削除する
+// DeleteUser ユーザーを削除する（論理削除）
 func DeleteUser(db *gorm.DB, id string) error {
 	log.Printf("🔍 DeleteUser - Deleting user with ID: %s", id)
 	err := db.Delete(&User{}, "id = ?", id).Error

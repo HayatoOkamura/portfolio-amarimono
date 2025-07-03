@@ -33,7 +33,7 @@ export default function SignUpPage() {
         formData.append("gender", userData.gender);
       }
 
-      const res = await fetch(`${backendUrl}/api/users`, {
+      const res = await fetch(`${backendUrl}/api/users/sync`, {
         method: "POST",
         body: formData,
       });

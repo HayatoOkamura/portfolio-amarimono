@@ -166,6 +166,63 @@ supabase db dump --db-url <production-db-url> -f production_backup_$(date +%Y%m%
    - 外部キー制約の動作が期待通りか確認
    - 認証エラーが発生した場合は、Supabase Dashboardでの手動実行を検討
 
+### ユーザー認証関連のトラブルシューティング
+
+#### よくある問題と解決方法
+
+1. **"Authentication failed, unexpected error occurred"エラー**
+   - **原因**: バックエンドAPIとの同期に失敗
+   - **解決方法**: 
+     - バックエンドサーバーのログを確認
+     - 環境変数`NEXT_PUBLIC_BACKEND_URL`の設定を確認
+     - ネットワーク接続を確認
+
+2. **Prepared Statement "already exists"エラー**
+   - **原因**: 本番環境での並行処理によるprepared statementの重複
+   - **解決方法**:
+     - バックエンドサーバーの再起動
+     - 接続プールの設定確認
+     - 重複リクエストの防止機能確認
+
+3. **ユーザープロファイル更新時の500エラー**
+   - **原因**: データベース接続の問題またはprepared statementエラー
+   - **解決方法**:
+     - バックエンドログの確認
+     - データベース接続の確認
+     - リトライ機能の確認
+
+#### デバッグ方法
+
+1. **ログの確認**
+   ```bash
+   # バックエンドログの確認
+   docker compose logs backend
+   
+   # フロントエンドログの確認
+   docker compose logs frontend
+   ```
+
+2. **環境変数の確認**
+   ```bash
+   # バックエンド環境変数
+   echo $NEXT_PUBLIC_BACKEND_URL
+   echo $SUPABASE_URL
+   
+   # フロントエンド環境変数
+   echo $NEXT_PUBLIC_BACKEND_URL
+   echo $NEXT_PUBLIC_IMAGE_BASE_URL
+   ```
+
+3. **API接続のテスト**
+   ```bash
+   # バックエンドAPIの疎通確認
+   curl -X GET http://localhost:8080/api/users/test-user-id
+   
+   # フロントエンドAPIの疎通確認
+   curl -X POST http://localhost:3000/api/auth/sync \
+     -H "Authorization: Bearer test-token"
+   ```
+
 ## 🔧 開発ツール
 
 ### VS Codeタスク
@@ -230,12 +287,58 @@ supabase db dump --db-url <production-db-url> -f production_backup_$(date +%Y%m%
 
 バックエンドサービスが実行されている場合、`http://localhost:8080/docs`でAPIドキュメントを利用できます。
 
+### ユーザー管理API
+
+#### ユーザー同期機能
+- **POST /api/users/sync** - ユーザー情報の同期（存在しない場合は作成、存在する場合は更新）
+- **GET /api/users/:id** - ユーザー情報の取得
+- **POST /api/users** - 新規ユーザーの作成（純粋な作成のみ）
+
+#### 認証・認可
+- **POST /api/auth/sync** - フロントエンド認証同期（Supabaseとバックエンドの同期）
+- **GET /api/users/:id/profile** - ユーザープロファイル取得（ロール情報付き）
+
+### 設計思想
+
+#### 責任の分離
+- **取得専用**: `GetUserByID` - 純粋なユーザー情報取得
+- **同期専用**: `SyncUser` - SupabaseとバックエンドDBの同期
+- **作成専用**: `CreateUser` - 新規ユーザー作成
+
+#### エラーハンドリング
+- prepared statementエラーとユーザー存在エラーを明確に区別
+- 重複キーエラーの適切な処理
+- 詳細なデバッグログの提供
+
 ## 🛠 開発ガイドライン
 
 ### コードスタイル
 
 - フロントエンド: Next.jsとReactのベストプラクティスに従う
 - バックエンド: GoのベストプラクティスとGinフレームワークのガイドラインに従う
+
+### ユーザー管理機能の開発ガイドライン
+
+#### 関数設計の原則
+1. **単一責任の原則**: 各関数は一つの明確な責任を持つ
+   - `GetUserByID`: ユーザー情報の取得のみ
+   - `SyncUser`: SupabaseとバックエンドDBの同期のみ
+   - `CreateUser`: 新規ユーザーの作成のみ
+
+2. **関数名と処理の一致**: 関数名が実際の処理を正確に表現する
+   - 同期処理には`Sync`を含む
+   - 取得処理には`Get`を含む
+   - 作成処理には`Create`を含む
+
+3. **エラーハンドリングの明確化**
+   - prepared statementエラーとユーザー存在エラーを区別
+   - 適切なHTTPステータスコードの返却
+   - 詳細なデバッグログの出力
+
+#### API設計の原則
+1. **RESTful設計**: 適切なHTTPメソッドとエンドポイントの使用
+2. **段階的移行**: 既存APIとの互換性を保ちながら新機能を追加
+3. **バージョニング**: 必要に応じてAPIバージョンの管理
 
 ### Gitワークフロー
 
@@ -402,6 +505,27 @@ Client Components (CSR)
 - クライアントコンポーネントの最小化
 
 ## 🥗 具材管理機能
+
+### ユーザー管理API
+
+#### エンドポイント一覧
+- `POST /api/users` - ユーザー新規作成（純粋な作成のみ）
+- `POST /api/users/sync` - ユーザー同期処理（作成・更新）
+- `GET /api/users/:id` - ユーザー情報取得（純粋な取得）
+- `GET /api/users/:id/profile` - ユーザープロフィール取得（ロール情報付き）
+- `PUT /api/users/:id` - ユーザープロフィール更新
+
+#### 設計思想
+- **責任の分離**: 取得、作成、同期、更新の処理を明確に分離
+- **直感的な命名**: 関数名が実際の処理と一致
+- **エラーハンドリング**: 適切なエラーメッセージとリトライ機能
+- **prepared statement対策**: 本番環境での並行処理に対応
+
+#### 移行完了
+- ✅ ユーザー同期機能のリファクタリング完了
+- ✅ 古いAPIエンドポイントの削除完了
+- ✅ 関数の責任分離完了
+- ✅ エラーハンドリングの改善完了
 
 ### 具材の登録プロセス
 

@@ -20,10 +20,12 @@ func SetupRoutes(router *gin.Engine, recipeHandler *handlers.RecipeHandler, like
 	// `/api/recommendations` エンドポイントの登録
 	router.GET("/api/recommendations/:user_id", recommendationHandler.GetRecommendedRecipes)
 
-	// ユーザー登録エンドポイント
-	router.POST("/api/users", userHandler.CreateUser)
-	router.GET("/api/users/:id", userHandler.GetUserProfile)
-	router.PUT("/api/users/:id", userHandler.UpdateUserProfile)
+	// ユーザー関連エンドポイント
+	router.POST("/api/users", userHandler.CreateUser)                           // 新規作成（純粋な作成のみ）
+	router.POST("/api/users/sync", userHandler.SyncUser)                        // 同期処理（作成・更新）
+	router.GET("/api/users/:id", userHandler.GetUser)                           // 純粋な取得
+	router.GET("/api/users/:id/profile", userHandler.GetUserProfile)            // プロフィール取得（ロール情報付き）
+	router.PUT("/api/users/:id", userHandler.UpdateUserProfile)                 // プロフィール更新
 	router.POST("/api/users/:id/profile-image", userHandler.UploadProfileImage) // プロフィール画像アップロード用エンドポイント
 	router.GET("/api/users/:id/likes", userHandler.GetUserLikeCount)            // ユーザーの投稿レシピの合計いいね数を取得
 	router.GET("/api/users/:id/reviews", userHandler.GetUserRecipeAverageRating)

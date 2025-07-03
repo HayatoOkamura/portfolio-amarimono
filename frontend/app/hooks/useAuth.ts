@@ -28,19 +28,19 @@ const fetchUserDetails = async (userId: string, session: any) => {
     const response = await fetch(`${backendUrl}/api/users/${userId}`);
     if (!response.ok) {
       if (response.status === 404) {
-        // ユーザーが存在しない場合は新規作成
+        // ユーザーが存在しない場合は同期処理
         try {
-          const newUser = await createBackendUser({
+          const syncedUser = await syncBackendUser({
             id: userId,
             email: session.user.email,
             access_token: session.access_token
           });
           return {
-            username: newUser.username || '',
-            profileImage: newUser.profileImage || '',
-            age: newUser.age || 0,
-            gender: newUser.gender || '未設定',
-            role: newUser.role || 'user'
+            username: syncedUser.username || '',
+            profileImage: syncedUser.profileImage || '',
+            age: syncedUser.age || 0,
+            gender: syncedUser.gender || '未設定',
+            role: syncedUser.role || 'user'
           };
         } catch (createError) {
           // ユーザー作成に失敗した場合、既に存在する可能性があるので再度取得を試みる
@@ -90,8 +90,8 @@ const fetchUserDetails = async (userId: string, session: any) => {
   }
 };
 
-// バックエンドにユーザーを作成する関数
-const createBackendUser = async (user: any) => {
+// バックエンドにユーザーを同期する関数
+const syncBackendUser = async (user: any) => {
   const requestData = {
     id: user.id,
     email: user.email || "",
@@ -99,7 +99,7 @@ const createBackendUser = async (user: any) => {
     gender: "未設定"
   };
 
-  const response = await fetch(`${backendUrl}/api/users`, {
+  const response = await fetch(`${backendUrl}/api/users/sync`, {
     method: "POST",
     headers: {
       'Content-Type': 'application/json',
@@ -110,8 +110,8 @@ const createBackendUser = async (user: any) => {
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error("Error creating user:", errorData);
-    throw new Error(errorData.error || "バックエンドへのユーザー登録に失敗しました");
+    console.error("Error syncing user:", errorData);
+    throw new Error(errorData.error || "バックエンドへのユーザー同期に失敗しました");
   }
 
   const responseData = await response.json();

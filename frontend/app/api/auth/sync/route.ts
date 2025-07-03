@@ -141,9 +141,9 @@ export async function POST(request: Request) {
         return { success: true, user };
       }
 
-      // 404エラーの場合（ユーザーが存在しない場合）は新規作成を試みる
+      // 404エラーの場合（ユーザーが存在しない場合）は同期処理を試みる
       if (response.status === 404) {
-        debugLog('User not found in backend, attempting creation', { requestId }, requestId);
+        debugLog('User not found in backend, attempting sync', { requestId }, requestId);
         
         const userData = {
           id: authUser.id,
@@ -153,9 +153,9 @@ export async function POST(request: Request) {
           gender: "未設定"
         };
 
-        debugLog('Creating new user', { userData, requestId }, requestId);
+        debugLog('Syncing user', { userData, requestId }, requestId);
 
-        const createResponse = await fetch(`${backendUrl}/api/users`, {
+        const syncResponse = await fetch(`${backendUrl}/api/users/sync`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -164,27 +164,27 @@ export async function POST(request: Request) {
           body: JSON.stringify(userData),
         });
 
-        debugLog('User creation response', {
-          status: createResponse.status,
-          ok: createResponse.ok,
+        debugLog('User sync response', {
+          status: syncResponse.status,
+          ok: syncResponse.ok,
           requestId
         }, requestId);
 
-        if (createResponse.ok) {
-          const newUser = await createResponse.json();
-          debugLog('User created successfully', { userId: newUser.id, requestId }, requestId);
-          return { success: true, user: newUser };
+        if (syncResponse.ok) {
+          const syncedUser = await syncResponse.json();
+          debugLog('User synced successfully', { userId: syncedUser.id, requestId }, requestId);
+          return { success: true, user: syncedUser };
         }
 
         // 重複エラーの場合は、ユーザーが既に作成されていると判断
-        const responseText = await createResponse.text();
-        debugLog('User creation failed', {
-          status: createResponse.status,
+        const responseText = await syncResponse.text();
+        debugLog('User sync failed', {
+          status: syncResponse.status,
           responseText,
           requestId
         }, requestId);
 
-        if (createResponse.status === 500 && responseText.includes('duplicate key')) {
+        if (syncResponse.status === 500 && responseText.includes('duplicate key')) {
           // 重複エラーの場合は、ユーザー情報を再取得
           const retryResponse = await fetch(apiUrl, {
             headers: {
@@ -202,7 +202,7 @@ export async function POST(request: Request) {
 
         return { 
           success: false, 
-          error: 'ユーザーの作成に失敗しました',
+          error: 'ユーザーの同期に失敗しました',
           details: responseText,
           status: 500
         };

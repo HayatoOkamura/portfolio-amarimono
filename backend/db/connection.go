@@ -123,10 +123,10 @@ func InitDB() (*DBConfig, error) {
 	var dsn string
 
 	if environment == "development" {
-		// 開発環境用：prepared statementを完全無効化したDSN
-		log.Println("   🔧 開発環境のため、prepared statementを完全無効化したDSNを使用")
+		// 開発環境用：最も基本的なDSN（古いPostgreSQLバージョン対応）
+		log.Println("   🔧 開発環境のため、最も基本的なDSNを使用（古いPostgreSQLバージョン対応）")
 		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 prefer_simple_protocol=true binary_parameters=no",
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 			finalHost, finalPort, finalUser, dbPassword, dbName,
 		)
 	} else {
@@ -170,9 +170,13 @@ func InitDB() (*DBConfig, error) {
 	log.Printf("   📝 DryRun: false")
 	log.Printf("   📝 DisableForeignKeyConstraintWhenMigrating: true")
 	log.Printf("🔧 PostgreSQL設定:")
-	log.Printf("   📝 statement_cache_mode: describe")
-	log.Printf("   📝 prepared_statement_cache_size: 0")
-	log.Printf("   📝 max_prepared_statements: 0")
+	if environment == "development" {
+		log.Printf("   📝 開発環境のため、古いPostgreSQLバージョンに対応した設定を使用")
+	} else {
+		log.Printf("   📝 statement_cache_mode: describe")
+		log.Printf("   📝 prepared_statement_cache_size: 0")
+		log.Printf("   📝 max_prepared_statements: 0")
+	}
 
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
@@ -190,6 +194,12 @@ func InitDB() (*DBConfig, error) {
 		DisableAutomaticPing: true, // 自動pingを無効化
 		// さらに追加の設定
 		AllowGlobalUpdate: false, // グローバル更新を無効化
+		// Prepared Statementエラー対策の追加設定
+		DisableNestedTransaction: true, // ネストしたトランザクションを無効化
+		// セッション設定
+		NowFunc: func() time.Time {
+			return time.Now().UTC()
+		},
 	})
 	if err != nil {
 		log.Printf("❌ GORMの初期化に失敗しました: %v", err)
@@ -220,7 +230,7 @@ func InitDB() (*DBConfig, error) {
 			var fallbackDSN string
 			if environment == "development" {
 				fallbackDSN = fmt.Sprintf(
-					"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 prefer_simple_protocol=true binary_parameters=no",
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
 				)
 			} else {
@@ -305,10 +315,10 @@ func InitDB() (*DBConfig, error) {
 		log.Println("✅ 開発環境用の接続プール設定が完了しました")
 	} else {
 		// 本番環境用の設定（Supabase最適化）
-		sqlDB.SetMaxIdleConns(1)                   // アイドル接続数を最小限に
-		sqlDB.SetMaxOpenConns(5)                   // 最大接続数を制限
-		sqlDB.SetConnMaxLifetime(15 * time.Minute) // 接続の最大生存時間を短縮
-		sqlDB.SetConnMaxIdleTime(5 * time.Minute)  // アイドル接続の最大生存時間を短縮
+		sqlDB.SetMaxIdleConns(0)                   // アイドル接続を無効化
+		sqlDB.SetMaxOpenConns(3)                   // 最大接続数をさらに制限
+		sqlDB.SetConnMaxLifetime(10 * time.Minute) // 接続の最大生存時間をさらに短縮
+		sqlDB.SetConnMaxIdleTime(1 * time.Minute)  // アイドル接続の最大生存時間をさらに短縮
 		log.Println("✅ 本番環境用の接続プール設定が完了しました")
 	}
 
@@ -320,10 +330,12 @@ func InitDB() (*DBConfig, error) {
 	}
 	log.Println("✅ 接続テストが成功しました")
 
-	// セッション設定を強制適用（Pooler接続では一部設定がサポートされない）
+	// セッション設定を強制適用（開発環境とPooler接続では一部設定がサポートされない）
 	log.Println("🔧 セッション設定を強制適用中...")
 	if strings.Contains(finalHost, "pooler.supabase.com") {
 		log.Println("   📝 Pooler接続のため、一部の設定をスキップします")
+	} else if environment == "development" {
+		log.Println("   📝 開発環境のため、古いPostgreSQLバージョンに対応して一部の設定をスキップします")
 	} else {
 		_, err = sqlDB.Exec("SET statement_cache_mode = 'describe'")
 		if err != nil {

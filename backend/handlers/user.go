@@ -24,7 +24,7 @@ func NewUserHandler(db *gorm.DB) *UserHandler {
 	}
 }
 
-// CreateUser handles user creation
+// CreateUser handles user creation (pure creation only, no sync logic)
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	// デバッグ情報の追加
 	log.Printf("🔍 CreateUser called - Headers: %v", c.Request.Header)
@@ -81,45 +81,111 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		}
 	}
 
-	log.Printf("🔍 CreateUser - Checking existing user with ID: %s", user.ID)
+	log.Printf("🔍 CreateUser - Creating new user with ID: %s", user.ID)
 
-	// 既存のユーザーを確認
-	existingUser, err := models.GetUserByID(h.DB, user.ID)
-	if err != nil {
-		log.Printf("🔍 CreateUser - GetUserByID error: %v", err)
-		if err == gorm.ErrRecordNotFound {
-			log.Printf("🔍 CreateUser - User not found, creating new user")
-			// ユーザーが存在しない場合は新規作成
-			if err := models.CreateUser(h.DB, &user); err != nil {
-				log.Printf("🔍 CreateUser - Failed to create user: %v", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
-				return
-			}
-			log.Printf("🔍 CreateUser - User created successfully: %s", user.ID)
-			c.JSON(http.StatusCreated, user)
+	// 新規作成のみ（同期処理は含まない）
+	if err := models.CreateUser(h.DB, &user); err != nil {
+		log.Printf("🔍 CreateUser - Failed to create user: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
+
+	log.Printf("🔍 CreateUser - User created successfully: %s", user.ID)
+	c.JSON(http.StatusCreated, user)
+}
+
+// SyncUser handles user synchronization (create if not exists, update if exists)
+func (h *UserHandler) SyncUser(c *gin.Context) {
+	// デバッグ情報の追加
+	log.Printf("🔍 SyncUser called - Headers: %v", c.Request.Header)
+	log.Printf("🔍 SyncUser called - Method: %s", c.Request.Method)
+	log.Printf("🔍 SyncUser called - Content-Type: %s", c.GetHeader("Content-Type"))
+
+	var user models.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		log.Printf("🔍 SyncUser - JSON binding error: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user data"})
+		return
+	}
+
+	log.Printf("🔍 SyncUser - User data received: %+v", user)
+
+	// ユーザーIDの検証
+	if user.ID == "" {
+		log.Printf("🔍 SyncUser - User ID is empty")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
+		return
+	}
+
+	// メールアドレスの検証
+	if user.Email == "" {
+		log.Printf("🔍 SyncUser - Email is empty")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email is required"})
+		return
+	}
+
+	// 画像ファイルの処理
+	if file, err := c.FormFile("image"); err == nil {
+		log.Printf("🔍 SyncUser - Image file found: %s", file.Filename)
+		// ファイルサイズのチェック（10MB制限）
+		if file.Size > 10*1024*1024 {
+			log.Printf("🔍 SyncUser - Image file too large: %d bytes", file.Size)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Image file size exceeds 10MB limit"})
 			return
 		}
-		// その他のエラーの場合
-		log.Printf("🔍 CreateUser - Database error checking existing user: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check existing user"})
+
+		// 画像を保存
+		imagePath, err := utils.SaveImage(c, file, "users/"+user.ID, "")
+		if err != nil {
+			log.Printf("🔍 SyncUser - Failed to save image: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
+			return
+		}
+		user.ProfileImage = &imagePath
+	} else {
+		log.Printf("🔍 SyncUser - No image file provided: %v", err)
+		// 画像が選択されていない場合は、既存のimageUrlを使用
+		imageUrl := c.PostForm("image_url")
+		if imageUrl != "" {
+			user.ProfileImage = &imageUrl
+		}
+	}
+
+	log.Printf("🔍 SyncUser - Syncing user with ID: %s", user.ID)
+
+	// 同期処理（存在しない場合は作成、存在する場合は更新）
+	if err := models.SyncUser(h.DB, &user); err != nil {
+		log.Printf("🔍 SyncUser - Failed to sync user: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to sync user"})
 		return
 	}
 
-	log.Printf("🔍 CreateUser - Existing user found, updating: %s", existingUser.ID)
-
-	// ユーザーが既に存在する場合は更新
-	user.CreatedAt = existingUser.CreatedAt // 作成日時は保持
-	if err := models.UpdateUser(h.DB, &user); err != nil {
-		log.Printf("🔍 CreateUser - Failed to update user: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
-		return
-	}
-
-	log.Printf("🔍 CreateUser - User updated successfully: %s", user.ID)
+	log.Printf("🔍 SyncUser - User synced successfully: %s", user.ID)
 	c.JSON(http.StatusOK, user)
 }
 
-// GetUserProfile handles retrieving a user's profile
+// GetUser handles retrieving a user (pure retrieval only, no sync logic)
+func (h *UserHandler) GetUser(c *gin.Context) {
+	userID := c.Param("id")
+	log.Printf("🔍 GetUser - Retrieving user with ID: %s", userID)
+
+	// 純粋な取得のみ（同期処理は含まない）
+	user, err := models.GetUserByID(h.DB, userID)
+	if err != nil {
+		log.Printf("🔍 GetUser - Error retrieving user: %v", err)
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user"})
+		}
+		return
+	}
+
+	log.Printf("🔍 GetUser - User retrieved successfully: %s", user.ID)
+	c.JSON(http.StatusOK, user)
+}
+
+// GetUserProfile handles retrieving a user's profile with role information
 func (h *UserHandler) GetUserProfile(c *gin.Context) {
 	userID := c.Param("id")
 
@@ -149,7 +215,7 @@ func (h *UserHandler) GetUserProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// UpdateUserProfile handles updating a user's profile
+// UpdateUserProfile handles updating a user's profile (existing user update only)
 func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
 	userID := c.Param("id")
 
@@ -230,7 +296,7 @@ func (h *UserHandler) UpdateUserProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, existingUser)
 }
 
-// DeleteUser handles user deletion
+// DeleteUser handles user deletion (logical deletion)
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	userID := c.Param("id")
 	if err := models.DeleteUser(h.DB, userID); err != nil {
