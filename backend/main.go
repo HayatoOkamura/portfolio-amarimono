@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 	"os"
+	"strings"
+	"time"
 
 	"portfolio-amarimono/db"
 	"portfolio-amarimono/handlers"
@@ -14,8 +16,60 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+// preparedStatementErrorMiddleware はprepared statementエラーを監視するミドルウェア
+func preparedStatementErrorMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// リクエスト開始時刻を記録
+		start := time.Now()
+
+		// リクエスト情報をログに記録
+		log.Printf("🔍 Request started: %s %s", c.Request.Method, c.Request.URL.Path)
+
+		// 次のハンドラーを実行
+		c.Next()
+
+		// レスポンス時間を計算
+		duration := time.Since(start)
+
+		// エラーが発生した場合の詳細ログ
+		if len(c.Errors) > 0 {
+			for _, err := range c.Errors {
+				if strings.Contains(err.Error(), "prepared statement") && strings.Contains(err.Error(), "already exists") {
+					log.Printf("🚨 PREPARED STATEMENT ERROR DETECTED:")
+					log.Printf("   📝 Method: %s", c.Request.Method)
+					log.Printf("   📝 Path: %s", c.Request.URL.Path)
+					log.Printf("   📝 Duration: %v", duration)
+					log.Printf("   📝 Error: %v", err.Error())
+					log.Printf("   📝 User-Agent: %s", c.Request.UserAgent())
+					log.Printf("   📝 Remote-Addr: %s", c.ClientIP())
+					log.Printf("   📝 Environment: %s", os.Getenv("ENVIRONMENT"))
+					log.Printf("   📝 DB Host: %s", os.Getenv("SUPABASE_DB_HOST"))
+				}
+			}
+		}
+
+		// レスポンス完了をログに記録
+		log.Printf("🔍 Request completed: %s %s - %d - %v",
+			c.Request.Method, c.Request.URL.Path, c.Writer.Status(), duration)
+	}
+}
+
 func main() {
 	log.SetOutput(os.Stdout)
+
+	// 環境変数の設定
+	environment := os.Getenv("ENVIRONMENT")
+	if environment == "" {
+		environment = "development"
+	}
+
+	// ログレベルの設定
+	if environment == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	log.Println("🚀 Amarimono Backend Server Starting...")
+	log.Printf("🌍 Environment: %s", environment)
 
 	// Ginをデバッグモードに設定
 	gin.SetMode(gin.DebugMode)
@@ -23,12 +77,15 @@ func main() {
 	// Ginフレームワークのデフォルトの設定を使用してルータを作成
 	r := gin.Default()
 
+	// prepared statementエラー監視ミドルウェアを追加
+	r.Use(preparedStatementErrorMiddleware())
+
 	// GinのLoggerミドルウェアを使用
 	r.Use(gin.Logger())
 
 	// CORS設定を追加
 	var allowOrigins []string
-	if os.Getenv("ENVIRONMENT") == "production" {
+	if environment == "production" {
 		// 本番環境では特定のオリジンのみ許可
 		allowOrigins = []string{"https://portfolio-amarimono.vercel.app"}
 	} else {
@@ -51,17 +108,17 @@ func main() {
 	// データベース接続の初期化
 	dbConn, err := db.InitDB()
 	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		log.Fatalf("❌ Failed to initialize database: %v", err)
 	}
 
 	// マイグレーションの実行（本番環境ではスキップ）
-	if os.Getenv("ENVIRONMENT") != "production" {
+	if environment != "production" {
 		sqlDB, err := dbConn.DB.DB()
 		if err != nil {
-			log.Fatalf("Failed to get database instance: %v", err)
+			log.Fatalf("❌ Failed to get database instance: %v", err)
 		}
 		if err := db.RunMigrations(sqlDB); err != nil {
-			log.Fatalf("Failed to run migrations: %v", err)
+			log.Fatalf("❌ Failed to run migrations: %v", err)
 		}
 		log.Println("✅ マイグレーションが完了しました")
 	} else {
@@ -121,6 +178,6 @@ func main() {
 		port = "8080"
 	}
 	if err := r.Run("0.0.0.0:" + port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		log.Fatalf("❌ Failed to start server: %v", err)
 	}
 }

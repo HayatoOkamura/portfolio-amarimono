@@ -441,6 +441,38 @@ func InitDB() (*DBConfig, error) {
 		}
 	}
 
+	// 本番環境での追加監視設定
+	if environment != "development" {
+		log.Println("🔍 本番環境での追加監視設定:")
+
+		// prepared statementの統計情報を確認
+		var prepStmtCount int
+		err = sqlDB.QueryRow("SELECT COUNT(*) FROM pg_prepared_statements").Scan(&prepStmtCount)
+		if err != nil {
+			log.Printf("⚠️ prepared statement数確認に失敗: %v", err)
+		} else {
+			log.Printf("   📝 Current Prepared Statements: %d", prepStmtCount)
+		}
+
+		// アクティブな接続数を確認
+		var activeConnections int
+		err = sqlDB.QueryRow("SELECT COUNT(*) FROM pg_stat_activity WHERE state = 'active'").Scan(&activeConnections)
+		if err != nil {
+			log.Printf("⚠️ アクティブ接続数確認に失敗: %v", err)
+		} else {
+			log.Printf("   📝 Active Connections: %d", activeConnections)
+		}
+
+		// 最大接続数を確認
+		var maxConnections int
+		err = sqlDB.QueryRow("SHOW max_connections").Scan(&maxConnections)
+		if err != nil {
+			log.Printf("⚠️ 最大接続数確認に失敗: %v", err)
+		} else {
+			log.Printf("   📝 Max Connections: %d", maxConnections)
+		}
+	}
+
 	// Supabaseクライアントの初期化
 	log.Println("🔌 Supabaseクライアントの初期化中...")
 	supabaseURL := os.Getenv("SUPABASE_URL")

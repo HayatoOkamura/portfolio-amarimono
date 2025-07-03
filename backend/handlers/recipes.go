@@ -5,6 +5,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
+	"time"
 
 	"portfolio-amarimono/models"
 	"portfolio-amarimono/utils"
@@ -103,8 +105,42 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 
 	// 栄養情報の標準値を取得
 	var standard models.NutritionStandard
-	if err := h.DB.Where("age_group = ? AND gender = ?", "18-29", "male").First(&standard).Error; err != nil {
+
+	// リトライ機能付きでクエリを実行
+	var nutritionErr error
+	for retry := 0; retry < 5; retry++ {
+		// より強力なセッション設定（本番環境対応）
+		tx := h.DB.Session(&gorm.Session{
+			PrepareStmt:              false,
+			SkipDefaultTransaction:   true,
+			DisableNestedTransaction: true,
+			// 本番環境での追加設定
+			QueryFields: true,
+			// セッション固有の設定
+			DryRun: false,
+		})
+
+		// 生のSQLクエリを使用してprepared statementを回避
+		nutritionErr = tx.Raw("SELECT * FROM nutrition_standards WHERE age_group = ? AND gender = ? LIMIT 1", "18-29", "male").Scan(&standard).Error
+		if nutritionErr == nil {
+			break
+		}
+
+		// prepared statementエラーの場合はリトライ
+		if retry < 4 && (strings.Contains(nutritionErr.Error(), "prepared statement") && strings.Contains(nutritionErr.Error(), "already exists")) {
+			log.Printf("🔍 SerchRecipes - Prepared statement error in nutrition standard query, retrying... (attempt %d/5)", retry+1)
+			// 待機時間を指数関数的に増加
+			waitTime := time.Duration(100*(retry+1)) * time.Millisecond
+			time.Sleep(waitTime)
+			continue
+		}
+
+		break
+	}
+
+	if nutritionErr != nil {
 		// 標準値が見つからない場合はデフォルト値を設定
+		log.Printf("🔍 SerchRecipes - Nutrition standard not found, using default values: %v", nutritionErr)
 		standard = models.NutritionStandard{
 			AgeGroup:      "18-29",
 			Gender:        "male",
