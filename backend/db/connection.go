@@ -125,7 +125,7 @@ func InitDB() (*DBConfig, error) {
 		// 開発環境用：prepared statementを完全無効化したDSN
 		log.Println("   🔧 開発環境のため、prepared statementを完全無効化したDSNを使用")
 		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0",
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 prefer_simple_protocol=true",
 			finalHost, finalPort, finalUser, dbPassword, dbName,
 		)
 	} else {
@@ -176,6 +176,8 @@ func InitDB() (*DBConfig, error) {
 		QueryFields: true, // フィールドを明示的に指定
 		// 本番環境での追加設定
 		DryRun: false, // ドライランを無効化
+		// 追加の設定
+		DisableAutomaticPing: true, // 自動pingを無効化
 	})
 	if err != nil {
 		log.Printf("❌ GORMの初期化に失敗しました: %v", err)
@@ -206,7 +208,7 @@ func InitDB() (*DBConfig, error) {
 			var fallbackDSN string
 			if environment == "development" {
 				fallbackDSN = fmt.Sprintf(
-					"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0",
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 prefer_simple_protocol=true",
 					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
 				)
 			} else {
@@ -229,6 +231,8 @@ func InitDB() (*DBConfig, error) {
 				DisableForeignKeyConstraintWhenMigrating: true, // 外部キー制約を無効化
 				// クエリの最適化
 				QueryFields: true, // フィールドを明示的に指定
+				// 追加の設定
+				DisableAutomaticPing: true, // 自動pingを無効化
 			})
 			if err != nil {
 				log.Printf("❌ フォールバック接続も失敗しました: %v", err)
@@ -287,10 +291,10 @@ func InitDB() (*DBConfig, error) {
 		log.Println("✅ 開発環境用の接続プール設定が完了しました")
 	} else {
 		// 本番環境用の設定（Supabase最適化）
-		sqlDB.SetMaxIdleConns(2)                   // アイドル接続数を最小限に
-		sqlDB.SetMaxOpenConns(10)                  // 最大接続数を制限
-		sqlDB.SetConnMaxLifetime(30 * time.Minute) // 接続の最大生存時間を短縮
-		sqlDB.SetConnMaxIdleTime(10 * time.Minute) // アイドル接続の最大生存時間を短縮
+		sqlDB.SetMaxIdleConns(1)                   // アイドル接続数を最小限に
+		sqlDB.SetMaxOpenConns(5)                   // 最大接続数を制限
+		sqlDB.SetConnMaxLifetime(15 * time.Minute) // 接続の最大生存時間を短縮
+		sqlDB.SetConnMaxIdleTime(5 * time.Minute)  // アイドル接続の最大生存時間を短縮
 		log.Println("✅ 本番環境用の接続プール設定が完了しました")
 	}
 
@@ -305,7 +309,7 @@ func InitDB() (*DBConfig, error) {
 	// PostgreSQLの設定を確認
 	log.Println("🔍 PostgreSQLの設定を確認中...")
 	var settingName, setting string
-	rows, err := sqlDB.Query("SELECT name, setting FROM pg_settings WHERE name IN ('prepared_statement_cache_size', 'statement_cache_mode', 'max_prepared_statements')")
+	rows, err := sqlDB.Query("SELECT name, setting FROM pg_settings WHERE name IN ('prepared_statement_cache_size', 'statement_cache_mode', 'max_prepared_statements', 'prefer_simple_protocol')")
 	if err != nil {
 		log.Printf("⚠️ PostgreSQL設定の確認に失敗: %v", err)
 	} else {
