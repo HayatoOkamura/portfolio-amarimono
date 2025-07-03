@@ -76,27 +76,9 @@ func InitDB() (*DBConfig, error) {
 
 	if strings.Contains(dbHost, "pooler.supabase.com") {
 		log.Println("   📝 既にPoolerホストが設定されています")
-		if usePooler == "false" {
-			log.Println("   🔧 USE_POOLER=falseのため、Direct Connectionに変換します")
-			// PoolerホストからDirect Connectionホストに変換
-			// ユーザー名からプロジェクトリファレンスIDを抽出
-			// 例: postgres.qmrjsqeigdkizkrpiahs -> qmrjsqeigdkizkrpiahs
-			projectRef := strings.TrimPrefix(dbUser, "postgres.")
-			if projectRef != "" && projectRef != dbUser {
-				finalHost = fmt.Sprintf("db.%s.supabase.co", projectRef)
-				finalPort = "5432"
-				finalUser = "postgres"
-				log.Printf("   🔄 Direct Connectionホストに変換: %s", finalHost)
-			} else {
-				log.Println("❌ プロジェクトリファレンスIDの抽出に失敗しました")
-				log.Printf("   🔸 ユーザー名: %s", dbUser)
-				return nil, fmt.Errorf("failed to extract project reference ID from pooler user: %s", dbUser)
-			}
-		} else {
-			finalHost = dbHost
-			finalPort = dbPort
-			finalUser = dbUser
-		}
+		finalHost = dbHost
+		finalPort = dbPort
+		finalUser = dbUser
 	} else {
 		log.Println("   📝 Direct ConnectionホストからリファレンスIDを抽出します")
 
@@ -148,12 +130,21 @@ func InitDB() (*DBConfig, error) {
 			finalHost, finalPort, finalUser, dbPassword, dbName,
 		)
 	} else {
-		// 本番環境用：prepared statementを完全無効化したDSN（本番環境対応のパラメータを含む）
-		log.Println("   🔧 本番環境のため、prepared statementを完全無効化したDSNを使用")
-		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 binary_parameters=no",
-			finalHost, finalPort, finalUser, dbPassword, dbName,
-		)
+		// 本番環境用：Pooler接続に対応したDSN
+		log.Println("   🔧 本番環境のため、Pooler接続に対応したDSNを使用")
+		if strings.Contains(finalHost, "pooler.supabase.com") {
+			// Pooler接続用：サポートされていないパラメータを除外
+			dsn = fmt.Sprintf(
+				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
+				finalHost, finalPort, finalUser, dbPassword, dbName,
+			)
+		} else {
+			// Direct Connection用：全パラメータを含む
+			dsn = fmt.Sprintf(
+				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 binary_parameters=no",
+				finalHost, finalPort, finalUser, dbPassword, dbName,
+			)
+		}
 	}
 	log.Printf("   📝 DSN: %s", maskDSN(dsn))
 
@@ -329,27 +320,31 @@ func InitDB() (*DBConfig, error) {
 	}
 	log.Println("✅ 接続テストが成功しました")
 
-	// セッション設定を強制適用
+	// セッション設定を強制適用（Pooler接続では一部設定がサポートされない）
 	log.Println("🔧 セッション設定を強制適用中...")
-	_, err = sqlDB.Exec("SET statement_cache_mode = 'describe'")
-	if err != nil {
-		log.Printf("⚠️ statement_cache_mode設定に失敗: %v", err)
+	if strings.Contains(finalHost, "pooler.supabase.com") {
+		log.Println("   📝 Pooler接続のため、一部の設定をスキップします")
 	} else {
-		log.Println("   ✅ statement_cache_mode = 'describe' を設定")
-	}
+		_, err = sqlDB.Exec("SET statement_cache_mode = 'describe'")
+		if err != nil {
+			log.Printf("⚠️ statement_cache_mode設定に失敗: %v", err)
+		} else {
+			log.Println("   ✅ statement_cache_mode = 'describe' を設定")
+		}
 
-	_, err = sqlDB.Exec("SET prepared_statement_cache_size = 0")
-	if err != nil {
-		log.Printf("⚠️ prepared_statement_cache_size設定に失敗: %v", err)
-	} else {
-		log.Println("   ✅ prepared_statement_cache_size = 0 を設定")
-	}
+		_, err = sqlDB.Exec("SET prepared_statement_cache_size = 0")
+		if err != nil {
+			log.Printf("⚠️ prepared_statement_cache_size設定に失敗: %v", err)
+		} else {
+			log.Println("   ✅ prepared_statement_cache_size = 0 を設定")
+		}
 
-	_, err = sqlDB.Exec("SET max_prepared_statements = 0")
-	if err != nil {
-		log.Printf("⚠️ max_prepared_statements設定に失敗: %v", err)
-	} else {
-		log.Println("   ✅ max_prepared_statements = 0 を設定")
+		_, err = sqlDB.Exec("SET max_prepared_statements = 0")
+		if err != nil {
+			log.Printf("⚠️ max_prepared_statements設定に失敗: %v", err)
+		} else {
+			log.Println("   ✅ max_prepared_statements = 0 を設定")
+		}
 	}
 
 	log.Println("✅ セッション設定の強制適用が完了しました")
