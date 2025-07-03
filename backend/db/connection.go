@@ -71,11 +71,32 @@ func InitDB() (*DBConfig, error) {
 	var finalUser string
 	var usePooler string
 
+	// Pooler接続の有効性を確認するための環境変数
+	usePooler = os.Getenv("USE_POOLER")
+
 	if strings.Contains(dbHost, "pooler.supabase.com") {
 		log.Println("   📝 既にPoolerホストが設定されています")
-		finalHost = dbHost
-		finalPort = dbPort
-		finalUser = dbUser
+		if usePooler == "false" {
+			log.Println("   🔧 USE_POOLER=falseのため、Direct Connectionに変換します")
+			// PoolerホストからDirect Connectionホストに変換
+			// ユーザー名からプロジェクトリファレンスIDを抽出
+			// 例: postgres.qmrjsqeigdkizkrpiahs -> qmrjsqeigdkizkrpiahs
+			projectRef := strings.TrimPrefix(dbUser, "postgres.")
+			if projectRef != "" && projectRef != dbUser {
+				finalHost = fmt.Sprintf("db.%s.supabase.co", projectRef)
+				finalPort = "5432"
+				finalUser = "postgres"
+				log.Printf("   🔄 Direct Connectionホストに変換: %s", finalHost)
+			} else {
+				log.Println("❌ プロジェクトリファレンスIDの抽出に失敗しました")
+				log.Printf("   🔸 ユーザー名: %s", dbUser)
+				return nil, fmt.Errorf("failed to extract project reference ID from pooler user: %s", dbUser)
+			}
+		} else {
+			finalHost = dbHost
+			finalPort = dbPort
+			finalUser = dbUser
+		}
 	} else {
 		log.Println("   📝 Direct ConnectionホストからリファレンスIDを抽出します")
 
@@ -94,8 +115,6 @@ func InitDB() (*DBConfig, error) {
 			return nil, fmt.Errorf("failed to extract project reference ID from host: %s", dbHost)
 		}
 
-		// Pooler接続の有効性を確認するための環境変数
-		usePooler = os.Getenv("USE_POOLER")
 		if usePooler == "true" {
 			// Poolerホストの構築
 			finalHost = fmt.Sprintf("%s.pooler.supabase.com", projectRef)
@@ -429,6 +448,7 @@ func extractProjectRef(host string) string {
 	log.Printf("   🔍 ホスト名の解析: %s", host)
 
 	// 例: db.qmrjsqeigdkizkrpiahs.supabase.co
+	// 例: aws-0-ap-northeast-1.pooler.supabase.com
 	parts := strings.Split(host, ".")
 	log.Printf("   📝 分割された部分: %v", parts)
 
@@ -439,7 +459,17 @@ func extractProjectRef(host string) string {
 
 	var projectRef string
 
-	// db.qmrjsqeigdkizkrpiahs.supabase.co の形式の場合
+	// aws-0-ap-northeast-1.pooler.supabase.com の形式の場合（Pooler）
+	if strings.Contains(host, "pooler.supabase.com") {
+		// 最初の部分からプロジェクトリファレンスIDを抽出
+		// aws-0-ap-northeast-1 から qmrjsqeigdkizkrpiahs を抽出する必要がある
+		// この場合、ユーザー名から抽出する必要がある
+		log.Printf("   🔍 PoolerホストからプロジェクトリファレンスIDを抽出中...")
+		log.Printf("   💡 Poolerホストの場合は、ユーザー名からプロジェクトリファレンスIDを抽出する必要があります")
+		return ""
+	}
+
+	// db.qmrjsqeigdkizkrpiahs.supabase.co の形式の場合（Direct Connection）
 	if parts[0] == "db" && len(parts) >= 3 {
 		projectRef = parts[1] // 2番目の部分がプロジェクトリファレンスID
 		log.Printf("   🔍 2番目の部分（プロジェクトリファレンスID）: %s", projectRef)
