@@ -200,6 +200,27 @@ export async function POST(request: Request) {
           }
         }
 
+        // prepared statementエラーの場合の特別な処理
+        if (syncResponse.status === 500 && responseText.includes('prepared statement')) {
+          debugLog('Prepared statement error detected, retrying after delay', { requestId });
+          
+          // 少し待機してから再試行
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const retryResponse = await fetch(apiUrl, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (retryResponse.ok) {
+            const retryUser = await retryResponse.json();
+            debugLog('User retrieved after prepared statement error', { userId: retryUser.id, requestId });
+            return { success: true, user: retryUser };
+          }
+        }
+
         return { 
           success: false, 
           error: 'ユーザーの同期に失敗しました',

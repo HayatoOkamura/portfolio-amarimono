@@ -133,13 +133,13 @@ func InitDB() (*DBConfig, error) {
 		// 本番環境用：Pooler接続に対応したDSN
 		log.Println("   🔧 本番環境のため、Pooler接続に対応したDSNを使用")
 		if strings.Contains(finalHost, "pooler.supabase.com") {
-			// Pooler接続用：サポートされていないパラメータを除外
+			// Pooler接続用：prepared statementを完全に無効化
 			dsn = fmt.Sprintf(
-				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend",
+				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 binary_parameters=no",
 				finalHost, finalPort, finalUser, dbPassword, dbName,
 			)
 		} else {
-			// Direct Connection用：全パラメータを含む
+			// Direct Connection用：prepared statementを完全に無効化
 			dsn = fmt.Sprintf(
 				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 binary_parameters=no",
 				finalHost, finalPort, finalUser, dbPassword, dbName,
@@ -337,6 +337,7 @@ func InitDB() (*DBConfig, error) {
 	} else if environment == "development" {
 		log.Println("   📝 開発環境のため、古いPostgreSQLバージョンに対応して一部の設定をスキップします")
 	} else {
+		// 本番環境での強力な設定
 		_, err = sqlDB.Exec("SET statement_cache_mode = 'describe'")
 		if err != nil {
 			log.Printf("⚠️ statement_cache_mode設定に失敗: %v", err)
@@ -356,6 +357,21 @@ func InitDB() (*DBConfig, error) {
 			log.Printf("⚠️ max_prepared_statements設定に失敗: %v", err)
 		} else {
 			log.Println("   ✅ max_prepared_statements = 0 を設定")
+		}
+
+		// 追加の設定（本番環境専用）
+		_, err = sqlDB.Exec("SET enable_prepared_statement_cache = false")
+		if err != nil {
+			log.Printf("⚠️ enable_prepared_statement_cache設定に失敗: %v", err)
+		} else {
+			log.Println("   ✅ enable_prepared_statement_cache = false を設定")
+		}
+
+		_, err = sqlDB.Exec("SET statement_timeout = '30s'")
+		if err != nil {
+			log.Printf("⚠️ statement_timeout設定に失敗: %v", err)
+		} else {
+			log.Println("   ✅ statement_timeout = '30s' を設定")
 		}
 	}
 

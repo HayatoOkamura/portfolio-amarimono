@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"log"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -92,14 +93,19 @@ func GetUserByID(db *gorm.DB, id string) (*User, error) {
 	// リトライ機能付きでクエリを実行
 	var err error
 	for retry := 0; retry < 5; retry++ {
-		// 新しいセッションでクエリを実行（より強力な設定）
+		// より強力なセッション設定（本番環境対応）
 		tx := db.Session(&gorm.Session{
 			PrepareStmt:              false,
 			SkipDefaultTransaction:   true,
 			DisableNestedTransaction: true,
+			// 本番環境での追加設定
+			QueryFields: true,
+			// セッション固有の設定
+			DryRun: false,
 		})
 
-		err = tx.First(&user, "id = ?", id).Error
+		// 生のSQLクエリを使用してprepared statementを回避
+		err = tx.Raw("SELECT id, email, username, age, gender, profile_image, created_at, updated_at, deleted_at FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1", id).Scan(&user).Error
 		if err == nil {
 			log.Printf("🔍 GetUserByID - User found: %s", user.ID)
 			return &user, nil
@@ -110,6 +116,8 @@ func GetUserByID(db *gorm.DB, id string) (*User, error) {
 			log.Printf("🔍 GetUserByID - Prepared statement error, retrying... (attempt %d/5)", retry+1)
 			log.Printf("🔍 GetUserByID - Error details: %v", err)
 			log.Printf("🔍 GetUserByID - User ID: %s", id)
+			log.Printf("🔍 GetUserByID - Environment: %s", os.Getenv("ENVIRONMENT"))
+			log.Printf("🔍 GetUserByID - Host: %s", os.Getenv("SUPABASE_DB_HOST"))
 			// 待機時間を指数関数的に増加
 			waitTime := time.Duration(100*(retry+1)) * time.Millisecond
 			time.Sleep(waitTime)
@@ -130,14 +138,24 @@ func UpdateUser(db *gorm.DB, user *User) error {
 	// リトライ機能付きでクエリを実行
 	var err error
 	for retry := 0; retry < 5; retry++ {
-		// 新しいセッションでクエリを実行（より強力な設定）
+		// より強力なセッション設定（本番環境対応）
 		tx := db.Session(&gorm.Session{
 			PrepareStmt:              false,
 			SkipDefaultTransaction:   true,
 			DisableNestedTransaction: true,
+			// 本番環境での追加設定
+			QueryFields: true,
+			// セッション固有の設定
+			DryRun: false,
 		})
 
-		err = tx.Save(user).Error
+		// 生のSQLクエリを使用してprepared statementを回避
+		err = tx.Exec(`
+			UPDATE users 
+			SET email = ?, username = ?, age = ?, gender = ?, profile_image = ?, updated_at = NOW()
+			WHERE id = ? AND deleted_at IS NULL
+		`, user.Email, user.Username, user.Age, user.Gender, user.ProfileImage, user.ID).Error
+
 		if err == nil {
 			log.Printf("🔍 UpdateUser - User updated successfully: %s", user.ID)
 			return nil
