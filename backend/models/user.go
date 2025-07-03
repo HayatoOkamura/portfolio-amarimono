@@ -71,12 +71,28 @@ func GetUserByID(db *gorm.DB, id string) (*User, error) {
 // UpdateUser ユーザー情報を更新する
 func UpdateUser(db *gorm.DB, user *User) error {
 	log.Printf("🔍 UpdateUser - Updating user with ID: %s", user.ID)
-	err := db.Save(user).Error
-	if err != nil {
-		log.Printf("🔍 UpdateUser - Error updating user: %v", err)
-	} else {
-		log.Printf("🔍 UpdateUser - User updated successfully: %s", user.ID)
+
+	// リトライ機能付きでクエリを実行
+	var err error
+	for retry := 0; retry < 3; retry++ {
+		err = db.Save(user).Error
+		if err == nil {
+			log.Printf("🔍 UpdateUser - User updated successfully: %s", user.ID)
+			return nil
+		}
+
+		// prepared statementエラーの場合はリトライ
+		if retry < 2 && (err.Error() == "ERROR: prepared statement \"stmtcache_\" already exists (SQLSTATE 42P05)" ||
+			strings.Contains(err.Error(), "prepared statement") && strings.Contains(err.Error(), "already exists")) {
+			log.Printf("🔍 UpdateUser - Prepared statement error, retrying... (attempt %d/3)", retry+1)
+			time.Sleep(100 * time.Millisecond) // 少し待機
+			continue
+		}
+
+		break
 	}
+
+	log.Printf("🔍 UpdateUser - Error updating user: %v", err)
 	return err
 }
 

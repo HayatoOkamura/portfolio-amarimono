@@ -84,8 +84,21 @@ function EditProfileContent() {
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      setError("プロフィールの更新に失敗しました");
-      toast.error("プロフィールの更新に失敗しました");
+      let errorMessage = "プロフィールの更新に失敗しました";
+      
+      // エラーメッセージの詳細化
+      if (error instanceof Error) {
+        if (error.message.includes("500")) {
+          errorMessage = "サーバーエラーが発生しました。しばらく時間をおいて再度お試しください。";
+        } else if (error.message.includes("timeout")) {
+          errorMessage = "リクエストがタイムアウトしました。ネットワーク接続を確認してください。";
+        } else if (error.message.includes("network")) {
+          errorMessage = "ネットワークエラーが発生しました。接続を確認してください。";
+        }
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setUpdating(false);
     }
