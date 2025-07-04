@@ -178,10 +178,11 @@ func InitDB() (*DBConfig, error) {
 		log.Printf("   📝 max_prepared_statements: 0")
 	}
 
-	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	database, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  dsn,
+		PreferSimpleProtocol: true, // prepared statementを無効化（記事の解決策）
+	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
-		// Prepared Statementの適切な管理
-		PrepareStmt: true, // Prepared Statementを有効化（適切に管理）
 		// その他の最適化設定
 		SkipDefaultTransaction: true, // デフォルトトランザクションをスキップ
 		// 本番環境での追加設定
@@ -243,10 +244,11 @@ func InitDB() (*DBConfig, error) {
 			log.Printf("   📝 フォールバックDSN: %s", maskDSN(fallbackDSN))
 
 			// フォールバック接続を試行
-			database, err = gorm.Open(postgres.Open(fallbackDSN), &gorm.Config{
+			database, err = gorm.Open(postgres.New(postgres.Config{
+				DSN:                  fallbackDSN,
+				PreferSimpleProtocol: true, // prepared statementを無効化（記事の解決策）
+			}), &gorm.Config{
 				Logger: logger.Default.LogMode(logger.Info),
-				// Prepared Statementの重複エラーを防ぐための設定
-				PrepareStmt: false, // Prepared Statementを無効化
 				// その他の最適化設定
 				SkipDefaultTransaction: true, // デフォルトトランザクションをスキップ
 				// 本番環境での追加設定
@@ -316,7 +318,7 @@ func InitDB() (*DBConfig, error) {
 	} else {
 		// 本番環境用の設定（Supabase最適化）
 		sqlDB.SetMaxIdleConns(2)                   // アイドル接続を適度に保持
-		sqlDB.SetMaxOpenConns(5)                   // 適度な接続数（prepared statementの競合を減らす）
+		sqlDB.SetMaxOpenConns(5)                   // 適度な接続数
 		sqlDB.SetConnMaxLifetime(10 * time.Minute) // 接続の最大生存時間
 		sqlDB.SetConnMaxIdleTime(5 * time.Minute)  // アイドル接続の最大生存時間
 		log.Println("✅ 本番環境用の接続プール設定が完了しました")
@@ -343,21 +345,6 @@ func InitDB() (*DBConfig, error) {
 			log.Printf("⚠️ statement_timeout設定に失敗: %v", err)
 		} else {
 			log.Println("   ✅ statement_timeout = '30s' を設定")
-		}
-
-		// prepared statementの適切な管理設定
-		_, err = sqlDB.Exec("SET prepared_statement_cache_size = 100")
-		if err != nil {
-			log.Printf("⚠️ prepared_statement_cache_size設定に失敗: %v", err)
-		} else {
-			log.Println("   ✅ prepared_statement_cache_size = 100 を設定")
-		}
-
-		_, err = sqlDB.Exec("SET max_prepared_statements = 100")
-		if err != nil {
-			log.Printf("⚠️ max_prepared_statements設定に失敗: %v", err)
-		} else {
-			log.Println("   ✅ max_prepared_statements = 100 を設定")
 		}
 	}
 

@@ -89,53 +89,11 @@ func GetUserByID(db *gorm.DB, id string) (*User, error) {
 	log.Printf("🔍 GetUserByID - Called from: %s", getCallerInfo())
 	var user User
 
-	// リトライ機能付きでクエリを実行
-	var err error
-	for retry := 0; retry < 5; retry++ {
-		// セッション設定（prepared statementの適切な管理）
-		tx := db.Session(&gorm.Session{
-			PrepareStmt:              true, // prepared statementを有効化
-			SkipDefaultTransaction:   true,
-			DisableNestedTransaction: true,
-			QueryFields:              true,
-			DryRun:                   false,
-		})
-
-		// 通常のGORMクエリを使用（prepared statementの適切な管理）
-		err = tx.Where("id = ? AND deleted_at IS NULL", id).First(&user).Error
-		if err == nil {
-			log.Printf("🔍 GetUserByID - User found: %s", user.ID)
-			return &user, nil
-		}
-
-		// prepared statementエラーの場合は特別な処理
-		if retry < 4 && (strings.Contains(err.Error(), "prepared statement") && strings.Contains(err.Error(), "already exists")) {
-			log.Printf("🔍 GetUserByID - Prepared statement error, retrying with new session... (attempt %d/5)", retry+1)
-			log.Printf("🔍 GetUserByID - Error details: %v", err)
-
-			// 新しいセッションでリトライ（prepared statementをクリア）
-			tx = db.Session(&gorm.Session{
-				PrepareStmt:              false, // 一時的に無効化
-				SkipDefaultTransaction:   true,
-				DisableNestedTransaction: true,
-				QueryFields:              true,
-				DryRun:                   false,
-			})
-
-			// 生のSQLクエリでリトライ
-			err = tx.Raw("SELECT id, email, username, age, gender, profile_image, created_at, updated_at, deleted_at FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1", id).Scan(&user).Error
-			if err == nil {
-				log.Printf("🔍 GetUserByID - User found with raw query: %s", user.ID)
-				return &user, nil
-			}
-
-			// 待機時間を指数関数的に増加
-			waitTime := time.Duration(100*(retry+1)) * time.Millisecond
-			time.Sleep(waitTime)
-			continue
-		}
-
-		break
+	// 通常のGORMクエリを使用（prepared statementは無効化済み）
+	err := db.Where("id = ? AND deleted_at IS NULL", id).First(&user).Error
+	if err == nil {
+		log.Printf("🔍 GetUserByID - User found: %s", user.ID)
+		return &user, nil
 	}
 
 	log.Printf("🔍 GetUserByID - Error finding user: %v", err)
@@ -146,65 +104,19 @@ func GetUserByID(db *gorm.DB, id string) (*User, error) {
 func UpdateUser(db *gorm.DB, user *User) error {
 	log.Printf("🔍 UpdateUser - Updating user with ID: %s", user.ID)
 
-	// リトライ機能付きでクエリを実行
-	var err error
-	for retry := 0; retry < 5; retry++ {
-		// セッション設定（prepared statementの適切な管理）
-		tx := db.Session(&gorm.Session{
-			PrepareStmt:              true, // prepared statementを有効化
-			SkipDefaultTransaction:   true,
-			DisableNestedTransaction: true,
-			QueryFields:              true,
-			DryRun:                   false,
-		})
+	// 通常のGORMクエリを使用（prepared statementは無効化済み）
+	err := db.Model(&User{}).Where("id = ? AND deleted_at IS NULL", user.ID).Updates(map[string]interface{}{
+		"email":         user.Email,
+		"username":      user.Username,
+		"age":           user.Age,
+		"gender":        user.Gender,
+		"profile_image": user.ProfileImage,
+		"updated_at":    time.Now(),
+	}).Error
 
-		// 通常のGORMクエリを使用（prepared statementの適切な管理）
-		err = tx.Model(&User{}).Where("id = ? AND deleted_at IS NULL", user.ID).Updates(map[string]interface{}{
-			"email":         user.Email,
-			"username":      user.Username,
-			"age":           user.Age,
-			"gender":        user.Gender,
-			"profile_image": user.ProfileImage,
-			"updated_at":    time.Now(),
-		}).Error
-
-		if err == nil {
-			log.Printf("🔍 UpdateUser - User updated successfully: %s", user.ID)
-			return nil
-		}
-
-		// prepared statementエラーの場合は特別な処理
-		if retry < 4 && (strings.Contains(err.Error(), "prepared statement") && strings.Contains(err.Error(), "already exists")) {
-			log.Printf("🔍 UpdateUser - Prepared statement error, retrying with new session... (attempt %d/5)", retry+1)
-
-			// 新しいセッションでリトライ（prepared statementをクリア）
-			tx = db.Session(&gorm.Session{
-				PrepareStmt:              false, // 一時的に無効化
-				SkipDefaultTransaction:   true,
-				DisableNestedTransaction: true,
-				QueryFields:              true,
-				DryRun:                   false,
-			})
-
-			// 生のSQLクエリでリトライ
-			err = tx.Exec(`
-				UPDATE users 
-				SET email = ?, username = ?, age = ?, gender = ?, profile_image = ?, updated_at = NOW()
-				WHERE id = ? AND deleted_at IS NULL
-			`, user.Email, user.Username, user.Age, user.Gender, user.ProfileImage, user.ID).Error
-
-			if err == nil {
-				log.Printf("🔍 UpdateUser - User updated successfully with raw query: %s", user.ID)
-				return nil
-			}
-
-			// 待機時間を指数関数的に増加
-			waitTime := time.Duration(100*(retry+1)) * time.Millisecond
-			time.Sleep(waitTime)
-			continue
-		}
-
-		break
+	if err == nil {
+		log.Printf("🔍 UpdateUser - User updated successfully: %s", user.ID)
+		return nil
 	}
 
 	log.Printf("🔍 UpdateUser - Error updating user: %v", err)
