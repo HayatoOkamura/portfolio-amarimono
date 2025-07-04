@@ -69,7 +69,27 @@ func SyncUser(db *gorm.DB, user *User) error {
 		if err == gorm.ErrRecordNotFound {
 			log.Printf("🔍 SyncUser - User not found, creating new user: %s", user.ID)
 			// ユーザーが存在しない場合は新規作成
-			return CreateUser(db, user)
+			err = CreateUser(db, user)
+			if err != nil {
+				// 重複キーエラーの場合、ユーザーが既に作成されている
+				if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+					log.Printf("🔍 SyncUser - Duplicate key error, user already exists: %s", user.ID)
+					// 既存のユーザーを再取得
+					existingUser, err = GetUserByID(db, user.ID)
+					if err != nil {
+						log.Printf("🔍 SyncUser - Error retrieving existing user: %v", err)
+						return err
+					}
+					// 既存のユーザー情報で更新
+					*user = *existingUser
+					log.Printf("🔍 SyncUser - User retrieved successfully: %s", user.ID)
+					return nil
+				}
+				log.Printf("🔍 SyncUser - Error creating user: %v", err)
+				return err
+			}
+			log.Printf("🔍 SyncUser - User created successfully: %s", user.ID)
+			return nil
 		}
 		// その他のエラーの場合
 		log.Printf("🔍 SyncUser - Error checking existing user: %v", err)

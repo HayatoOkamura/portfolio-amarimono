@@ -9,6 +9,8 @@ import (
 
 	"log"
 
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -156,6 +158,22 @@ func (h *UserHandler) SyncUser(c *gin.Context) {
 	// 同期処理（存在しない場合は作成、存在する場合は更新）
 	if err := models.SyncUser(h.DB, &user); err != nil {
 		log.Printf("🔍 SyncUser - Failed to sync user: %v", err)
+
+		// 重複キーエラーの場合は特別な処理
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			log.Printf("🔍 SyncUser - Duplicate key error, user already exists: %s", user.ID)
+			// 既存のユーザーを取得して返す
+			existingUser, err := models.GetUserByID(h.DB, user.ID)
+			if err != nil {
+				log.Printf("🔍 SyncUser - Error retrieving existing user: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve existing user"})
+				return
+			}
+			log.Printf("🔍 SyncUser - Existing user retrieved successfully: %s", existingUser.ID)
+			c.JSON(http.StatusOK, existingUser)
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to sync user"})
 		return
 	}

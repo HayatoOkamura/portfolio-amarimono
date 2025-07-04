@@ -184,7 +184,9 @@ export async function POST(request: Request) {
           requestId
         }, requestId);
 
-        if (syncResponse.status === 500 && responseText.includes('duplicate key')) {
+        if (syncResponse.status === 500 && (responseText.includes('duplicate key') || responseText.includes('already exists'))) {
+          debugLog('Duplicate key error detected, retrying user retrieval', { requestId });
+          
           // 重複エラーの場合は、ユーザー情報を再取得
           const retryResponse = await fetch(apiUrl, {
             headers: {
@@ -197,6 +199,11 @@ export async function POST(request: Request) {
             const retryUser = await retryResponse.json();
             debugLog('User retrieved after duplicate error', { userId: retryUser.id, requestId });
             return { success: true, user: retryUser };
+          } else {
+            debugLog('Failed to retrieve user after duplicate error', { 
+              status: retryResponse.status,
+              requestId 
+            });
           }
         }
 
