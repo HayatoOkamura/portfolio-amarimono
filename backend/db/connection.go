@@ -133,15 +133,15 @@ func InitDB() (*DBConfig, error) {
 		// 本番環境用：Pooler接続に対応したDSN
 		log.Println("   🔧 本番環境のため、Pooler接続に対応したDSNを使用")
 		if strings.Contains(finalHost, "pooler.supabase.com") {
-			// Pooler接続用：prepared statementを完全に無効化
+			// Pooler接続用：prepared statementを適切に管理
 			dsn = fmt.Sprintf(
-				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 binary_parameters=no",
+				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=false application_name=amarimono-backend",
 				finalHost, finalPort, finalUser, dbPassword, dbName,
 			)
 		} else {
-			// Direct Connection用：prepared statementを完全に無効化
+			// Direct Connection用：prepared statementを適切に管理
 			dsn = fmt.Sprintf(
-				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 binary_parameters=no",
+				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=false application_name=amarimono-backend",
 				finalHost, finalPort, finalUser, dbPassword, dbName,
 			)
 		}
@@ -180,8 +180,8 @@ func InitDB() (*DBConfig, error) {
 
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
-		// Prepared Statementの重複エラーを防ぐための設定
-		PrepareStmt: false, // Prepared Statementを無効化
+		// Prepared Statementの適切な管理
+		PrepareStmt: true, // Prepared Statementを有効化（適切に管理）
 		// その他の最適化設定
 		SkipDefaultTransaction: true, // デフォルトトランザクションをスキップ
 		// 本番環境での追加設定
@@ -235,7 +235,7 @@ func InitDB() (*DBConfig, error) {
 				)
 			} else {
 				fallbackDSN = fmt.Sprintf(
-					"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=true application_name=amarimono-backend statement_cache_mode=describe prepared_statement_cache_size=0 max_prepared_statements=0 binary_parameters=no",
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=false application_name=amarimono-backend",
 					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
 				)
 			}
@@ -315,10 +315,10 @@ func InitDB() (*DBConfig, error) {
 		log.Println("✅ 開発環境用の接続プール設定が完了しました")
 	} else {
 		// 本番環境用の設定（Supabase最適化）
-		sqlDB.SetMaxIdleConns(0)                   // アイドル接続を無効化
-		sqlDB.SetMaxOpenConns(3)                   // 最大接続数をさらに制限
-		sqlDB.SetConnMaxLifetime(10 * time.Minute) // 接続の最大生存時間をさらに短縮
-		sqlDB.SetConnMaxIdleTime(1 * time.Minute)  // アイドル接続の最大生存時間をさらに短縮
+		sqlDB.SetMaxIdleConns(2)                   // アイドル接続を適度に保持
+		sqlDB.SetMaxOpenConns(5)                   // 適度な接続数（prepared statementの競合を減らす）
+		sqlDB.SetConnMaxLifetime(10 * time.Minute) // 接続の最大生存時間
+		sqlDB.SetConnMaxIdleTime(5 * time.Minute)  // アイドル接続の最大生存時間
 		log.Println("✅ 本番環境用の接続プール設定が完了しました")
 	}
 
@@ -337,41 +337,27 @@ func InitDB() (*DBConfig, error) {
 	} else if environment == "development" {
 		log.Println("   📝 開発環境のため、古いPostgreSQLバージョンに対応して一部の設定をスキップします")
 	} else {
-		// 本番環境での強力な設定
-		_, err = sqlDB.Exec("SET statement_cache_mode = 'describe'")
-		if err != nil {
-			log.Printf("⚠️ statement_cache_mode設定に失敗: %v", err)
-		} else {
-			log.Println("   ✅ statement_cache_mode = 'describe' を設定")
-		}
-
-		_, err = sqlDB.Exec("SET prepared_statement_cache_size = 0")
-		if err != nil {
-			log.Printf("⚠️ prepared_statement_cache_size設定に失敗: %v", err)
-		} else {
-			log.Println("   ✅ prepared_statement_cache_size = 0 を設定")
-		}
-
-		_, err = sqlDB.Exec("SET max_prepared_statements = 0")
-		if err != nil {
-			log.Printf("⚠️ max_prepared_statements設定に失敗: %v", err)
-		} else {
-			log.Println("   ✅ max_prepared_statements = 0 を設定")
-		}
-
-		// 追加の設定（本番環境専用）
-		_, err = sqlDB.Exec("SET enable_prepared_statement_cache = false")
-		if err != nil {
-			log.Printf("⚠️ enable_prepared_statement_cache設定に失敗: %v", err)
-		} else {
-			log.Println("   ✅ enable_prepared_statement_cache = false を設定")
-		}
-
+		// 本番環境での適切な設定
 		_, err = sqlDB.Exec("SET statement_timeout = '30s'")
 		if err != nil {
 			log.Printf("⚠️ statement_timeout設定に失敗: %v", err)
 		} else {
 			log.Println("   ✅ statement_timeout = '30s' を設定")
+		}
+
+		// prepared statementの適切な管理設定
+		_, err = sqlDB.Exec("SET prepared_statement_cache_size = 100")
+		if err != nil {
+			log.Printf("⚠️ prepared_statement_cache_size設定に失敗: %v", err)
+		} else {
+			log.Println("   ✅ prepared_statement_cache_size = 100 を設定")
+		}
+
+		_, err = sqlDB.Exec("SET max_prepared_statements = 100")
+		if err != nil {
+			log.Printf("⚠️ max_prepared_statements設定に失敗: %v", err)
+		} else {
+			log.Println("   ✅ max_prepared_statements = 100 を設定")
 		}
 	}
 
