@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"log"
+	"os" // Added for os.Getenv
 	"runtime"
 	"strings"
 	"time"
@@ -85,7 +86,22 @@ func SyncUser(db *gorm.DB, user *User) error {
 					log.Printf("🔍 SyncUser - User retrieved successfully: %s", user.ID)
 					return nil
 				}
+
+				// その他のエラーの詳細ログ
 				log.Printf("🔍 SyncUser - Error creating user: %v", err)
+				log.Printf("🔍 SyncUser - Error type: %T", err)
+				log.Printf("🔍 SyncUser - Error message: %s", err.Error())
+
+				// 開発環境での追加デバッグ情報
+				if os.Getenv("ENVIRONMENT") == "development" {
+					log.Printf("🔍 SyncUser - Development environment - Full error details:")
+					log.Printf("   User ID: %s", user.ID)
+					log.Printf("   Email: %s", user.Email)
+					log.Printf("   Username: %v", user.Username)
+					log.Printf("   Age: %v", user.Age)
+					log.Printf("   Gender: %v", user.Gender)
+				}
+
 				return err
 			}
 			log.Printf("🔍 SyncUser - User created successfully: %s", user.ID)
@@ -93,6 +109,7 @@ func SyncUser(db *gorm.DB, user *User) error {
 		}
 		// その他のエラーの場合
 		log.Printf("🔍 SyncUser - Error checking existing user: %v", err)
+		log.Printf("🔍 SyncUser - Error type: %T", err)
 		return err
 	}
 

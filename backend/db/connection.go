@@ -123,10 +123,10 @@ func InitDB() (*DBConfig, error) {
 	var dsn string
 
 	if environment == "development" {
-		// 開発環境用：最も基本的なDSN（古いPostgreSQLバージョン対応）
-		log.Println("   🔧 開発環境のため、最も基本的なDSNを使用（古いPostgreSQLバージョン対応）")
+		// 開発環境用：本番環境と同様の設定を使用（prepared statement無効化対応）
+		log.Println("   🔧 開発環境のため、本番環境と同様の設定を使用（prepared statement無効化対応）")
 		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write application_name=amarimono-backend-dev",
 			finalHost, finalPort, finalUser, dbPassword, dbName,
 		)
 	} else {
@@ -135,13 +135,13 @@ func InitDB() (*DBConfig, error) {
 		if strings.Contains(finalHost, "pooler.supabase.com") {
 			// Pooler接続用：prepared statementを適切に管理
 			dsn = fmt.Sprintf(
-				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=false application_name=amarimono-backend",
+				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write application_name=amarimono-backend",
 				finalHost, finalPort, finalUser, dbPassword, dbName,
 			)
 		} else {
 			// Direct Connection用：prepared statementを適切に管理
 			dsn = fmt.Sprintf(
-				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=false application_name=amarimono-backend",
+				"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write application_name=amarimono-backend",
 				finalHost, finalPort, finalUser, dbPassword, dbName,
 			)
 		}
@@ -231,12 +231,12 @@ func InitDB() (*DBConfig, error) {
 			var fallbackDSN string
 			if environment == "development" {
 				fallbackDSN = fmt.Sprintf(
-					"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=10 target_session_attrs=read-write application_name=amarimono-backend-dev",
 					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
 				)
 			} else {
 				fallbackDSN = fmt.Sprintf(
-					"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write prefer_simple_protocol=false application_name=amarimono-backend",
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write application_name=amarimono-backend",
 					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
 				)
 			}

@@ -11,6 +11,8 @@ import (
 
 	"strings"
 
+	"os"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -158,6 +160,8 @@ func (h *UserHandler) SyncUser(c *gin.Context) {
 	// 同期処理（存在しない場合は作成、存在する場合は更新）
 	if err := models.SyncUser(h.DB, &user); err != nil {
 		log.Printf("🔍 SyncUser - Failed to sync user: %v", err)
+		log.Printf("🔍 SyncUser - Error type: %T", err)
+		log.Printf("🔍 SyncUser - Error message: %s", err.Error())
 
 		// 重複キーエラーの場合は特別な処理
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
@@ -172,6 +176,18 @@ func (h *UserHandler) SyncUser(c *gin.Context) {
 			log.Printf("🔍 SyncUser - Existing user retrieved successfully: %s", existingUser.ID)
 			c.JSON(http.StatusOK, existingUser)
 			return
+		}
+
+		// 開発環境での追加デバッグ情報
+		if os.Getenv("ENVIRONMENT") == "development" {
+			log.Printf("🔍 SyncUser - Development environment - Full error details:")
+			log.Printf("   User ID: %s", user.ID)
+			log.Printf("   Email: %s", user.Email)
+			log.Printf("   Username: %v", user.Username)
+			log.Printf("   Age: %v", user.Age)
+			log.Printf("   Gender: %v", user.Gender)
+			log.Printf("   Request Headers: %v", c.Request.Header)
+			log.Printf("   Content-Type: %s", c.GetHeader("Content-Type"))
 		}
 
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to sync user"})
