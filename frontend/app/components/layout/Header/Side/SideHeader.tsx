@@ -15,6 +15,7 @@ import { CgSmartHomeRefrigerator } from "react-icons/cg";
 import { useUserStore } from "@/app/stores/userStore";
 import ClientAuthMenu from "./ClientAuthMenu";
 import { useAuth } from "@/app/hooks/useAuth";
+import { useEffect } from "react";
 
 const SideHeader = () => {
   const { user } = useUserStore();

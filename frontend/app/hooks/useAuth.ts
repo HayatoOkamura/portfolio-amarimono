@@ -25,7 +25,8 @@ export interface AuthError {
 // バックエンドのユーザー情報を取得する関数
 const fetchUserDetails = async (userId: string, session: any) => {
   try {
-    const response = await fetch(`${backendUrl}/api/users/${userId}`);
+    // 🔥 修正: role情報を含むプロフィールエンドポイントを使用
+    const response = await fetch(`${backendUrl}/api/users/${userId}/profile`);
     if (!response.ok) {
       if (response.status === 404) {
         // ユーザーが存在しない場合は同期処理
@@ -44,7 +45,7 @@ const fetchUserDetails = async (userId: string, session: any) => {
           };
         } catch (createError) {
           // ユーザー作成に失敗した場合、既に存在する可能性があるので再度取得を試みる
-          const retryResponse = await fetch(`${backendUrl}/api/users/${userId}`);
+          const retryResponse = await fetch(`${backendUrl}/api/users/${userId}/profile`);
           if (retryResponse.ok) {
             const retryData = await retryResponse.json();
             return {
@@ -66,9 +67,32 @@ const fetchUserDetails = async (userId: string, session: any) => {
           };
         }
       }
+      
+      // 🔥 追加: プロフィールエンドポイントが失敗した場合のフォールバック
+      console.warn(`Profile endpoint failed (${response.status}), trying regular user endpoint`);
+      const fallbackResponse = await fetch(`${backendUrl}/api/users/${userId}`);
+      if (fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json();
+        return {
+          username: fallbackData.username || '',
+          profileImage: fallbackData.profileImage || '',
+          age: fallbackData.age || 0,
+          gender: fallbackData.gender || '未設定',
+          role: 'user' // フォールバック時はデフォルトのrole
+        };
+      }
+      
       throw new Error("Failed to fetch user details");
     }
     const data = await response.json();
+    
+    // 🔥 追加: role情報の取得状況をログ出力
+    console.log('🔍 User details fetched:', {
+      userId,
+      username: data.username,
+      role: data.role,
+      hasRole: !!data.role
+    });
     
     return {
       username: data.username || '',
@@ -114,8 +138,22 @@ const syncBackendUser = async (user: any) => {
     throw new Error(errorData.error || "バックエンドへのユーザー同期に失敗しました");
   }
 
-  const responseData = await response.json();
-  return responseData;
+  // 🔥 修正: 同期成功後、role情報を含むユーザー情報を再取得
+  const profileResponse = await fetch(`${backendUrl}/api/users/${user.id}/profile`, {
+    headers: {
+      'Authorization': `Bearer ${user.access_token}`
+    }
+  });
+
+  if (profileResponse.ok) {
+    const profileData = await profileResponse.json();
+    return profileData;
+  } else {
+    // プロフィール取得に失敗した場合は同期結果を返す
+    const responseData = await response.json();
+    console.warn("Failed to fetch user profile, using sync result:", profileResponse.status);
+    return responseData;
+  }
 };
 
 // エラーを生成する関数
