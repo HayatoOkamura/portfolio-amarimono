@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"portfolio-amarimono/models"
@@ -26,7 +27,7 @@ func (h *ReviewHandler) AddReview(c *gin.Context) {
 	var review models.Review
 
 	// リクエストボディを review 構造体に直接バインド
-	if err := c.ShouldBindJSON(&review); err != nil {	
+	if err := c.ShouldBindJSON(&review); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format", "details": err.Error()})
 		return
 	}
@@ -48,6 +49,15 @@ func (h *ReviewHandler) GetReviewsByRecipeID(c *gin.Context) {
 	if err := h.DB.Where("recipe_id = ?", recipeID).Find(&reviews).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch reviews"})
 		return
+	}
+
+	// デバッグログ: 取得したレビューデータをログ出力
+	for i, review := range reviews {
+		c.Writer.Header().Set("X-Debug-Review-"+string(rune(i)),
+			fmt.Sprintf("ID:%s,RecipeID:%s,UserID:%s,Rating:%d,Comment:%s,CreatedAt:%s,UpdatedAt:%s",
+				review.ID, review.RecipeID, review.UserID, review.Rating, review.Comment,
+				review.CreatedAt.Format("2006-01-02 15:04:05"),
+				review.UpdatedAt.Format("2006-01-02 15:04:05")))
 	}
 
 	c.JSON(http.StatusOK, reviews)

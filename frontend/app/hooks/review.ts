@@ -5,13 +5,13 @@ import { Review } from "@/app/types/index"; // レビューデータの型定義
 
 // Goのレスポンスをキャメルケースに変換する関数
 const convertReview = (review: any): Review => ({
-  id: review.ID,
-  recipeId: review.RecipeID,
-  userId: review.UserID,
-  rating: review.Rating,
-  comment: review.Comment,
-  createdAt: review.CreatedAt,
-  updatedAt: review.UpdatedAt,
+  id: review.id,
+  recipeId: review.recipeId,
+  userId: review.userId,
+  rating: review.rating,
+  comment: review.comment,
+  createdAt: review.createdAt,
+  updatedAt: review.updatedAt,
 });
 
 // レシピごとのレビューを取得
@@ -22,7 +22,11 @@ export const fetchReviewsByRecipeID = async (recipeId: string): Promise<Review[]
       throw new Error("Failed to fetch reviews");
     }
     const data = await response.json();
-    return data.map(convertReview);
+    console.log("🌀API Response:", data);
+    console.log("🌀Response Headers:", Object.fromEntries(response.headers.entries()));
+    const convertedReviews = data.map(convertReview);
+    console.log("🌀Converted Reviews:", convertedReviews);
+    return convertedReviews;
   } catch (error) {
     console.error("Error fetching reviews:", error);
     throw error;
@@ -45,7 +49,7 @@ export const fetchReviewsByUserID = async (userId: string): Promise<Review[]> =>
 };
 
 // 新しいレビューを追加
-export const addReview = async (review: Omit<Review, "id" | "created_at" | "updated_at">): Promise<Review> => {
+export const addReview = async (review: Omit<Review, "id" | "createdAt" | "updatedAt">): Promise<Review> => {
   try {
     const response = await fetch(`${backendUrl}/api/reviews`, {
       method: "POST",

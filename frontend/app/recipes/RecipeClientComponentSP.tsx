@@ -102,9 +102,10 @@ const RecipeClientComponentSP = () => {
 
     updateBorderPosition(recipe.id);
 
+    setSelectedRecipe(recipe);
+    
     // アニメーション完了後に状態を更新
     setTimeout(() => {
-      setSelectedRecipe(recipe);
       setNextRecipe(null);
       setIsFadingOut(false);
     }, 600); // アニメーション時間と同じ

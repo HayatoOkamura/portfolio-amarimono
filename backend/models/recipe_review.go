@@ -12,8 +12,8 @@ type Review struct {
 	UserID    uuid.UUID `json:"userId" gorm:"type:uuid;not null"`
 	Rating    int       `json:"rating" gorm:"type:int;check:rating >= 1 AND rating <= 5"`
 	Comment   string    `json:"comment" gorm:"type:text"`
-	CreatedAt time.Time `json:"create_at" gorm:"default:CURRENT_TIMESTAMP"`
-	UpdatedAt time.Time `json:"update_at" gorm:"default:CURRENT_TIMESTAMP"`
+	CreatedAt time.Time `json:"createdAt" gorm:"default:CURRENT_TIMESTAMP"`
+	UpdatedAt time.Time `json:"updatedAt" gorm:"default:CURRENT_TIMESTAMP"`
 }
 
 func (Review) TableName() string {

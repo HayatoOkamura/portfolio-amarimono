@@ -1,13 +1,13 @@
 import styles from "./RecipeDetail.module.scss";
 import { imageBaseUrl } from "@/app/utils/api";
 import ResponsivePieChart from "@/app/components/ui/PieChart/PieChart";
-import { Recipe } from "@/app/types/index";
+import { Recipe, Review } from "@/app/types/index";
 import Image from "next/image";
 import { IoMdTime } from "react-icons/io";
 import { RiMoneyCnyCircleLine } from "react-icons/ri";
 import { FaHeart } from "react-icons/fa";
 import { MdOutlineRateReview } from "react-icons/md";
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 
 import StarRating from "@/app/components/ui/StarRating/StarRating";
 import { calculateAverageRating } from "@/app/utils/calculateAverageRating";
@@ -18,6 +18,7 @@ import { FaTint } from "react-icons/fa";
 import { GiMeat } from "react-icons/gi";
 import { TbSalt } from "react-icons/tb";
 import LoginModal from "@/app/components/ui/LoginModal/LoginModal";
+import { fetchReviewsByRecipeID } from "@/app/hooks/review";
 
 const PRESENCE_UNITS = ["適量", "少々", "ひとつまみ"] as const;
 
@@ -65,6 +66,30 @@ const RecipeDetailPC = memo(
     onLogin,
   }: RecipeDetailProps) => {
     const averageRating = calculateAverageRating(recipe.reviews || []);
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+
+    useEffect(() => {
+      const loadReviews = async () => {
+        console.log("🌀loadReviews");
+        setIsLoadingReviews(true);
+        try {
+          const fetchedReviews = await fetchReviewsByRecipeID(recipe.id);
+          console.log("🌀fetchedReviews", fetchedReviews);
+          // ratingが高い順にソートし、最大4件を取得
+          const sortedReviews = fetchedReviews
+            .sort((a, b) => b.rating - a.rating)
+            .slice(0, 4);
+          setReviews(sortedReviews);
+        } catch (error) {
+          console.error("Error loading reviews:", error);
+        } finally {
+          setIsLoadingReviews(false);
+        }
+      };
+
+      loadReviews();
+    }, [recipe.id]);
 
     return (
       <div
@@ -362,6 +387,43 @@ const RecipeDetailPC = memo(
               </ul>
             </section>
           )}
+
+          <section className={styles.review_block}>
+            <h3 className={styles.review_block__title}>レビュー</h3>
+            {isLoadingReviews ? (
+              <div className={styles.review_block__empty}>読み込み中...</div>
+            ) : reviews.length > 0 ? (
+              <ul className={styles.review_block__list}>
+                {reviews.map((review) => (
+                  <li className={styles.review_block__item} key={review.id}>
+                    <div className={styles.review_block__header}>
+                      <div className={styles.review_block__rating}>
+                        <StarRating
+                          reviews={[{ rating: review.rating }]}
+                          size={16}
+                        />
+                        <span className={styles.review_block__rating_text}>
+                          {review.rating}.0
+                        </span>
+                      </div>
+                      <span className={styles.review_block__date}>
+                        {new Date(review.createdAt).toLocaleDateString('ja-JP')}
+                      </span>
+                    </div>
+                    {review.comment && (
+                      <p className={styles.review_block__comment}>
+                        {review.comment}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className={styles.review_block__empty}>
+                まだレビューがありません
+              </div>
+            )}
+          </section>
         </div>
 
         {showReviewModal && (
