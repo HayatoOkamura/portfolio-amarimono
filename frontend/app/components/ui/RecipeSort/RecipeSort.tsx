@@ -1,12 +1,11 @@
 /* eslint-disable */
-import { useState } from "react";
+import useRecipeStore from "@/app/stores/recipeStore";
 
 export const RecipeSort = ({ onSortChange }: { onSortChange: (sortBy: string) => void }) => {
-  const [sortBy, setSortBy] = useState("rating_desc");
+  const { sortBy } = useRecipeStore();
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newSortBy = e.target.value;
-    setSortBy(newSortBy);
     onSortChange(newSortBy);
   };
 

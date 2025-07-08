@@ -184,9 +184,9 @@ const RecipeClientComponentSP = () => {
   // 初期表示時のレシピ選択とボーダー位置の設定
   useEffect(() => {
     if (persistedRecipes.length > 0) {
-      // 選択されたレシピがない場合は最初のレシピを選択
+      // 選択されたレシピがない場合はソート済みの最初のレシピを選択
       if (!persistedSelectedRecipe) {
-        setSelectedRecipe(persistedRecipes[0]);
+        setSelectedRecipe(sortedRecipes[0]);
       }
 
       // レンダリング完了後に設定を試みる

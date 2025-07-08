@@ -26,10 +26,6 @@ const FavoritesPage = () => {
     fetchRecipeGenres();
   }, []);
 
-  if (!user) {
-    return <LoginModal onLogin={() => router.push("/login")} />;
-  }
-
   const handleRecipeClick = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
   };
@@ -47,6 +43,10 @@ const FavoritesPage = () => {
   });
 
   const sortedRecipes = useSortedRecipes(filteredRecipes);
+
+  if (!user) {
+    return <LoginModal onLogin={() => router.push("/login")} />;
+  }
 
   return (
     <PageLoading isLoading={isLoading}>
