@@ -617,7 +617,7 @@
       display: flex;
       align-items: flex-end;
       gap: 5px;
-      font-family: "Roboto";
+      font-family: var(--font-roboto);
       font-size: 2.5rem;
       line-height: 1;
       font-weight: 700;
@@ -692,7 +692,7 @@
       span {
         font-size: 1.625rem;
         font-weight: 700;
-        font-family: "Roboto";
+        font-family: var(--font-roboto);
         @include mq-max("sp") {
           font-size: calc(22 / #{$device_sp} * 100vw);
         }
@@ -770,7 +770,7 @@
 
     &__num {
       font-size: 1rem;
-      font-family: "Roboto";
+      font-family: var(--font-roboto);
       font-weight: 600;
       line-height: 1;
       text-align: center;
