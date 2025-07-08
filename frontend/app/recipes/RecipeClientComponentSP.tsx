@@ -68,6 +68,9 @@ const RecipeClientComponentSP = () => {
   const [borderSize, setBorderSize] = useState({ width: 0, height: 0 });
   const [containerElement, setContainerElement] =
     useState<HTMLDivElement | null>(null);
+  // レイアウトズレ防止用の「古いレシピ」状態
+  const [oldRecipe, setOldRecipe] = useState<Recipe | null>(null);
+  const [isTextAbsolute, setIsTextAbsolute] = useState(false);
 
   const router = useRouter();
 
@@ -96,18 +99,23 @@ const RecipeClientComponentSP = () => {
   const handleRecipeClick = (recipe: Recipe) => {
     if (recipe.id === persistedSelectedRecipe?.id) return;
 
-    // アニメーション開始
+    // 1. レイアウトズレ防止の準備
+    setOldRecipe(recipe); // 新しいレシピの内容で「古いレシピ」を生成
+    setIsTextAbsolute(true); // テキストを絶対配置に
+
+    // 2. アニメーション開始
     setNextRecipe(recipe);
     setIsFadingOut(true);
 
     updateBorderPosition(recipe.id);
 
-    setSelectedRecipe(recipe);
-    
-    // アニメーション完了後に状態を更新
+    // 3. アニメーション完了後に状態を更新
     setTimeout(() => {
+      setSelectedRecipe(recipe);
       setNextRecipe(null);
       setIsFadingOut(false);
+      setOldRecipe(null); // 「古いレシピ」を削除
+      setIsTextAbsolute(false); // テキストを相対配置に戻す
     }, 600); // アニメーション時間と同じ
   };
 
@@ -207,6 +215,8 @@ const RecipeClientComponentSP = () => {
       // アニメーション関連の状態をリセット
       setNextRecipe(null);
       setIsFadingOut(false);
+      setOldRecipe(null);
+      setIsTextAbsolute(false);
     };
   }, [setSelectedRecipe]);
 
@@ -338,6 +348,26 @@ const RecipeClientComponentSP = () => {
                 className={styles.current_recipe__detail}
                 style={{ position: "relative" }}
               >
+                {/* 古いレシピ（目に見えない、レイアウト固定用） */}
+                {oldRecipe && (
+                  <div
+                    className={`${styles.recipe_name} ${styles.old_recipe}`}
+                    style={{
+                      opacity: 0,
+                      visibility: 'hidden',
+                      position: 'relative',
+                      height: 'auto'
+                    }}
+                  >
+                    <p className={styles.current_recipe__catchphrase}>
+                      {oldRecipe?.catchphrase}
+                    </p>
+                    <h2 className={styles.current_recipe__title}>
+                      {oldRecipe?.name}
+                    </h2>
+                  </div>
+                )}
+
                 {/* 次のレシピのテキスト（背景） */}
                 {nextRecipe && (
                   <div
@@ -359,6 +389,12 @@ const RecipeClientComponentSP = () => {
                   className={`${styles.recipe_name} ${styles.current_text} ${
                     isFadingOut ? styles.fade_out_slide_left : ""
                   }`}
+                  style={{
+                    position: isTextAbsolute ? 'absolute' : 'relative',
+                    top: isTextAbsolute ? 0 : 'auto',
+                    left: isTextAbsolute ? 0 : 'auto',
+                    width: isTextAbsolute ? '100%' : 'auto'
+                  }}
                 >
                   <p className={styles.current_recipe__catchphrase}>
                     {persistedSelectedRecipe?.catchphrase}
@@ -720,10 +756,10 @@ const RecipeClientComponentSP = () => {
                                       : `${
                                           Number.isInteger(ingredient.quantity)
                                             ? ingredient.quantity
-                                            : Number(
-                                                ingredient.quantity
-                                              ).toFixed(1)
-                                        }${ingredient.unit.name}`}
+                                            : Number(ingredient.quantity).toFixed(
+                                              1
+                                            )
+                                      }${ingredient.unit.name}`}
                                   </p>
                                 </li>
                               )
