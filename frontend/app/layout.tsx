@@ -8,7 +8,7 @@ import { Toaster } from 'react-hot-toast';
 
 const notoSansJp = Noto_Sans_JP({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "700"],
+  weight: ["300", "400", "500", "600", "700"],
   preload: true,
   variable: "--font-noto-sans-jp",
   display: "swap",
