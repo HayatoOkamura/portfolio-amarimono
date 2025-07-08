@@ -1,20 +1,21 @@
-"use client";
+import type { Metadata } from "next";
+import UserSettingsClient from "./UserSettingsClient";
 
-import React from 'react';
-import { UserIngredientDefaults } from '@/app/components/features/UserIngredientDefaults/UserIngredientDefaults';
-import styles from './page.module.scss';
-import { withAuth } from '@/app/components/auth/withAuth';
+export const metadata: Metadata = {
+  title: "具材の初期設定",
+  description: "よく使う具材の初期数量を設定できます。レシピ検索時に自動的に選択され、より効率的なレシピ検索が可能になります。",
+  keywords: ["具材設定", "初期設定", "よく使う具材", "レシピ検索", "自動選択"],
+  openGraph: {
+    title: "具材の初期設定",
+    description: "よく使う具材の初期数量を設定できます。レシピ検索時に自動的に選択され、より効率的なレシピ検索が可能になります。",
+    url: '/user/settings',
+  },
+  twitter: {
+    title: "具材の初期設定",
+    description: "よく使う具材の初期数量を設定できます。レシピ検索時に自動的に選択され、より効率的なレシピ検索が可能になります。",
+  },
+};
 
-function UserSettingsPage() {
-  return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>具材の初期設定</h1>
-      <p className={styles.description}>
-        よく使う具材の初期数量を設定できます。レシピ検索時に自動的に選択されます。
-      </p>
-      <UserIngredientDefaults />
-    </div>
-  );
-}
-
-export default withAuth(UserSettingsPage); 
+export default function UserSettingsPage() {
+  return <UserSettingsClient />;
+} 

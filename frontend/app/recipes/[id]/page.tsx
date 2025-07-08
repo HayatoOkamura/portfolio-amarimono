@@ -1,126 +1,50 @@
-/* eslint-disable */
-"use client";
-import { useEffect, useState } from "react";
+import type { Metadata } from "next";
 import { Recipe } from "@/app/types/index";
-import { backendUrl } from "@/app/utils/api";
-import { fetchRecipeByIdService, handleLikeService, checkLikeStatusService } from "@/app/hooks/recipes";
-import { useUserStore } from "@/app/stores/userStore";
-import { useRouter } from "next/navigation";
-import RecipeDetail from "@/app/components/ui/RecipeDetail/RecipeDetail";
-import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
-import toast from "react-hot-toast";
+import RecipeDetailClient from "./RecipeDetailClient";
 
-const RecipeDetailPage = () => {
-  const router = useRouter();
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [isLiked, setIsLiked] = useState<boolean>(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewValue, setReviewValue] = useState(0);
-  const [reviewText, setReviewText] = useState("");
-  const { user } = useUserStore();
-
-  useEffect(() => {
-    const id = window.location.pathname.split("/").pop();
-    if (id) {
-      fetchRecipeByIdService(id)
-        .then((recipe) => {
-          setRecipe(recipe);
-        })
-        .catch((error) => console.error("Error fetching recipe:", error));
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'}/api/recipes/${params.id}`);
+    if (!response.ok) {
+      return {
+        title: "レシピが見つかりません",
+        description: "指定されたレシピが見つかりませんでした。",
+      };
     }
-  }, []);
-
-  useEffect(() => {
-    if (!recipe || !user) {
-      setIsLiked(false);
-      return;
-    }
-
-    const checkLikeStatus = async () => {
-      try {
-        const isLiked = await checkLikeStatusService(user.id, recipe.id);
-        setIsLiked(isLiked);
-      } catch (error) {
-        console.error("Error checking like status:", error);
-        setIsLiked(false);
-      }
+    
+    const recipe: Recipe = await response.json();
+    
+    return {
+      title: recipe.name,
+      description: `${recipe.name}のレシピです。${recipe.summary || '家にある材料で作れる美味しい料理です。'} 材料、手順、栄養情報を詳しく紹介しています。`,
+      keywords: [recipe.name, "レシピ", "料理", "作り方", "材料", "手順"],
+      openGraph: {
+        title: recipe.name,
+        description: `${recipe.name}のレシピです。${recipe.summary || '家にある材料で作れる美味しい料理です。'}`,
+        url: `/recipes/${params.id}`,
+        images: recipe.imageUrl ? [
+          {
+            url: recipe.imageUrl,
+            width: 1200,
+            height: 630,
+            alt: recipe.name,
+          }
+        ] : undefined,
+      },
+      twitter: {
+        title: recipe.name,
+        description: `${recipe.name}のレシピです。${recipe.summary || '家にある材料で作れる美味しい料理です。'}`,
+        images: recipe.imageUrl ? [recipe.imageUrl] : undefined,
+      },
     };
+  } catch (error) {
+    return {
+      title: "レシピ詳細",
+      description: "レシピの詳細情報を表示します。",
+    };
+  }
+}
 
-    checkLikeStatus();
-  }, [recipe, user]);
-
-  const handleLike = async () => {
-    if (!user) {
-      setShowLoginModal(true);
-      return;
-    }
-
-    if (!recipe) return;
-    handleLikeService(user.id, recipe.id, setIsLiked, setShowLoginModal);
-  };
-
-  const handleReview = () => {
-    if (!user) {
-      setShowLoginModal(true);
-      return;
-    }
-    setShowReviewModal(true);
-  };
-
-  const handleReviewSubmit = async () => {
-    if (!user || !recipe) return;
-
-    try {
-      const response = await fetch(`${backendUrl}/api/reviews`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          recipeId: recipe.id,
-          rating: reviewValue,
-          comment: reviewText,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success("レビューが送信されました");
-        setShowReviewModal(false);
-        setReviewValue(0);
-        setReviewText("");
-      } else {
-        toast.error("レビュー送信に失敗しました");
-      }
-    } catch (error) {
-      toast.error("レビュー送信に失敗しました");
-    }
-  };
-
-  return (
-    <PageLoading isLoading={!recipe}>
-      {recipe && (
-        <RecipeDetail
-          recipe={recipe}
-          isLiked={isLiked}
-          showLoginModal={showLoginModal}
-          showReviewModal={showReviewModal}
-          reviewValue={reviewValue}
-          reviewText={reviewText}
-          onLike={handleLike}
-          onReview={handleReview}
-          onReviewSubmit={handleReviewSubmit}
-          onReviewTextChange={setReviewText}
-          onReviewValueChange={setReviewValue}
-          onCloseReviewModal={() => setShowReviewModal(false)}
-          onCloseLoginModal={() => setShowLoginModal(false)}
-          onLogin={() => router.push("/login/")}
-          setShowLoginModal={setShowLoginModal}
-        />
-      )}
-    </PageLoading>
-  );
-};
-
-export default RecipeDetailPage;
+export default function RecipeDetailPage({ params }: { params: { id: string } }) {
+  return <RecipeDetailClient id={params.id} />;
+}

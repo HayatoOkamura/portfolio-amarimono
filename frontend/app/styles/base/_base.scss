@@ -7,7 +7,7 @@ body {
   background: var(--primary-bg-color);
   overflow: hidden;
   margin: 0;
-  font-family: "Noto Sans JP", "Yu Gothic Medium", "游ゴシック Medium", YuGothic,
+  font-family: var(--font-noto-sans-jp), "Yu Gothic Medium", "游ゴシック Medium", YuGothic,
   "游ゴシック体", Meiryo, "Hiragino Kaku Gothic Pro", "ＭＳ Ｐゴシック", Osaka,
   Arial, Sans-serif;
 }
