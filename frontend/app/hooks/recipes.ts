@@ -691,11 +691,7 @@ export const useSortedRecipes = (filteredRecipes: Recipe[] | null | undefined) =
   const sortBy = recipeStore?.sortBy || 'rating_desc';
 
   // filteredRecipesがnullまたはundefinedの場合は空配列を返す
-  if (!filteredRecipes) {
-    return [];
-  }
-
-  return sortRecipes(filteredRecipes, sortBy);
+  return sortRecipes(filteredRecipes || [], sortBy);
 };
 
 // 下書きレシピの保存
