@@ -42,7 +42,7 @@
       max-width: 620px;
     }
     @include mq-max("sp") {
-      max-width: 300px;
+      max-width: 550px;
     }
     &__form {
       display: flex;
@@ -82,7 +82,7 @@
       white-space: nowrap;
       @include mq-max("sp") {
         font-size: 0.75rem;
-        padding: 3px 10px;
+        padding: 3px 14px;
       }
     }
   }
