@@ -87,10 +87,10 @@ func main() {
 	var allowOrigins []string
 	if environment == "production" {
 		// 本番環境では特定のオリジンのみ許可
-		allowOrigins = []string{"https://portfolio-amarimono.vercel.app"}
+		allowOrigins = []string{"https://okamura.dev", "https://www.okamura.dev"}
 	} else {
 		// 開発環境ではローカルネットワークを広く許可
-		allowOrigins = []string{"http://localhost:3000", "http://127.0.0.1:3000", "http://192.168.11.2:3000", "https://portfolio-amarimono.vercel.app"}
+		allowOrigins = []string{"http://localhost:3000", "http://127.0.0.1:3000", "http://192.168.11.2:3000", "https://okamura.dev", "https://www.okamura.dev"}
 	}
 
 	r.Use(cors.New(cors.Config{

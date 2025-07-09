@@ -59,6 +59,12 @@ const nextConfig = {
           },
           {
             protocol: 'https',
+            hostname: 'api.okamura.dev',
+            port: '',
+            pathname: '/uploads/**',
+          },
+          {
+            protocol: 'https',
             hostname: 'qmrjsqeigdkizkrpiahs.supabase.co',
             port: '',
             pathname: '/storage/v1/object/public/images/**',
