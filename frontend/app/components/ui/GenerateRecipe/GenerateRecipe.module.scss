@@ -146,12 +146,8 @@
   }
 
   &__footer {
-    padding-top: 15px;
-    border-top: 1px solid #e5e7eb;
+    margin-top: 16px;
     text-align: center;
-    @include mq-max("sp") {
-      margin-top: 16px;
-    }
 
     button {
       background: var(--primary-accent-color);

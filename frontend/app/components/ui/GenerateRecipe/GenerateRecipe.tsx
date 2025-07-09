@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { IoMdInformationCircleOutline } from "react-icons/io";
+import toast from "react-hot-toast";
 import styles from "./GenerateRecipe.module.scss";
 import { imageBaseUrl } from "@/app/utils/api";
 import useRecipeStore from "@/app/stores/recipeStore";
@@ -65,7 +66,7 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
         );
 
       if (filteredIngredients.length === 0) {
-        alert("具材が選択されていません。");
+        toast.error("具材が選択されていません。");
         return;
       }
 

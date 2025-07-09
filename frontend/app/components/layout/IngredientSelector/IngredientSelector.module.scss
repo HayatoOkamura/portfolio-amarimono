@@ -148,9 +148,12 @@
       color: var(--primary-font-color);
       background: #fff;
       @include mq-max("sp") {
-        font-size: 0.875rem;
         padding: 10px;
         border-radius: 5px;
+        [type="text"] {
+          font-size: 1rem;
+          transform: scale(0.875);
+        }
       }
 
       &:focus {

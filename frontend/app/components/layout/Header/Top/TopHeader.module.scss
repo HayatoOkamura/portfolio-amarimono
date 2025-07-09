@@ -7,7 +7,7 @@
   align-items: center;
   border-bottom: 1px solid #c6c6c6;
   gap: 50px;
-  @include mq-max('sp') {
+  @include mq-max("sp") {
     gap: 20px;
     position: sticky;
     top: 0;
@@ -19,7 +19,7 @@
     display: flex;
     align-items: center;
     gap: 80px;
-    @include mq-max('tab') {
+    @include mq-max("tab") {
       padding: 10px 0 10px 10px;
       gap: 10px;
     }
@@ -38,7 +38,7 @@
   .search_block {
     max-width: 480px;
     width: 100%;
-    @include mq-max('tab') {
+    @include mq-max("tab") {
       max-width: 620px;
     }
     @include mq-max("sp") {
@@ -62,8 +62,11 @@
       flex: 1;
       font-size: 0.875rem;
       @include mq-max("sp") {
-        font-size: 0.75rem;
         padding: 10px;
+        [type="text"] {
+          font-size: 1rem;
+          transform: scale(0.75);
+        }
       }
     }
 

@@ -63,6 +63,7 @@ const RecipeDetailSP = memo(
     onReviewTextChange,
     onReviewValueChange,
     onCloseReviewModal,
+    onCloseLoginModal,
     onLogin,
   }: RecipeDetailProps) => {
     const averageRating = calculateAverageRating(recipe.reviews || []);
@@ -505,7 +506,12 @@ const RecipeDetailSP = memo(
           </div>
         )}
 
-        {showLoginModal && onLogin && <LoginModal onLogin={onLogin} />}
+        {showLoginModal && onLogin && (
+          <LoginModal
+            onLogin={onLogin}
+            onClose={onCloseLoginModal}
+          />
+        )}
       </div>
     );
   }

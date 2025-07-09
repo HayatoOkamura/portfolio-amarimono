@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import IngredientSelector from "./components/layout/IngredientSelector/IngredientSelector";
 import GenerateRecipe from "./components/ui/GenerateRecipe/GenerateRecipe";
 import SearchModeMenu from "./components/ui/SearchModeMenu/SearchModeMenu";
@@ -76,7 +77,7 @@ export default function HomePageClient({
 
   const handleSearch = async () => {
     if (ingredients.length === 0) {
-      alert("具材を選択してください");
+      toast.error("具材を選択してください");
       return;
     }
 
@@ -88,14 +89,14 @@ export default function HomePageClient({
 
       if (result.isError) {
         console.error("レシピの取得に失敗しました:", result.error);
-        alert("レシピの取得に失敗しました。もう一度お試しください。");
+        toast.error("レシピの取得に失敗しました。もう一度お試しください。");
         setIsSearching(false);
         return;
       }
 
       if (!result.isSuccess || !result.data) {
         console.error("レシピデータが取得できませんでした");
-        alert("レシピデータが取得できませんでした。もう一度お試しください。");
+        toast.error("レシピデータが取得できませんでした。もう一度お試しください。");
         setIsSearching(false);
         return;
       }

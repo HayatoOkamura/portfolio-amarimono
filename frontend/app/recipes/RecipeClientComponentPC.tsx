@@ -366,37 +366,47 @@ const RecipeClientComponentPC = () => {
           </div>
           {/* レシピリスト */}
           <div className={styles.recipe_list} ref={containerRef}>
-            <motion.div
-              className={styles.recipe_list__border}
-              animate={{
-                top: borderPosition.top,
-                left: borderPosition.left,
-                width: borderSize.width,
-                height: borderSize.height,
-              }}
-              transition={{ type: "spring", stiffness: 150, damping: 20 }}
-              style={{ position: "absolute" }}
-            />
-            {sortedRecipes.map((recipe) => {
-              return (
-                <div
-                  key={recipe.id}
-                  data-recipe-id={recipe.id}
-                  className={styles.recipe_list__item}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRecipeClick(recipe);
+            {sortedRecipes.length > 0 ? (
+              <>
+                <motion.div
+                  className={styles.recipe_list__border}
+                  animate={{
+                    top: borderPosition.top,
+                    left: borderPosition.left,
+                    width: borderSize.width,
+                    height: borderSize.height,
                   }}
-                  style={{ cursor: "pointer" }}
-                >
-                  <RecipeCard
-                    recipe={recipe}
-                    isFavoritePage={false}
-                    path="/recipes/"
-                  />
-                </div>
-              );
-            })}
+                  transition={{ type: "spring", stiffness: 150, damping: 20 }}
+                  style={{ position: "absolute" }}
+                />
+                {sortedRecipes.map((recipe) => {
+                  return (
+                    <div
+                      key={recipe.id}
+                      data-recipe-id={recipe.id}
+                      className={styles.recipe_list__item}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRecipeClick(recipe);
+                      }}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <RecipeCard
+                        recipe={recipe}
+                        isFavoritePage={false}
+                        path="/recipes/"
+                      />
+                    </div>
+                  );
+                })}
+              </>
+            ) : (
+              <div className={styles.no_recipes_message_container}>
+                <p className={styles.no_recipes_message}>
+                  選択されたジャンルのレシピが見つかりませんでした。
+                </p>
+              </div>
+            )}
           </div>
         </div>
         {/* レシピ詳細セクション */}

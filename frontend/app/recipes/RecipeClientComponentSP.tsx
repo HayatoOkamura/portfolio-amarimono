@@ -292,7 +292,8 @@ const RecipeClientComponentSP = () => {
       </div>
       <div className={styles.recipes_block__inner}>
         {/* レシピ一覧セクション */}
-        <div className={styles.recipes_block__contents}>
+        {sortedRecipes.length > 0 && (
+          <div className={styles.recipes_block__contents}>
           {/* 現在選択中のレシピ表示 */}
           {persistedSelectedRecipe && (
             <div
@@ -525,7 +526,7 @@ const RecipeClientComponentSP = () => {
                           </div>
                         </div>
                         {/* 栄養情報 */}
-                        {persistedSelectedRecipe.nutrition && (
+                        {nextRecipe?.nutrition && (
                           <>
                             <ul className={styles.nutrition_block}>
                               <li className={styles.nutrition_block__item}>
@@ -540,8 +541,8 @@ const RecipeClientComponentSP = () => {
                                     className={styles.nutrition_block__texts}
                                   >
                                     <p className={styles.nutrition_block__num}>
-                                      {persistedSelectedRecipe.nutrition &&
-                                        persistedSelectedRecipe.nutrition.calories.toFixed(
+                                      {nextRecipe.nutrition &&
+                                        nextRecipe.nutrition.calories.toFixed(
                                           1
                                         )}
                                       <br />
@@ -554,14 +555,15 @@ const RecipeClientComponentSP = () => {
                                     }
                                   >
                                     <ResponsivePieChart
-                                      key={`${persistedSelectedRecipe.id}-calories`}
+                                      key={`${nextRecipe.id}-calories`}
                                       value={
-                                        persistedSelectedRecipe.nutritionPercentage
-                                          ? persistedSelectedRecipe
+                                        nextRecipe.nutritionPercentage
+                                          ? nextRecipe
                                               .nutritionPercentage.calories
                                           : 0
                                       }
                                       type="calories"
+                                      disableAnimation={true}
                                     />
                                   </div>
                                 </div>
@@ -578,8 +580,8 @@ const RecipeClientComponentSP = () => {
                                     className={styles.nutrition_block__texts}
                                   >
                                     <p className={styles.nutrition_block__num}>
-                                      {persistedSelectedRecipe.nutrition &&
-                                        persistedSelectedRecipe.nutrition.carbohydrates.toFixed(
+                                      {nextRecipe.nutrition &&
+                                        nextRecipe.nutrition.carbohydrates.toFixed(
                                           1
                                         )}
                                       <span>g</span>
@@ -591,14 +593,15 @@ const RecipeClientComponentSP = () => {
                                     }
                                   >
                                     <ResponsivePieChart
-                                      key={`${persistedSelectedRecipe.id}-carbohydrates`}
+                                      key={`${nextRecipe.id}-carbohydrates`}
                                       value={
-                                        persistedSelectedRecipe.nutritionPercentage
-                                          ? persistedSelectedRecipe
+                                        nextRecipe.nutritionPercentage
+                                          ? nextRecipe
                                               .nutritionPercentage.carbohydrates
                                           : 0
                                       }
                                       type="carbohydrates"
+                                      disableAnimation={true}
                                     />
                                   </div>
                                 </div>
@@ -615,8 +618,8 @@ const RecipeClientComponentSP = () => {
                                     className={styles.nutrition_block__texts}
                                   >
                                     <p className={styles.nutrition_block__num}>
-                                      {persistedSelectedRecipe.nutrition &&
-                                        persistedSelectedRecipe.nutrition.fat.toFixed(
+                                      {nextRecipe.nutrition &&
+                                        nextRecipe.nutrition.fat.toFixed(
                                           1
                                         )}
                                       <span>g</span>
@@ -628,14 +631,15 @@ const RecipeClientComponentSP = () => {
                                     }
                                   >
                                     <ResponsivePieChart
-                                      key={`${persistedSelectedRecipe.id}-fat`}
+                                      key={`${nextRecipe.id}-fat`}
                                       value={
-                                        persistedSelectedRecipe.nutritionPercentage
-                                          ? persistedSelectedRecipe
+                                        nextRecipe.nutritionPercentage
+                                          ? nextRecipe
                                               .nutritionPercentage.fat
                                           : 0
                                       }
                                       type="fat"
+                                      disableAnimation={true}
                                     />
                                   </div>
                                 </div>
@@ -652,8 +656,8 @@ const RecipeClientComponentSP = () => {
                                     className={styles.nutrition_block__texts}
                                   >
                                     <p className={styles.nutrition_block__num}>
-                                      {persistedSelectedRecipe.nutrition &&
-                                        persistedSelectedRecipe.nutrition.protein.toFixed(
+                                      {nextRecipe.nutrition &&
+                                        nextRecipe.nutrition.protein.toFixed(
                                           1
                                         )}
                                       <span>g</span>
@@ -665,14 +669,15 @@ const RecipeClientComponentSP = () => {
                                     }
                                   >
                                     <ResponsivePieChart
-                                      key={`${persistedSelectedRecipe.id}-protein`}
+                                      key={`${nextRecipe.id}-protein`}
                                       value={
-                                        persistedSelectedRecipe.nutritionPercentage
-                                          ? persistedSelectedRecipe
+                                        nextRecipe.nutritionPercentage
+                                          ? nextRecipe
                                               .nutritionPercentage.protein
                                           : 0
                                       }
                                       type="protein"
+                                      disableAnimation={true}
                                     />
                                   </div>
                                 </div>
@@ -689,8 +694,8 @@ const RecipeClientComponentSP = () => {
                                     className={styles.nutrition_block__texts}
                                   >
                                     <p className={styles.nutrition_block__num}>
-                                      {persistedSelectedRecipe.nutrition &&
-                                        persistedSelectedRecipe.nutrition.salt.toFixed(
+                                      {nextRecipe.nutrition &&
+                                        nextRecipe.nutrition.salt.toFixed(
                                           1
                                         )}
                                       <span>g</span>
@@ -702,14 +707,15 @@ const RecipeClientComponentSP = () => {
                                     }
                                   >
                                     <ResponsivePieChart
-                                      key={`${persistedSelectedRecipe.id}-salt`}
+                                      key={`${nextRecipe.id}-salt`}
                                       value={
-                                        persistedSelectedRecipe.nutritionPercentage
-                                          ? persistedSelectedRecipe
+                                        nextRecipe.nutritionPercentage
+                                          ? nextRecipe
                                               .nutritionPercentage.salt
                                           : 0
                                       }
                                       type="salt"
+                                      disableAnimation={true}
                                     />
                                   </div>
                                 </div>
@@ -735,7 +741,7 @@ const RecipeClientComponentSP = () => {
                             材料
                           </h3>
                           <ul className={styles.ingredients_block__list}>
-                            {persistedSelectedRecipe.ingredients.map(
+                            {nextRecipe?.ingredients.map(
                               (ingredient: Ingredient, idx: number) => (
                                 <li
                                   key={idx}
@@ -1024,44 +1030,53 @@ const RecipeClientComponentSP = () => {
             </div>
           </section>
         </div>
+        )}
         {/* レシピリスト */}
-        <div className={styles.recipe_list} ref={containerRef}>
-          <motion.div
-            className={styles.recipe_list__border}
-            animate={{
-              top: borderPosition.top,
-              left: borderPosition.left,
-              width: borderSize.width,
-              height: borderSize.height,
-            }}
-            transition={{ type: "spring", stiffness: 150, damping: 20 }}
-            style={{ position: "absolute" }}
-          />
-          {sortedRecipes.map((recipe) => {
-            return (
-              <div
-                key={recipe.id}
-                data-recipe-id={recipe.id}
-                className={styles.recipe_list__item}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRecipeClick(recipe);
-                }}
-                style={{ cursor: "pointer" }}
-              >
-                <Image
-                  src={
-                    `${imageBaseUrl}/${recipe.imageUrl}` ||
-                    "/pic_recipe_default.webp"
-                  }
-                  alt={recipe.name || "Recipe Image"}
-                  width={197}
-                  height={197}
-                />
-              </div>
-            );
-          })}
-        </div>
+        {sortedRecipes.length > 0 ? (
+          <div className={styles.recipe_list} ref={containerRef}>
+            <motion.div
+              className={styles.recipe_list__border}
+              animate={{
+                top: borderPosition.top,
+                left: borderPosition.left,
+                width: borderSize.width,
+                height: borderSize.height,
+              }}
+              transition={{ type: "spring", stiffness: 150, damping: 20 }}
+              style={{ position: "absolute" }}
+            />
+            {sortedRecipes.map((recipe) => {
+              return (
+                <div
+                  key={recipe.id}
+                  data-recipe-id={recipe.id}
+                  className={styles.recipe_list__item}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRecipeClick(recipe);
+                  }}
+                  style={{ cursor: "pointer" }}
+                >
+                  <Image
+                    src={
+                      `${imageBaseUrl}/${recipe.imageUrl}` ||
+                      "/pic_recipe_default.webp"
+                    }
+                    alt={recipe.name || "Recipe Image"}
+                    width={197}
+                    height={197}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className={styles.no_recipes_message_container}>
+            <p className={styles.no_recipes_message}>
+              選択されたジャンルのレシピが<br />見つかりませんでした。
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

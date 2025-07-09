@@ -63,6 +63,7 @@ const RecipeDetailPC = memo(
     onReviewTextChange,
     onReviewValueChange,
     onCloseReviewModal,
+    onCloseLoginModal,
     onLogin,
   }: RecipeDetailProps) => {
     const averageRating = calculateAverageRating(recipe.reviews || []);
@@ -472,6 +473,7 @@ const RecipeDetailPC = memo(
         {showLoginModal && onLogin && (
           <LoginModal
             onLogin={onLogin}
+            onClose={onCloseLoginModal}
           />
         )}
       </div>

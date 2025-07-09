@@ -8,16 +8,16 @@ type NutritionType = "calories" | "carbohydrates" | "fat" | "protein" | "salt" ;
 
 const getNutritionColor = (type: NutritionType): string => {
   const colors = {
-    calories: "#DA5944",      // 赤
-    carbohydrates: "#3762ED", // 青
-    fat: "#6846C1",          // 紫
-    protein: "#DBBE62",      // 黄
-    salt: "#49B552",         // 紫
+    calories: "#FF6B6B",     
+    carbohydrates: "#4ECDC4",
+    fat: "#45B7D1",         
+    protein: "#96CEB4",     
+    salt: "#FFEAA7",        
   };
-  return colors[type] || "#03a9f4"; // デフォルトは青
+  return colors[type] || "#FF6B6B";
 };
 
-const ResponsivePieChart = ({ value, type }: { value: number; type: NutritionType }) => {
+const ResponsivePieChart = ({ value, type, disableAnimation = false }: { value: number; type: NutritionType; disableAnimation?: boolean }) => {
   const [radius, setRadius] = useState(70);
   const circumference = 2 * Math.PI * radius;
 
@@ -55,7 +55,7 @@ const ResponsivePieChart = ({ value, type }: { value: number; type: NutritionTyp
           strokeWidth="10"
         />
         <circle
-          className={styles.line}
+          className={disableAnimation ? '' : styles.line}
           cx="75"
           cy="75"
           r={radius}
@@ -65,7 +65,8 @@ const ResponsivePieChart = ({ value, type }: { value: number; type: NutritionTyp
           strokeDasharray={circumference}
           style={{
             '--dash-offset': strokeDashoffset,
-            transform: 'rotate(-90deg)'
+            transform: 'rotate(-90deg)',
+            ...(disableAnimation ? { strokeDashoffset: strokeDashoffset } : {})
           } as React.CSSProperties}
         />
       </svg>

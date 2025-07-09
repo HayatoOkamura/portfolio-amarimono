@@ -108,8 +108,9 @@
         }
 
         @include mq-max("sp") {
-          font-size: calc(18 / #{$device_sp} * 100vw);
-          padding: calc(8 / #{$device_sp} * 100vw) calc(12 / #{$device_sp} * 100vw);
+          font-size: calc(15 / #{$device_sp} * 100vw);
+          padding: calc(8 / #{$device_sp} * 100vw)
+            calc(12 / #{$device_sp} * 100vw);
           border-radius: calc(4 / #{$device_sp} * 100vw);
         }
       }
@@ -132,8 +133,10 @@
           width: calc(8 / #{$device_sp} * 100vw);
           height: calc(8 / #{$device_sp} * 100vw);
           right: calc(8 / #{$device_sp} * 100vw);
-          border-right: calc(2 / #{$device_sp} * 100vw) solid var(--primary-accent-color);
-          border-bottom: calc(2 / #{$device_sp} * 100vw) solid var(--primary-accent-color);
+          border-right: calc(2 / #{$device_sp} * 100vw) solid
+            var(--primary-accent-color);
+          border-bottom: calc(2 / #{$device_sp} * 100vw) solid
+            var(--primary-accent-color);
         }
       }
     }
@@ -836,13 +839,21 @@
   min-height: 400px;
   gap: 20px;
   padding: 20px;
+  width: 100%;
+  height: 100%;
+  @include mq-max("sp") {
+    flex-direction: column;
+  }
 }
 
 .no_recipes_message {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 500;
   color: var(--text-color);
   text-align: center;
+  @include mq-max("sp") {
+    font-size: 1.25rem;
+  }
 }
 
 .back_button {
@@ -858,5 +869,19 @@
 
   &:hover {
     opacity: 0.8;
+  }
+}
+
+.no_recipes_message_container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  width: 100%;
+  @include mq-max("sp") {
+    flex-direction: column;
+    justify-content: flex-start;
+    margin-top: 50px;
   }
 }
