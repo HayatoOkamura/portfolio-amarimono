@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://okamura.dev'),
+  metadataBase: new URL('https://amarimono.okamura.dev'),
   alternates: {
     canonical: '/',
   },
@@ -76,7 +76,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "あまりもの",
     description: "あまりもので簡単レシピを作ろう！家にある材料で美味しい料理を作るためのレシピ管理システムです。",
-    url: 'https://okamura.dev',
+    url: 'https://amarimono.okamura.dev',
     siteName: 'あまりもの',
     images: [
       {

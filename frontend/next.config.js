@@ -96,7 +96,7 @@ const nextConfig = {
         source: '/api/:path*',
         destination: process.env.ENVIRONMENT === 'development'
           ? 'http://localhost:8080/api/:path*'
-          : 'https://amarimono-backend.onrender.com/api/:path*',
+          : 'https://amarimono-api.okamura.dev/api/:path*',
       }
     ];
   },
