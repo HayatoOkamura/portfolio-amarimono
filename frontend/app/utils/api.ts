@@ -18,8 +18,13 @@ export const backendUrl = typeof window !== 'undefined'
         return `http://${currentHost}:8080`;
       }
       
+      // 本番環境では新しいサブドメインを使用
+      if (currentHost === 'amarimono.okamura.dev') {
+        return 'https://amarimono-api.okamura.dev';
+      }
+      
       // その他の場合は環境変数を使用
-      return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+      return process.env.NEXT_PUBLIC_BACKEND_URL || 'https://amarimono-api.okamura.dev';
     })()
   : process.env.NEXT_PUBLIC_BACKEND_INTERNAL_URL || 'http://portfolio-amarimono_backend_1:8080';
 
