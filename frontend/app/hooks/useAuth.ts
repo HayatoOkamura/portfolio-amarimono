@@ -274,7 +274,7 @@ export function useAuth() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/callback`,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/callback`,
         },
       });
 
@@ -308,12 +308,16 @@ export function useAuth() {
       console.log('🔍 NEXT_PUBLIC_PROD_SUPABASE_URL:', process.env.NEXT_PUBLIC_PROD_SUPABASE_URL);
       console.log('🔍 NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY exists:', !!process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY);
       
+      // 環境変数からサイトURLを取得、フォールバックとしてwindow.location.originを使用
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      console.log('🔍 Using site URL:', siteUrl);
+      
       if (isLogin) {
         // ログイン時は直接認証を実行
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: `${window.location.origin}/`,
+            redirectTo: `${siteUrl}/`,
           }
         });
 
@@ -334,7 +338,7 @@ export function useAuth() {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: `${window.location.origin}/callback`,
+            redirectTo: `${siteUrl}/callback`,
           }
         });
 

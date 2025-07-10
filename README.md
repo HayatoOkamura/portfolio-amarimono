@@ -53,7 +53,6 @@ cd portfolio-amarimono
 
 ### 2. 環境設定
 
-
 ルートディレクトリに`.env`ファイルを作成し、以下の変数を設定します：
 
 ```env
@@ -62,10 +61,14 @@ SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-# フロントエンド設定
+# フロントエンド設定（開発環境）
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
 NEXT_PUBLIC_BACKEND_INTERNAL_URL=portfolio-amarimono_backend_1
 NEXT_PUBLIC_IMAGE_BASE_URL=https://your-project.supabase.co/storage/v1/object/public/images
+
+# フロントエンド設定（本番環境）
+NEXT_PUBLIC_SITE_URL=https://amarimono.okamura.dev
+NEXT_PUBLIC_BACKEND_URL=https://amarimono-api.okamura.dev
 ```
 
 ### 3. 開発環境の起動
@@ -191,6 +194,131 @@ supabase db dump --db-url <production-db-url> -f production_backup_$(date +%Y%m%
      - データベース接続の確認
      - リトライ機能の確認
 
+4. **404: NOT_FOUND / DEPLOYMENT_NOT_FOUNDエラー**
+   - **原因**: ドメイン設定の変更によるデプロイメントの不整合
+   - **解決方法**:
+     - Vercelダッシュボードでドメイン設定を確認
+     - 環境変数`NEXT_PUBLIC_SITE_URL`の設定を確認
+     - Supabaseの認証設定でリダイレクトURLを更新
+     - 必要に応じてVercelプロジェクトの再デプロイ
+
+5. **ログイン・新規登録時のリダイレクトエラー**
+   - **原因**: Supabaseの認証設定とドメイン設定の不整合
+   - **解決方法**:
+     - Supabase Dashboardで認証設定を確認
+     - リダイレクトURLに`https://amarimono.okamura.dev/auth/callback`を追加
+     - サイトURLを`https://amarimono.okamura.dev`に設定
+
+## 🔧 ドメイン設定変更後のトラブルシューティング
+
+### 404: NOT_FOUND / DEPLOYMENT_NOT_FOUNDエラーの解決
+
+ドメイン設定を変更した後に発生する404エラーを解決するための手順です。
+
+#### 1. Vercel環境変数の確認と設定
+
+Vercelダッシュボードで以下の環境変数が正しく設定されているか確認してください：
+
+```env
+# 必須環境変数
+NEXT_PUBLIC_SITE_URL=https://amarimono.okamura.dev
+NEXT_PUBLIC_BACKEND_URL=https://amarimono-api.okamura.dev
+NEXT_PUBLIC_PROD_SUPABASE_URL=https://qmrjsqeigdkizkrpiahs.supabase.co
+NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_PROD_SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+ENVIRONMENT=production
+```
+
+**設定手順**:
+1. Vercelダッシュボードにアクセス
+2. プロジェクトを選択
+3. Settings → Environment Variables
+4. 上記の環境変数を追加/更新
+5. 変更を保存後、プロジェクトを再デプロイ
+
+#### 2. Supabase認証設定の更新
+
+Supabaseダッシュボードで認証設定を更新してください：
+
+**設定手順**:
+1. Supabaseダッシュボードにアクセス
+2. Authentication → Settings → URL Configuration
+3. Site URLを更新：
+   ```
+   https://amarimono.okamura.dev
+   ```
+4. Redirect URLsに以下を追加：
+   ```
+   https://amarimono.okamura.dev/callback
+   https://amarimono.okamura.dev/auth/callback
+   https://amarimono.okamura.dev/
+   ```
+5. 変更を保存
+
+#### 3. Google OAuth設定の確認
+
+Google Cloud ConsoleでOAuth設定を確認してください：
+
+**設定手順**:
+1. Google Cloud Consoleにアクセス
+2. APIs & Services → Credentials
+3. OAuth 2.0 Client IDsを選択
+4. Authorized redirect URIsに以下を追加：
+   ```
+   https://qmrjsqeigdkizkrpiahs.supabase.co/auth/v1/callback
+   ```
+
+#### 4. キャッシュのクリア
+
+ブラウザとVercelのキャッシュをクリアしてください：
+
+**ブラウザキャッシュ**:
+- Chrome: Ctrl+Shift+R (Windows) / Cmd+Shift+R (Mac)
+- または、開発者ツール → Network → Disable cache
+
+**Vercelキャッシュ**:
+- Vercelダッシュボード → Deployments
+- 最新のデプロイメントを選択
+- "Redeploy"を実行
+
+#### 5. 動作確認
+
+設定完了後、以下の手順で動作を確認してください：
+
+1. **アプリケーションへのアクセス**:
+   ```
+   https://amarimono.okamura.dev
+   ```
+
+2. **ログインテスト**:
+   - ログインページにアクセス
+   - Googleログインを試行
+   - コールバックページでの処理を確認
+
+3. **エラーログの確認**:
+   - ブラウザの開発者ツール → Console
+   - Vercelダッシュボード → Functions → Logs
+
+#### 6. よくある問題と解決方法
+
+**問題1: "Authentication failed, unexpected error occurred"**
+- **原因**: バックエンドAPIとの同期に失敗
+- **解決方法**: 
+  - 環境変数`NEXT_PUBLIC_BACKEND_URL`の設定を確認
+  - バックエンドサーバー（Render）の動作確認
+
+**問題2: "Invalid redirect URL"**
+- **原因**: SupabaseのリダイレクトURL設定が不正確
+- **解決方法**:
+  - SupabaseダッシュボードでリダイレクトURLを正確に設定
+  - プロトコル（https://）を含めて設定
+
+**問題3: "Cookie not set"**
+- **原因**: ドメイン設定によるCookie設定エラー
+- **解決方法**:
+  - 環境変数`NEXT_PUBLIC_SITE_URL`の設定を確認
+  - ブラウザのCookie設定を確認
+
 #### デバッグ方法
 
 1. **ログの確認**
@@ -211,6 +339,11 @@ supabase db dump --db-url <production-db-url> -f production_backup_$(date +%Y%m%
    # フロントエンド環境変数
    echo $NEXT_PUBLIC_BACKEND_URL
    echo $NEXT_PUBLIC_IMAGE_BASE_URL
+   echo $NEXT_PUBLIC_SITE_URL
+   
+   # 本番環境での確認
+   echo $NEXT_PUBLIC_SITE_URL  # https://amarimono.okamura.dev
+   echo $NEXT_PUBLIC_BACKEND_URL  # https://amarimono-api.okamura.dev
    ```
 
 3. **API接続のテスト**
@@ -244,11 +377,13 @@ supabase db dump --db-url <production-db-url> -f production_backup_$(date +%Y%m%
 
 1. メインブランチに変更をプッシュ
 2. Vercelが自動的に変更をデプロイ
+3. カスタムドメイン: https://amarimono.okamura.dev
 
 ### バックエンド（Render）
 
 1. メインブランチに変更をプッシュ
 2. Renderが自動的に変更をデプロイ
+3. カスタムドメイン: https://amarimono-api.okamura.dev
 
 ### データベース（Supabase）
 
@@ -368,11 +503,39 @@ supabase db dump --db-url <production-db-url> -f production_backup_$(date +%Y%m%
 - [PostgreSQL](https://www.postgresql.org/) - データベース
 - [Redis](https://redis.io/) - キャッシュ
 
-vercel（フロントエンド）
-https://vercel.com/hayatookamuras-projects/portfolio-amarimono
+## 🌐 本番環境
 
-render（バックエンド、データベース）
-https://dashboard.render.com/
+### フロントエンド（Vercel）
+- **アプリケーション**: https://amarimono.okamura.dev
+- **ダッシュボード**: https://vercel.com/hayatookamuras-projects/portfolio-amarimono
+
+### バックエンド（Render）
+- **API**: https://amarimono-api.okamura.dev
+- **ダッシュボード**: https://dashboard.render.com/
+
+### データベース（Supabase）
+- **ダッシュボード**: https://supabase.com/dashboard
+
+### ドメイン設定概要
+
+#### カスタムドメイン構成
+- **メインドメイン**: `okamura.dev` (ポートフォリオサイト用)
+- **アプリケーション**: `amarimono.okamura.dev` (レシピ管理システム)
+- **API**: `amarimono-api.okamura.dev` (バックエンドAPI)
+
+#### DNS設定（Cloudflare）
+```
+Type    Name                    Value
+A       okamura.dev             [Vercel IP]
+CNAME   www.okamura.dev         okamura.dev
+CNAME   amarimono.okamura.dev   [Vercel CNAME]
+CNAME   amarimono-api.okamura.dev [Render CNAME]
+```
+
+#### SSL証明書
+- CloudflareでSSL証明書を管理
+- すべてのサブドメインでHTTPS対応
+- 自動的な証明書更新
 
 # レンダリング戦略
 
