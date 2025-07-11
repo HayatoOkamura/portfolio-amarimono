@@ -166,7 +166,7 @@ func InitDB() (*DBConfig, error) {
 	// GORMの初期化
 	log.Println("⚙️ GORMの初期化中...")
 	log.Printf("🔧 GORM設定:")
-	log.Printf("   📝 PrepareStmt: false (prepared statement無効化)")
+	log.Printf("   📝 PrepareStmt: false (GORMのprepared statement無効化)")
 	log.Printf("   📝 SkipDefaultTransaction: true")
 	log.Printf("   📝 QueryFields: true")
 	log.Printf("   📝 DryRun: false")
@@ -174,6 +174,7 @@ func InitDB() (*DBConfig, error) {
 	log.Printf("🔧 PostgreSQL設定:")
 	log.Printf("   📝 pgxドライバー使用 (PreferSimpleProtocol: true)")
 	log.Printf("   📝 prepared statement完全無効化")
+	log.Printf("   📝 セッション設定でprepared statementキャッシュ無効化")
 	if environment == "development" {
 		log.Printf("   📝 開発環境のため、古いPostgreSQLバージョンに対応した設定を使用")
 	} else {
@@ -209,6 +210,8 @@ func InitDB() (*DBConfig, error) {
 		AllowGlobalUpdate: false, // グローバル更新を無効化
 		// Prepared Statementエラー対策の追加設定
 		DisableNestedTransaction: true, // ネストしたトランザクションを無効化
+		// Prepared Statementを完全に無効化
+		PrepareStmt: false, // GORMのprepared statementを無効化
 		// セッション設定
 		NowFunc: func() time.Time {
 			return time.Now().UTC()
@@ -278,6 +281,8 @@ func InitDB() (*DBConfig, error) {
 				DisableAutomaticPing: true, // 自動pingを無効化
 				// さらに追加の設定
 				AllowGlobalUpdate: false, // グローバル更新を無効化
+				// Prepared Statementを完全に無効化
+				PrepareStmt: false, // GORMのprepared statementを無効化
 			})
 			if err != nil {
 				log.Printf("❌ フォールバック接続も失敗しました: %v", err)
@@ -335,12 +340,12 @@ func InitDB() (*DBConfig, error) {
 		gormDB.SetConnMaxIdleTime(30 * time.Minute) // アイドル接続の最大生存時間
 		log.Println("✅ 開発環境用の接続プール設定が完了しました")
 	} else {
-		// 本番環境用の設定（Supabase最適化）
-		gormDB.SetMaxIdleConns(2)                   // アイドル接続を適度に保持
-		gormDB.SetMaxOpenConns(5)                   // 適度な接続数
-		gormDB.SetConnMaxLifetime(10 * time.Minute) // 接続の最大生存時間
-		gormDB.SetConnMaxIdleTime(5 * time.Minute)  // アイドル接続の最大生存時間
-		log.Println("✅ 本番環境用の接続プール設定が完了しました")
+		// 本番環境用の設定（Supabase最適化 - prepared statement無効化対応）
+		gormDB.SetMaxIdleConns(1)                  // アイドル接続を最小限に
+		gormDB.SetMaxOpenConns(3)                  // 接続数を最小限に
+		gormDB.SetConnMaxLifetime(5 * time.Minute) // 接続の生存時間を短縮
+		gormDB.SetConnMaxIdleTime(2 * time.Minute) // アイドル接続の生存時間を短縮
+		log.Println("✅ 本番環境用の接続プール設定が完了しました（prepared statement無効化対応）")
 	}
 
 	// 接続テスト
@@ -365,6 +370,30 @@ func InitDB() (*DBConfig, error) {
 		} else {
 			log.Println("   ✅ statement_timeout = '30s' を設定")
 		}
+	}
+
+	// Prepared Statementを完全に無効化するセッション設定
+	log.Println("🔧 Prepared Statement完全無効化設定中...")
+	_, err = gormDB.Exec("SET prepared_statement_cache_size = 0")
+	if err != nil {
+		log.Printf("⚠️ prepared_statement_cache_size設定に失敗: %v", err)
+	} else {
+		log.Println("   ✅ prepared_statement_cache_size = 0 を設定")
+	}
+
+	_, err = gormDB.Exec("SET max_prepared_statements = 0")
+	if err != nil {
+		log.Printf("⚠️ max_prepared_statements設定に失敗: %v", err)
+	} else {
+		log.Println("   ✅ max_prepared_statements = 0 を設定")
+	}
+
+	// 既存のprepared statementをクリア
+	_, err = gormDB.Exec("DEALLOCATE ALL")
+	if err != nil {
+		log.Printf("⚠️ DEALLOCATE ALLに失敗: %v", err)
+	} else {
+		log.Println("   ✅ 既存のprepared statementをクリア")
 	}
 
 	log.Println("✅ セッション設定の強制適用が完了しました")
