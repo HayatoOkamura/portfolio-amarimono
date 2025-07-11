@@ -161,10 +161,10 @@ func InitDB() (*DBConfig, error) {
 		sqlDB.SetConnMaxIdleTime(30 * time.Minute)
 	} else {
 		// 本番環境用の設定（prepared statementエラー対策）
-		sqlDB.SetMaxIdleConns(0)                  // アイドル接続を無効化
-		sqlDB.SetMaxOpenConns(1)                  // 接続数を1に制限
-		sqlDB.SetConnMaxLifetime(5 * time.Minute) // 接続の最大生存時間を短縮
-		sqlDB.SetConnMaxIdleTime(1 * time.Minute) // アイドル接続の最大生存時間を短縮
+		sqlDB.SetMaxIdleConns(2)                   // 適度なアイドル接続を保持
+		sqlDB.SetMaxOpenConns(5)                   // 適度な接続数を許可
+		sqlDB.SetConnMaxLifetime(15 * time.Minute) // 接続の最大生存時間
+		sqlDB.SetConnMaxIdleTime(10 * time.Minute) // アイドル接続の最大生存時間
 	}
 
 	// 接続テスト
@@ -187,6 +187,10 @@ func InitDB() (*DBConfig, error) {
 			log.Printf("⚠️ セッション設定に失敗: %s - %v", setting, err)
 		}
 	}
+
+	// 接続プールのコネクターにフックを追加（prepared statementクリア）
+	sqlDB.SetConnMaxLifetime(15 * time.Minute)
+	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
 
 	// Supabaseクライアントの初期化
 	supabaseURL := os.Getenv("SUPABASE_URL")
