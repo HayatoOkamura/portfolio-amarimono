@@ -180,7 +180,7 @@ func InitDB() (*DBConfig, error) {
 
 	database, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  dsn,
-		PreferSimpleProtocol: true, // prepared statementを無効化（記事の解決策）
+		PreferSimpleProtocol: false, // JSONB処理を正しく行うためfalseに統一
 	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 		// その他の最適化設定
@@ -201,6 +201,8 @@ func InitDB() (*DBConfig, error) {
 		NowFunc: func() time.Time {
 			return time.Now().UTC()
 		},
+		// prepared statementエラー対策の追加設定
+		PrepareStmt: false, // prepared statementを無効化（GORMレベル）
 	})
 	if err != nil {
 		log.Printf("❌ GORMの初期化に失敗しました: %v", err)
@@ -246,7 +248,7 @@ func InitDB() (*DBConfig, error) {
 			// フォールバック接続を試行
 			database, err = gorm.Open(postgres.New(postgres.Config{
 				DSN:                  fallbackDSN,
-				PreferSimpleProtocol: true, // prepared statementを無効化（記事の解決策）
+				PreferSimpleProtocol: false, // JSONB処理を正しく行うためfalseに統一
 			}), &gorm.Config{
 				Logger: logger.Default.LogMode(logger.Info),
 				// その他の最適化設定
@@ -259,6 +261,8 @@ func InitDB() (*DBConfig, error) {
 				DisableAutomaticPing: true, // 自動pingを無効化
 				// さらに追加の設定
 				AllowGlobalUpdate: false, // グローバル更新を無効化
+				// prepared statementエラー対策の追加設定
+				PrepareStmt: false, // prepared statementを無効化（GORMレベル）
 			})
 			if err != nil {
 				log.Printf("❌ フォールバック接続も失敗しました: %v", err)
@@ -316,12 +320,12 @@ func InitDB() (*DBConfig, error) {
 		sqlDB.SetConnMaxIdleTime(30 * time.Minute) // アイドル接続の最大生存時間
 		log.Println("✅ 開発環境用の接続プール設定が完了しました")
 	} else {
-		// 本番環境用の設定（Supabase最適化）
-		sqlDB.SetMaxIdleConns(2)                   // アイドル接続を適度に保持
-		sqlDB.SetMaxOpenConns(5)                   // 適度な接続数
-		sqlDB.SetConnMaxLifetime(10 * time.Minute) // 接続の最大生存時間
-		sqlDB.SetConnMaxIdleTime(5 * time.Minute)  // アイドル接続の最大生存時間
-		log.Println("✅ 本番環境用の接続プール設定が完了しました")
+		// 本番環境用の設定（Supabase最適化 + prepared statementエラー対策）
+		sqlDB.SetMaxIdleConns(1)                  // アイドル接続を最小限に
+		sqlDB.SetMaxOpenConns(3)                  // 接続数をさらに制限
+		sqlDB.SetConnMaxLifetime(5 * time.Minute) // 接続の最大生存時間を短縮
+		sqlDB.SetConnMaxIdleTime(2 * time.Minute) // アイドル接続の最大生存時間を短縮
+		log.Println("✅ 本番環境用の接続プール設定が完了しました（prepared statementエラー対策適用）")
 	}
 
 	// 接続テスト
@@ -345,6 +349,22 @@ func InitDB() (*DBConfig, error) {
 			log.Printf("⚠️ statement_timeout設定に失敗: %v", err)
 		} else {
 			log.Println("   ✅ statement_timeout = '30s' を設定")
+		}
+
+		// prepared statementエラー対策の設定
+		_, err = sqlDB.Exec("SET max_prepared_statements = 0")
+		if err != nil {
+			log.Printf("⚠️ max_prepared_statements設定に失敗: %v", err)
+		} else {
+			log.Println("   ✅ max_prepared_statements = 0 を設定")
+		}
+
+		// セッションごとのprepared statementキャッシュを無効化
+		_, err = sqlDB.Exec("SET prepared_statement_cache_size = 0")
+		if err != nil {
+			log.Printf("⚠️ prepared_statement_cache_size設定に失敗: %v", err)
+		} else {
+			log.Println("   ✅ prepared_statement_cache_size = 0 を設定")
 		}
 	}
 
