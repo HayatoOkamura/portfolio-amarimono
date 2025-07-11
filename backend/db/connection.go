@@ -1,14 +1,12 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/supabase-community/supabase-go"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -177,16 +175,9 @@ func InitDB() (*DBConfig, error) {
 		log.Printf("   📝 max_prepared_statements: 0")
 	}
 
-	// 標準ライブラリのsql.DBを作成（pgxドライブラリ使用）
-	pgxDB, err := sql.Open("pgx", dsn)
-	if err != nil {
-		log.Printf("❌ sql.DBの作成に失敗しました: %v", err)
-		return nil, fmt.Errorf("failed to create sql.DB: %v", err)
-	}
-
-	// GORMの初期化（pgxスタンダードライブラリモード）
+	// GORMの初期化（直接DSNを使用）
 	database, err := gorm.Open(postgres.New(postgres.Config{
-		Conn:                 pgxDB,
+		DSN:                  dsn,
 		PreferSimpleProtocol: true, // prepared statementを完全に無効化
 	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
@@ -252,16 +243,9 @@ func InitDB() (*DBConfig, error) {
 
 			log.Printf("   📝 フォールバックDSN: %s", maskDSN(fallbackDSN))
 
-			// フォールバック用のsql.DBを作成
-			fallbackPgxDB, err := sql.Open("pgx", fallbackDSN)
-			if err != nil {
-				log.Printf("❌ フォールバックsql.DBの作成に失敗しました: %v", err)
-				return nil, fmt.Errorf("failed to create fallback sql.DB: %v", err)
-			}
-
 			// フォールバック接続を試行
 			database, err = gorm.Open(postgres.New(postgres.Config{
-				Conn:                 fallbackPgxDB,
+				DSN:                  fallbackDSN,
 				PreferSimpleProtocol: true, // prepared statementを無効化
 			}), &gorm.Config{
 				Logger: logger.Default.LogMode(logger.Info),
@@ -334,12 +318,12 @@ func InitDB() (*DBConfig, error) {
 		gormDB.SetConnMaxIdleTime(30 * time.Minute) // アイドル接続の最大生存時間
 		log.Println("✅ 開発環境用の接続プール設定が完了しました")
 	} else {
-		// 本番環境用の設定（Supabase最適化 - prepared statement完全無効化対応）
-		gormDB.SetMaxIdleConns(1)                    // アイドル接続数を最小限に
-		gormDB.SetMaxOpenConns(2)                    // 接続数を最小限に制限
-		gormDB.SetConnMaxLifetime(120 * time.Second) // 接続の生存時間を120秒に設定
-		gormDB.SetConnMaxIdleTime(60 * time.Second)  // アイドル接続の生存時間を60秒に設定
-		log.Println("✅ 本番環境用の接続プール設定が完了しました（prepared statement完全無効化対応）")
+		// 本番環境用の設定（Supabase最適化）
+		gormDB.SetMaxIdleConns(2)                   // アイドル接続を適度に保持
+		gormDB.SetMaxOpenConns(5)                   // 適度な接続数
+		gormDB.SetConnMaxLifetime(10 * time.Minute) // 接続の最大生存時間
+		gormDB.SetConnMaxIdleTime(5 * time.Minute)  // アイドル接続の最大生存時間
+		log.Println("✅ 本番環境用の接続プール設定が完了しました")
 	}
 
 	// 接続テスト
