@@ -99,19 +99,12 @@ func InitDB() (*DBConfig, error) {
 			return nil, fmt.Errorf("failed to extract project reference ID from host: %s", dbHost)
 		}
 
-		if usePooler == "true" {
-			// Poolerホストの構築
-			finalHost = fmt.Sprintf("%s.pooler.supabase.com", projectRef)
-			finalPort = "6543"                                 // Poolerの標準ポート
-			finalUser = fmt.Sprintf("postgres.%s", projectRef) // Pooler接続用のユーザー名
-			log.Printf("   🔄 Poolerホストに変換: %s", finalHost)
-			log.Printf("   🔄 Poolerユーザー名に変換: %s", finalUser)
-		} else {
-			log.Println("   🔧 Pooler接続が無効化されているため、Direct Connectionを使用します")
-			finalHost = dbHost
-			finalPort = dbPort
-			finalUser = dbUser
-		}
+		// prepared statementエラー対策のため、強制的にDirect Connectionを使用
+		log.Println("   🔧 prepared statementエラー対策のため、強制的にDirect Connectionを使用します")
+		finalHost = dbHost
+		finalPort = dbPort
+		finalUser = dbUser
+		log.Printf("   📝 Direct Connection: %s:%s", finalHost, finalPort)
 	}
 
 	log.Println("🔧 最終接続情報:")
@@ -174,7 +167,8 @@ func InitDB() (*DBConfig, error) {
 	log.Printf("🔧 PostgreSQL設定:")
 	log.Printf("   📝 pgxドライバー使用 (PreferSimpleProtocol: true)")
 	log.Printf("   📝 prepared statement完全無効化")
-	log.Printf("   📝 セッション設定でprepared statementキャッシュ無効化")
+	log.Printf("   📝 GORMコールバックでprepared statementクリア")
+	log.Printf("   📝 接続プール最小化（MaxOpenConns: 1）")
 	if environment == "development" {
 		log.Printf("   📝 開発環境のため、古いPostgreSQLバージョンに対応した設定を使用")
 	} else {
@@ -341,11 +335,11 @@ func InitDB() (*DBConfig, error) {
 		log.Println("✅ 開発環境用の接続プール設定が完了しました")
 	} else {
 		// 本番環境用の設定（Supabase最適化 - prepared statement無効化対応）
-		gormDB.SetMaxIdleConns(1)                  // アイドル接続を最小限に
-		gormDB.SetMaxOpenConns(3)                  // 接続数を最小限に
-		gormDB.SetConnMaxLifetime(5 * time.Minute) // 接続の生存時間を短縮
-		gormDB.SetConnMaxIdleTime(2 * time.Minute) // アイドル接続の生存時間を短縮
-		log.Println("✅ 本番環境用の接続プール設定が完了しました（prepared statement無効化対応）")
+		gormDB.SetMaxIdleConns(0)                  // アイドル接続を完全に無効化
+		gormDB.SetMaxOpenConns(1)                  // 接続数を1に制限
+		gormDB.SetConnMaxLifetime(2 * time.Minute) // 接続の生存時間をさらに短縮
+		gormDB.SetConnMaxIdleTime(1 * time.Minute) // アイドル接続の生存時間をさらに短縮
+		log.Println("✅ 本番環境用の接続プール設定が完了しました（prepared statement完全無効化対応）")
 	}
 
 	// 接続テスト
@@ -355,6 +349,38 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("failed to ping database: %v", err)
 	}
 	log.Println("✅ 接続テストが成功しました")
+
+	// GORMのprepared statementを完全に無効化するコールバックを追加
+	log.Println("🔧 GORM prepared statement無効化コールバックを設定中...")
+	database.Callback().Query().Before("gorm:query").Register("disable_prepared_statement", func(db *gorm.DB) {
+		// クエリ実行前にprepared statementをクリア
+		if sqlDB, err := db.DB(); err == nil {
+			sqlDB.Exec("DEALLOCATE ALL")
+		}
+	})
+
+	database.Callback().Create().Before("gorm:create").Register("disable_prepared_statement_create", func(db *gorm.DB) {
+		// 作成実行前にprepared statementをクリア
+		if sqlDB, err := db.DB(); err == nil {
+			sqlDB.Exec("DEALLOCATE ALL")
+		}
+	})
+
+	database.Callback().Update().Before("gorm:update").Register("disable_prepared_statement_update", func(db *gorm.DB) {
+		// 更新実行前にprepared statementをクリア
+		if sqlDB, err := db.DB(); err == nil {
+			sqlDB.Exec("DEALLOCATE ALL")
+		}
+	})
+
+	database.Callback().Delete().Before("gorm:delete").Register("disable_prepared_statement_delete", func(db *gorm.DB) {
+		// 削除実行前にprepared statementをクリア
+		if sqlDB, err := db.DB(); err == nil {
+			sqlDB.Exec("DEALLOCATE ALL")
+		}
+	})
+
+	log.Println("✅ GORM prepared statement無効化コールバックが設定されました")
 
 	// セッション設定を強制適用（開発環境とPooler接続では一部設定がサポートされない）
 	log.Println("🔧 セッション設定を強制適用中...")
@@ -374,19 +400,6 @@ func InitDB() (*DBConfig, error) {
 
 	// Prepared Statementを完全に無効化するセッション設定
 	log.Println("🔧 Prepared Statement完全無効化設定中...")
-	_, err = gormDB.Exec("SET prepared_statement_cache_size = 0")
-	if err != nil {
-		log.Printf("⚠️ prepared_statement_cache_size設定に失敗: %v", err)
-	} else {
-		log.Println("   ✅ prepared_statement_cache_size = 0 を設定")
-	}
-
-	_, err = gormDB.Exec("SET max_prepared_statements = 0")
-	if err != nil {
-		log.Printf("⚠️ max_prepared_statements設定に失敗: %v", err)
-	} else {
-		log.Println("   ✅ max_prepared_statements = 0 を設定")
-	}
 
 	// 既存のprepared statementをクリア
 	_, err = gormDB.Exec("DEALLOCATE ALL")
