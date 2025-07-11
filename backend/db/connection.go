@@ -180,7 +180,7 @@ func InitDB() (*DBConfig, error) {
 
 	database, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  dsn,
-		PreferSimpleProtocol: false, // prepared statementを無効化（記事の解決策）
+		PreferSimpleProtocol: false, // JSONB処理のためfalseに設定
 	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 		// その他の最適化設定
@@ -197,6 +197,8 @@ func InitDB() (*DBConfig, error) {
 		AllowGlobalUpdate: false, // グローバル更新を無効化
 		// Prepared Statementエラー対策の追加設定
 		DisableNestedTransaction: true, // ネストしたトランザクションを無効化
+		// Prepared Statementを完全に無効化
+		PrepareStmt: false, // prepared statementを無効化
 		// セッション設定
 		NowFunc: func() time.Time {
 			return time.Now().UTC()
@@ -246,7 +248,7 @@ func InitDB() (*DBConfig, error) {
 			// フォールバック接続を試行
 			database, err = gorm.Open(postgres.New(postgres.Config{
 				DSN:                  fallbackDSN,
-				PreferSimpleProtocol: true, // prepared statementを無効化（記事の解決策）
+				PreferSimpleProtocol: false, // JSONB処理のためfalseに設定
 			}), &gorm.Config{
 				Logger: logger.Default.LogMode(logger.Info),
 				// その他の最適化設定
@@ -259,6 +261,8 @@ func InitDB() (*DBConfig, error) {
 				DisableAutomaticPing: true, // 自動pingを無効化
 				// さらに追加の設定
 				AllowGlobalUpdate: false, // グローバル更新を無効化
+				// Prepared Statementを完全に無効化
+				PrepareStmt: false, // prepared statementを無効化
 			})
 			if err != nil {
 				log.Printf("❌ フォールバック接続も失敗しました: %v", err)
@@ -316,12 +320,12 @@ func InitDB() (*DBConfig, error) {
 		sqlDB.SetConnMaxIdleTime(30 * time.Minute) // アイドル接続の最大生存時間
 		log.Println("✅ 開発環境用の接続プール設定が完了しました")
 	} else {
-		// 本番環境用の設定（Supabase最適化）
-		sqlDB.SetMaxIdleConns(2)                   // アイドル接続を適度に保持
-		sqlDB.SetMaxOpenConns(5)                   // 適度な接続数
-		sqlDB.SetConnMaxLifetime(10 * time.Minute) // 接続の最大生存時間
-		sqlDB.SetConnMaxIdleTime(5 * time.Minute)  // アイドル接続の最大生存時間
-		log.Println("✅ 本番環境用の接続プール設定が完了しました")
+		// 本番環境用の設定（prepared statementエラー対策）
+		sqlDB.SetMaxIdleConns(1)                   // アイドル接続を最小限に
+		sqlDB.SetMaxOpenConns(3)                   // 接続数を制限
+		sqlDB.SetConnMaxLifetime(30 * time.Minute) // 接続の最大生存時間を延長
+		sqlDB.SetConnMaxIdleTime(15 * time.Minute) // アイドル接続の最大生存時間を延長
+		log.Println("✅ 本番環境用の接続プール設定が完了しました（prepared statementエラー対策）")
 	}
 
 	// 接続テスト
@@ -332,19 +336,44 @@ func InitDB() (*DBConfig, error) {
 	}
 	log.Println("✅ 接続テストが成功しました")
 
-	// セッション設定を強制適用（開発環境とPooler接続では一部設定がサポートされない）
+	// セッション設定を強制適用（prepared statementエラー対策）
 	log.Println("🔧 セッション設定を強制適用中...")
+
+	// prepared statementエラー対策の設定
+	preparedStatementSettings := []string{
+		"SET statement_timeout = '30s'",
+		"SET prepared_statement_cache_size = 0",
+		"SET max_prepared_statements = 0",
+		"SET statement_cache_mode = 'describe'",
+	}
+
 	if strings.Contains(finalHost, "pooler.supabase.com") {
-		log.Println("   📝 Pooler接続のため、一部の設定をスキップします")
-	} else if environment == "development" {
-		log.Println("   📝 開発環境のため、古いPostgreSQLバージョンに対応して一部の設定をスキップします")
-	} else {
-		// 本番環境での適切な設定
+		log.Println("   📝 Pooler接続のため、基本的な設定のみ適用します")
+		// Pooler接続では基本的な設定のみ適用
 		_, err = sqlDB.Exec("SET statement_timeout = '30s'")
 		if err != nil {
 			log.Printf("⚠️ statement_timeout設定に失敗: %v", err)
 		} else {
 			log.Println("   ✅ statement_timeout = '30s' を設定")
+		}
+	} else if environment == "development" {
+		log.Println("   📝 開発環境のため、基本的な設定のみ適用します")
+		// 開発環境では基本的な設定のみ
+		_, err = sqlDB.Exec("SET statement_timeout = '30s'")
+		if err != nil {
+			log.Printf("⚠️ statement_timeout設定に失敗: %v", err)
+		} else {
+			log.Println("   ✅ statement_timeout = '30s' を設定")
+		}
+	} else {
+		// 本番環境での完全な設定
+		for _, setting := range preparedStatementSettings {
+			_, err = sqlDB.Exec(setting)
+			if err != nil {
+				log.Printf("⚠️ %s設定に失敗: %v", setting, err)
+			} else {
+				log.Printf("   ✅ %s を設定", setting)
+			}
 		}
 	}
 
