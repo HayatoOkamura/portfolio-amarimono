@@ -35,6 +35,15 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("database environment variables are not properly set")
 	}
 
+	// 環境変数の詳細ログ
+	log.Printf("🔍 環境変数の確認:")
+	log.Printf("   📝 SUPABASE_DB_HOST: %s", dbHost)
+	log.Printf("   📝 SUPABASE_DB_PORT: %s", dbPort)
+	log.Printf("   📝 SUPABASE_DB_USER: %s", dbUser)
+	log.Printf("   📝 SUPABASE_DB_NAME: %s", dbName)
+	log.Printf("   📝 USE_POOLER: %s", os.Getenv("USE_POOLER"))
+	log.Printf("   📝 ENVIRONMENT: %s", environment)
+
 	// プロジェクトリファレンスIDの抽出とPooler接続の設定
 	var finalHost string
 	var finalPort string
@@ -116,7 +125,7 @@ func InitDB() (*DBConfig, error) {
 		DisableAutomaticPing:                     true,
 		AllowGlobalUpdate:                        false,
 		DisableNestedTransaction:                 true,
-		PrepareStmt:                              false,
+		PrepareStmt:                              true, // prepared statementを有効化（直接接続対応）
 		NowFunc: func() time.Time {
 			return time.Now().UTC()
 		},
@@ -162,7 +171,7 @@ func InitDB() (*DBConfig, error) {
 				QueryFields:                              true,
 				DisableAutomaticPing:                     true,
 				AllowGlobalUpdate:                        false,
-				PrepareStmt:                              false,
+				PrepareStmt:                              true, // prepared statementを有効化（直接接続対応）
 			})
 			if err != nil {
 				return nil, fmt.Errorf("failed to connect to database (both pooler and direct): %v", err)
@@ -185,11 +194,11 @@ func InitDB() (*DBConfig, error) {
 		sqlDB.SetConnMaxLifetime(time.Hour)
 		sqlDB.SetConnMaxIdleTime(30 * time.Minute)
 	} else {
-		// 本番環境用の設定（prepared statementエラー根本解決）
-		sqlDB.SetMaxIdleConns(2)                  // アイドル接続を最小限に
-		sqlDB.SetMaxOpenConns(5)                  // 接続数を適度に制限
-		sqlDB.SetConnMaxLifetime(5 * time.Minute) // 接続の最大生存時間を延長
-		sqlDB.SetConnMaxIdleTime(2 * time.Minute) // アイドル接続の最大生存時間を延長
+		// 本番環境用の設定（直接接続最適化）
+		sqlDB.SetMaxIdleConns(5)                   // アイドル接続を増加（直接接続対応）
+		sqlDB.SetMaxOpenConns(10)                  // 同時接続数を増加（直接接続対応）
+		sqlDB.SetConnMaxLifetime(10 * time.Minute) // 接続の生存時間を延長
+		sqlDB.SetConnMaxIdleTime(5 * time.Minute)  // アイドル接続の生存時間を延長
 	}
 
 	// 接続テスト
@@ -197,12 +206,12 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("failed to ping database: %v", err)
 	}
 
-	// セッション設定（prepared statementエラー対策 - Supabase対応）
+	// セッション設定（直接接続最適化）
 	preparedStatementSettings := []string{
 		"SET statement_timeout = '30s'",
 		"SET application_name = 'amarimono-backend'",
 		"SET search_path = public",
-		"DEALLOCATE ALL", // 既存のprepared statementをクリア
+		// DEALLOCATE ALL を削除（直接接続では不要）
 	}
 
 	for _, setting := range preparedStatementSettings {
@@ -214,9 +223,12 @@ func InitDB() (*DBConfig, error) {
 		}
 	}
 
-	// 接続プールのコネクターにフックを追加（prepared statementクリア）
-	sqlDB.SetConnMaxLifetime(15 * time.Minute)
-	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
+	// 接続プール設定の詳細ログ
+	log.Printf("🔍 接続プール設定:")
+	log.Printf("   📝 MaxIdleConns: %d", sqlDB.Stats().MaxIdleClosed)
+	log.Printf("   📝 MaxOpenConns: %d", sqlDB.Stats().MaxOpenConnections)
+	log.Printf("   📝 ConnMaxLifetime: %v", sqlDB.Stats().MaxLifetimeClosed)
+	log.Printf("   📝 ConnMaxIdleTime: %v", sqlDB.Stats().MaxIdleTimeClosed)
 
 	// Supabaseクライアントの初期化
 	supabaseURL := os.Getenv("SUPABASE_URL")

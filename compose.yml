@@ -23,6 +23,7 @@ services:
       - SUPABASE_DB_USER=postgres
       - SUPABASE_DB_PASSWORD=postgres
       - SUPABASE_DB_NAME=postgres
+      - USE_POOLER=false
       - GOOGLE_CLOUD_TRANSLATION_API_KEY=${GOOGLE_CLOUD_TRANSLATION_API_KEY}
     depends_on:
       redis:
