@@ -1,12 +1,14 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 	"time"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/supabase-community/supabase-go"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -170,6 +172,8 @@ func InitDB() (*DBConfig, error) {
 	log.Printf("   📝 DryRun: false")
 	log.Printf("   📝 DisableForeignKeyConstraintWhenMigrating: true")
 	log.Printf("🔧 PostgreSQL設定:")
+	log.Printf("   📝 pgxドライバー使用 (PreferSimpleProtocol: true)")
+	log.Printf("   📝 prepared statement完全無効化")
 	if environment == "development" {
 		log.Printf("   📝 開発環境のため、古いPostgreSQLバージョンに対応した設定を使用")
 	} else {
@@ -178,9 +182,17 @@ func InitDB() (*DBConfig, error) {
 		log.Printf("   📝 max_prepared_statements: 0")
 	}
 
+	// 標準ライブラリのsql.DBを作成（pgxドライバー使用）
+	pgxDB, err := sql.Open("pgx", dsn)
+	if err != nil {
+		log.Printf("❌ sql.DBの作成に失敗しました: %v", err)
+		return nil, fmt.Errorf("failed to create sql.DB: %v", err)
+	}
+
+	// GORMの初期化（pgxスタンダードライブラリモード）
 	database, err := gorm.Open(postgres.New(postgres.Config{
-		DSN:                  dsn,
-		PreferSimpleProtocol: true, // prepared statementを無効化（記事の解決策）
+		Conn:                 pgxDB,
+		PreferSimpleProtocol: true, // prepared statementを無効化
 	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 		// その他の最適化設定
@@ -243,10 +255,17 @@ func InitDB() (*DBConfig, error) {
 
 			log.Printf("   📝 フォールバックDSN: %s", maskDSN(fallbackDSN))
 
+			// フォールバック用のsql.DBを作成
+			fallbackPgxDB, err := sql.Open("pgx", fallbackDSN)
+			if err != nil {
+				log.Printf("❌ フォールバックsql.DBの作成に失敗しました: %v", err)
+				return nil, fmt.Errorf("failed to create fallback sql.DB: %v", err)
+			}
+
 			// フォールバック接続を試行
 			database, err = gorm.Open(postgres.New(postgres.Config{
-				DSN:                  fallbackDSN,
-				PreferSimpleProtocol: true, // prepared statementを無効化（記事の解決策）
+				Conn:                 fallbackPgxDB,
+				PreferSimpleProtocol: true, // prepared statementを無効化
 			}), &gorm.Config{
 				Logger: logger.Default.LogMode(logger.Info),
 				// その他の最適化設定
@@ -301,7 +320,7 @@ func InitDB() (*DBConfig, error) {
 
 	// 接続プールの設定
 	log.Println("🏊 接続プールの設定中...")
-	sqlDB, err := database.DB()
+	gormDB, err := database.DB()
 	if err != nil {
 		log.Printf("❌ データベースインスタンスの取得に失敗しました: %v", err)
 		return nil, fmt.Errorf("failed to get database instance: %v", err)
@@ -310,23 +329,23 @@ func InitDB() (*DBConfig, error) {
 	// 接続プールの最適化（本番環境対応）
 	if environment == "development" {
 		// 開発環境用の設定
-		sqlDB.SetMaxIdleConns(5)                   // アイドル接続数を減らす
-		sqlDB.SetMaxOpenConns(20)                  // 最大接続数を制限
-		sqlDB.SetConnMaxLifetime(time.Hour)        // 接続の最大生存時間
-		sqlDB.SetConnMaxIdleTime(30 * time.Minute) // アイドル接続の最大生存時間
+		gormDB.SetMaxIdleConns(5)                   // アイドル接続数を減らす
+		gormDB.SetMaxOpenConns(20)                  // 最大接続数を制限
+		gormDB.SetConnMaxLifetime(time.Hour)        // 接続の最大生存時間
+		gormDB.SetConnMaxIdleTime(30 * time.Minute) // アイドル接続の最大生存時間
 		log.Println("✅ 開発環境用の接続プール設定が完了しました")
 	} else {
 		// 本番環境用の設定（Supabase最適化）
-		sqlDB.SetMaxIdleConns(2)                   // アイドル接続を適度に保持
-		sqlDB.SetMaxOpenConns(5)                   // 適度な接続数
-		sqlDB.SetConnMaxLifetime(10 * time.Minute) // 接続の最大生存時間
-		sqlDB.SetConnMaxIdleTime(5 * time.Minute)  // アイドル接続の最大生存時間
+		gormDB.SetMaxIdleConns(2)                   // アイドル接続を適度に保持
+		gormDB.SetMaxOpenConns(5)                   // 適度な接続数
+		gormDB.SetConnMaxLifetime(10 * time.Minute) // 接続の最大生存時間
+		gormDB.SetConnMaxIdleTime(5 * time.Minute)  // アイドル接続の最大生存時間
 		log.Println("✅ 本番環境用の接続プール設定が完了しました")
 	}
 
 	// 接続テスト
 	log.Println("🧪 接続テストを実行中...")
-	if err := sqlDB.Ping(); err != nil {
+	if err := gormDB.Ping(); err != nil {
 		log.Printf("❌ 接続テストに失敗しました: %v", err)
 		return nil, fmt.Errorf("failed to ping database: %v", err)
 	}
@@ -340,7 +359,7 @@ func InitDB() (*DBConfig, error) {
 		log.Println("   📝 開発環境のため、古いPostgreSQLバージョンに対応して一部の設定をスキップします")
 	} else {
 		// 本番環境での適切な設定
-		_, err = sqlDB.Exec("SET statement_timeout = '30s'")
+		_, err = gormDB.Exec("SET statement_timeout = '30s'")
 		if err != nil {
 			log.Printf("⚠️ statement_timeout設定に失敗: %v", err)
 		} else {
@@ -353,7 +372,7 @@ func InitDB() (*DBConfig, error) {
 	// PostgreSQLの設定を確認
 	log.Println("🔍 PostgreSQLの設定を確認中...")
 	var settingName, setting string
-	rows, err := sqlDB.Query("SELECT name, setting FROM pg_settings WHERE name IN ('prepared_statement_cache_size', 'statement_cache_mode', 'max_prepared_statements', 'prefer_simple_protocol')")
+	rows, err := gormDB.Query("SELECT name, setting FROM pg_settings WHERE name IN ('prepared_statement_cache_size', 'statement_cache_mode', 'max_prepared_statements', 'prefer_simple_protocol')")
 	if err != nil {
 		log.Printf("⚠️ PostgreSQL設定の確認に失敗: %v", err)
 	} else {
@@ -372,14 +391,14 @@ func InitDB() (*DBConfig, error) {
 	// 追加のデバッグ情報
 	log.Println("🔍 接続情報の詳細確認:")
 	var version, applicationName string
-	err = sqlDB.QueryRow("SELECT version()").Scan(&version)
+	err = gormDB.QueryRow("SELECT version()").Scan(&version)
 	if err != nil {
 		log.Printf("⚠️ バージョン確認に失敗: %v", err)
 	} else {
 		log.Printf("   📝 PostgreSQL Version: %s", version)
 	}
 
-	err = sqlDB.QueryRow("SELECT application_name FROM pg_stat_activity WHERE pid = pg_backend_pid() LIMIT 1").Scan(&applicationName)
+	err = gormDB.QueryRow("SELECT application_name FROM pg_stat_activity WHERE pid = pg_backend_pid() LIMIT 1").Scan(&applicationName)
 	if err != nil {
 		log.Printf("⚠️ アプリケーション名確認に失敗: %v", err)
 	} else {
@@ -392,7 +411,7 @@ func InitDB() (*DBConfig, error) {
 		Name  string
 		Value string
 	}
-	rows, err = sqlDB.Query("SHOW ALL")
+	rows, err = gormDB.Query("SHOW ALL")
 	if err != nil {
 		log.Printf("⚠️ セッション設定確認に失敗: %v", err)
 	} else {
@@ -420,7 +439,7 @@ func InitDB() (*DBConfig, error) {
 
 		// prepared statementの統計情報を確認
 		var prepStmtCount int
-		err = sqlDB.QueryRow("SELECT COUNT(*) FROM pg_prepared_statements").Scan(&prepStmtCount)
+		err = gormDB.QueryRow("SELECT COUNT(*) FROM pg_prepared_statements").Scan(&prepStmtCount)
 		if err != nil {
 			log.Printf("⚠️ prepared statement数確認に失敗: %v", err)
 		} else {
@@ -429,7 +448,7 @@ func InitDB() (*DBConfig, error) {
 
 		// アクティブな接続数を確認
 		var activeConnections int
-		err = sqlDB.QueryRow("SELECT COUNT(*) FROM pg_stat_activity WHERE state = 'active'").Scan(&activeConnections)
+		err = gormDB.QueryRow("SELECT COUNT(*) FROM pg_stat_activity WHERE state = 'active'").Scan(&activeConnections)
 		if err != nil {
 			log.Printf("⚠️ アクティブ接続数確認に失敗: %v", err)
 		} else {
@@ -438,7 +457,7 @@ func InitDB() (*DBConfig, error) {
 
 		// 最大接続数を確認
 		var maxConnections int
-		err = sqlDB.QueryRow("SHOW max_connections").Scan(&maxConnections)
+		err = gormDB.QueryRow("SHOW max_connections").Scan(&maxConnections)
 		if err != nil {
 			log.Printf("⚠️ 最大接続数確認に失敗: %v", err)
 		} else {
