@@ -1,7 +1,6 @@
 package db
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -82,7 +81,7 @@ func InitDB() (*DBConfig, error) {
 	// GORMの初期化
 	database, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  dsn,
-		PreferSimpleProtocol: true, // prepared statementを完全に無効化
+		PreferSimpleProtocol: false, // prepared statementを使用（理想的）
 	}), &gorm.Config{
 		Logger:                                   logger.Default.LogMode(logger.Info),
 		SkipDefaultTransaction:                   true,
@@ -130,7 +129,7 @@ func InitDB() (*DBConfig, error) {
 
 			database, err = gorm.Open(postgres.New(postgres.Config{
 				DSN:                  fallbackDSN,
-				PreferSimpleProtocol: true, // prepared statementを完全に無効化
+				PreferSimpleProtocol: false, // prepared statementを使用（理想的）
 			}), &gorm.Config{
 				Logger:                                   logger.Default.LogMode(logger.Info),
 				SkipDefaultTransaction:                   true,
@@ -161,11 +160,11 @@ func InitDB() (*DBConfig, error) {
 		sqlDB.SetConnMaxLifetime(time.Hour)
 		sqlDB.SetConnMaxIdleTime(30 * time.Minute)
 	} else {
-		// 本番環境用の設定（prepared statementエラー対策）
-		sqlDB.SetMaxIdleConns(2)                   // 適度なアイドル接続を保持
-		sqlDB.SetMaxOpenConns(5)                   // 適度な接続数を許可
-		sqlDB.SetConnMaxLifetime(15 * time.Minute) // 接続の最大生存時間
-		sqlDB.SetConnMaxIdleTime(10 * time.Minute) // アイドル接続の最大生存時間
+		// 本番環境用の設定（prepared statementエラー根本解決）
+		sqlDB.SetMaxIdleConns(0)                   // アイドル接続を無効化
+		sqlDB.SetMaxOpenConns(1)                   // 接続数を1に制限
+		sqlDB.SetConnMaxLifetime(30 * time.Second) // 接続の最大生存時間を短縮
+		sqlDB.SetConnMaxIdleTime(10 * time.Second) // アイドル接続の最大生存時間を短縮
 	}
 
 	// 接続テスト
@@ -192,21 +191,6 @@ func InitDB() (*DBConfig, error) {
 	// 接続プールのコネクターにフックを追加（prepared statementクリア）
 	sqlDB.SetConnMaxLifetime(15 * time.Minute)
 	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
-
-	// JSONB処理のためのカスタム設定
-	database.Callback().Create().Before("gorm:create").Register("jsonb_marshal", func(db *gorm.DB) {
-		for _, field := range db.Statement.Schema.Fields {
-			if field.Tag.Get("gorm") == "type:jsonb" {
-				if value, ok := db.Statement.Dest.(map[string]interface{}); ok {
-					if jsonValue, exists := value[field.DBName]; exists {
-						if jsonBytes, err := json.Marshal(jsonValue); err == nil {
-							value[field.DBName] = string(jsonBytes)
-						}
-					}
-				}
-			}
-		}
-	})
 
 	// Supabaseクライアントの初期化
 	supabaseURL := os.Getenv("SUPABASE_URL")
