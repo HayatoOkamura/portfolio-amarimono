@@ -334,12 +334,12 @@ func InitDB() (*DBConfig, error) {
 		gormDB.SetConnMaxIdleTime(30 * time.Minute) // アイドル接続の最大生存時間
 		log.Println("✅ 開発環境用の接続プール設定が完了しました")
 	} else {
-		// 本番環境用の設定（Supabase最適化 - prepared statement完全無効化対応）
-		gormDB.SetMaxIdleConns(2)                   // アイドル接続数を最小限に
-		gormDB.SetMaxOpenConns(5)                   // 接続数を適度に制限
-		gormDB.SetConnMaxLifetime(30 * time.Second) // 接続の生存時間を30秒に短縮
-		gormDB.SetConnMaxIdleTime(10 * time.Second) // アイドル接続の生存時間を10秒に短縮
-		log.Println("✅ 本番環境用の接続プール設定が完了しました（prepared statement完全無効化対応）")
+		// 本番環境用の設定（Supabase最適化 - prepared statementエラー対策）
+		gormDB.SetMaxIdleConns(1)                   // アイドル接続数を最小限に
+		gormDB.SetMaxOpenConns(3)                   // 接続数を最小限に制限
+		gormDB.SetConnMaxLifetime(60 * time.Second) // 接続の生存時間を60秒に設定
+		gormDB.SetConnMaxIdleTime(30 * time.Second) // アイドル接続の生存時間を30秒に設定
+		log.Println("✅ 本番環境用の接続プール設定が完了しました（prepared statementエラー対策）")
 	}
 
 	// 接続テスト
@@ -353,36 +353,7 @@ func InitDB() (*DBConfig, error) {
 	// GORMのprepared statementを完全に無効化するコールバックを追加
 	log.Println("🔧 GORM prepared statement無効化コールバックを設定中...")
 
-	// より強力なアプローチ：クエリ実行前にprepared statementをクリア
-	database.Callback().Query().Before("gorm:query").Register("clear_prepared_statement_before_query", func(db *gorm.DB) {
-		// クエリ実行前にprepared statementをクリア
-		if sqlDB, err := db.DB(); err == nil {
-			sqlDB.Exec("DEALLOCATE ALL")
-		}
-	})
-
-	database.Callback().Create().Before("gorm:create").Register("clear_prepared_statement_before_create", func(db *gorm.DB) {
-		// 作成実行前にprepared statementをクリア
-		if sqlDB, err := db.DB(); err == nil {
-			sqlDB.Exec("DEALLOCATE ALL")
-		}
-	})
-
-	database.Callback().Update().Before("gorm:update").Register("clear_prepared_statement_before_update", func(db *gorm.DB) {
-		// 更新実行前にprepared statementをクリア
-		if sqlDB, err := db.DB(); err == nil {
-			sqlDB.Exec("DEALLOCATE ALL")
-		}
-	})
-
-	database.Callback().Delete().Before("gorm:delete").Register("clear_prepared_statement_before_delete", func(db *gorm.DB) {
-		// 削除実行前にprepared statementをクリア
-		if sqlDB, err := db.DB(); err == nil {
-			sqlDB.Exec("DEALLOCATE ALL")
-		}
-	})
-
-	// エラー発生時のリカバリーコールバックも追加
+	// 安全なアプローチ：エラー発生時のみprepared statementをクリア
 	database.Callback().Query().After("gorm:query").Register("recover_prepared_statement_after_query", func(db *gorm.DB) {
 		// prepared statementエラーが発生した場合のリカバリー
 		if db.Error != nil && (strings.Contains(db.Error.Error(), "prepared statement") || strings.Contains(db.Error.Error(), "stmtcache")) {
@@ -419,7 +390,7 @@ func InitDB() (*DBConfig, error) {
 		}
 	})
 
-	log.Println("✅ GORM prepared statement無効化コールバックが設定されました（実行前クリア + エラー時リカバリー）")
+	log.Println("✅ GORM prepared statement無効化コールバックが設定されました（エラー時のみリカバリー）")
 
 	// セッション設定を強制適用（開発環境とPooler接続では一部設定がサポートされない）
 	log.Println("🔧 セッション設定を強制適用中...")
