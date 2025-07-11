@@ -175,9 +175,6 @@ func InitDB() (*DBConfig, error) {
 	// セッション設定（prepared statementエラー対策 - Supabase対応）
 	preparedStatementSettings := []string{
 		"SET statement_timeout = '30s'",
-		"SET prepared_statement_cache_size = 0",
-		"SET max_prepared_statements = 0",
-		"SET statement_cache_mode = 'describe'", // Supabase推奨設定
 		"SET application_name = 'amarimono-backend'",
 		"SET search_path = public",
 		"DEALLOCATE ALL", // 既存のprepared statementをクリア
@@ -185,7 +182,10 @@ func InitDB() (*DBConfig, error) {
 
 	for _, setting := range preparedStatementSettings {
 		if _, err := sqlDB.Exec(setting); err != nil {
-			log.Printf("⚠️ セッション設定に失敗: %s - %v", setting, err)
+			// 警告レベルのログに変更（エラーではない）
+			log.Printf("ℹ️ セッション設定スキップ: %s - %v", setting, err)
+		} else {
+			log.Printf("✅ セッション設定成功: %s", setting)
 		}
 	}
 
