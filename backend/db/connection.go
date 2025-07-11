@@ -187,7 +187,7 @@ func InitDB() (*DBConfig, error) {
 	// GORMの初期化（pgxスタンダードライブラリモード）
 	database, err := gorm.Open(postgres.New(postgres.Config{
 		Conn:                 pgxDB,
-		PreferSimpleProtocol: true, // prepared statementを無効化
+		PreferSimpleProtocol: true, // prepared statementを完全に無効化
 	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 		// その他の最適化設定
@@ -334,12 +334,12 @@ func InitDB() (*DBConfig, error) {
 		gormDB.SetConnMaxIdleTime(30 * time.Minute) // アイドル接続の最大生存時間
 		log.Println("✅ 開発環境用の接続プール設定が完了しました")
 	} else {
-		// 本番環境用の設定（Supabase最適化 - prepared statementエラー対策）
-		gormDB.SetMaxIdleConns(1)                   // アイドル接続数を最小限に
-		gormDB.SetMaxOpenConns(3)                   // 接続数を最小限に制限
-		gormDB.SetConnMaxLifetime(60 * time.Second) // 接続の生存時間を60秒に設定
-		gormDB.SetConnMaxIdleTime(30 * time.Second) // アイドル接続の生存時間を30秒に設定
-		log.Println("✅ 本番環境用の接続プール設定が完了しました（prepared statementエラー対策）")
+		// 本番環境用の設定（Supabase最適化 - prepared statement完全無効化対応）
+		gormDB.SetMaxIdleConns(1)                    // アイドル接続数を最小限に
+		gormDB.SetMaxOpenConns(2)                    // 接続数を最小限に制限
+		gormDB.SetConnMaxLifetime(120 * time.Second) // 接続の生存時間を120秒に設定
+		gormDB.SetConnMaxIdleTime(60 * time.Second)  // アイドル接続の生存時間を60秒に設定
+		log.Println("✅ 本番環境用の接続プール設定が完了しました（prepared statement完全無効化対応）")
 	}
 
 	// 接続テスト
