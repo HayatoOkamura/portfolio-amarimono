@@ -180,7 +180,7 @@ func InitDB() (*DBConfig, error) {
 
 	database, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  dsn,
-		PreferSimpleProtocol: true, // prepared statementを無効化（記事の解決策）
+		PreferSimpleProtocol: false, // prepared statementを無効化（記事の解決策）
 	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 		// その他の最適化設定
