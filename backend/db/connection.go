@@ -81,7 +81,7 @@ func InitDB() (*DBConfig, error) {
 	// GORMの初期化
 	database, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  dsn,
-		PreferSimpleProtocol: true, // prepared statementを完全に無効化
+		PreferSimpleProtocol: false, // JSONB処理のためfalseに設定
 	}), &gorm.Config{
 		Logger:                                   logger.Default.LogMode(logger.Info),
 		SkipDefaultTransaction:                   true,
@@ -129,7 +129,7 @@ func InitDB() (*DBConfig, error) {
 
 			database, err = gorm.Open(postgres.New(postgres.Config{
 				DSN:                  fallbackDSN,
-				PreferSimpleProtocol: true, // prepared statementを完全に無効化
+				PreferSimpleProtocol: false, // JSONB処理のためfalseに設定
 			}), &gorm.Config{
 				Logger:                                   logger.Default.LogMode(logger.Info),
 				SkipDefaultTransaction:                   true,
@@ -160,10 +160,11 @@ func InitDB() (*DBConfig, error) {
 		sqlDB.SetConnMaxLifetime(time.Hour)
 		sqlDB.SetConnMaxIdleTime(30 * time.Minute)
 	} else {
-		sqlDB.SetMaxIdleConns(1)
-		sqlDB.SetMaxOpenConns(3)
-		sqlDB.SetConnMaxLifetime(30 * time.Minute)
-		sqlDB.SetConnMaxIdleTime(15 * time.Minute)
+		// 本番環境用の設定（prepared statementエラー対策）
+		sqlDB.SetMaxIdleConns(0)                  // アイドル接続を無効化
+		sqlDB.SetMaxOpenConns(1)                  // 接続数を1に制限
+		sqlDB.SetConnMaxLifetime(5 * time.Minute) // 接続の最大生存時間を短縮
+		sqlDB.SetConnMaxIdleTime(1 * time.Minute) // アイドル接続の最大生存時間を短縮
 	}
 
 	// 接続テスト
@@ -177,6 +178,7 @@ func InitDB() (*DBConfig, error) {
 		"SET prepared_statement_cache_size = 0",
 		"SET max_prepared_statements = 0",
 		"SET statement_cache_mode = 'describe'",
+		"SET application_name = 'amarimono-backend'",
 		"DEALLOCATE ALL", // 既存のprepared statementをクリア
 	}
 
