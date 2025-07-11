@@ -78,7 +78,7 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 	log.Printf("🥦 Search mode: %s\n", request.SearchMode)
 
 	// サブクエリ：指定具材が含まれるレシピを取得（下書きを除外）
-	var recipeIDs []uuid.UUID
+	var recipeIDs []models.UUIDString
 	if err := h.DB.Table("recipe_ingredients").
 		Select("recipe_id").
 		Where("ingredient_id IN ?", ingredientIDs).

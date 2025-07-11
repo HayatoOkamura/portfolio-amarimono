@@ -40,9 +40,17 @@ func (j *JSONB) Scan(value interface{}) error {
 // Value はJSONBデータをデータベースに保存する
 func (j JSONB) Value() (driver.Value, error) {
 	if j == nil {
-		return nil, nil
+		return "{}", nil
 	}
-	return json.Marshal(j)
+
+	// JSONBとして保存するため、バイト配列を返す
+	bytes, err := json.Marshal(j)
+	if err != nil {
+		return nil, err
+	}
+
+	// PreferSimpleProtocol: trueの場合、文字列として返す
+	return string(bytes), nil
 }
 
 // String はJSONBを文字列として表現

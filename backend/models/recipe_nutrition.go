@@ -27,13 +27,44 @@ type NutritionInfo struct {
 }
 
 func (n *NutritionInfo) Scan(value interface{}) error {
-	bytes, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("failed to scan NutritionInfo: expected []byte, got %T", value)
+	if value == nil {
+		*n = NutritionInfo{}
+		return nil
 	}
+
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		return fmt.Errorf("failed to scan NutritionInfo: expected []byte or string, got %T", value)
+	}
+
+	// 空の値の場合はデフォルト値を設定
+	if len(bytes) == 0 || string(bytes) == "null" {
+		*n = NutritionInfo{
+			Calories:      0,
+			Carbohydrates: 0,
+			Fat:           0,
+			Protein:       0,
+			Salt:          0,
+		}
+		return nil
+	}
+
 	return json.Unmarshal(bytes, n)
 }
 
+// Value はNutritionInfoをデータベースに保存する
 func (n NutritionInfo) Value() (driver.Value, error) {
-	return json.Marshal(n)
+	// JSONBとして保存するため、バイト配列を返す
+	bytes, err := json.Marshal(n)
+	if err != nil {
+		return nil, err
+	}
+
+	// PreferSimpleProtocol: trueの場合、文字列として返す
+	return string(bytes), nil
 }

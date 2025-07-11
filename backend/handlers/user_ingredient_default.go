@@ -8,15 +8,17 @@ import (
 	"strings"
 	"time"
 
+	"portfolio-amarimono/models"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type UserIngredientDefault struct {
-	UserID          uuid.UUID `json:"user_id"`
-	IngredientID    int       `json:"ingredient_id"`
-	DefaultQuantity int       `json:"default_quantity"`
+	UserID          models.UUIDString `json:"user_id"`
+	IngredientID    int               `json:"ingredient_id"`
+	DefaultQuantity int               `json:"default_quantity"`
 }
 
 type UserIngredientDefaultHandler struct {
@@ -240,7 +242,7 @@ func (h *UserIngredientDefaultHandler) UpdateUserIngredientDefault(c *gin.Contex
 		success := true
 		for _, update := range updates {
 			defaultData := UserIngredientDefault{
-				UserID:          userUUID,
+				UserID:          models.FromUUID(userUUID),
 				IngredientID:    int(update["ingredient_id"].(float64)),
 				DefaultQuantity: int(update["default_quantity"].(float64)),
 			}

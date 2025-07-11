@@ -1,13 +1,17 @@
 package models
 
 import (
-	"github.com/google/uuid"
+	"time"
 )
 
 type UserIngredientDefault struct {
-	UserID          uuid.UUID `json:"user_id"`
-	IngredientID    int       `json:"ingredient_id"`
-	DefaultQuantity int       `json:"default_quantity"`
+	ID           int        `json:"id" gorm:"primaryKey"`
+	UserID       UUIDString `json:"user_id"`
+	IngredientID int        `json:"ingredient_id"`
+	Quantity     float64    `json:"quantity"`
+	UnitID       int        `json:"unit_id"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
 func (UserIngredientDefault) TableName() string {

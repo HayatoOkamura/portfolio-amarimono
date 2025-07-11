@@ -174,9 +174,9 @@ func (h *AIUsageHandler) IncrementAIUsage(c *gin.Context) {
 
 	// 既存のレコードを確認
 	var aiUsage struct {
-		ID          uuid.UUID `json:"id"`
-		UsageCount  int       `json:"usage_count"`
-		LastResetAt time.Time `json:"last_reset_date"`
+		ID          models.UUIDString `json:"id"`
+		UsageCount  int               `json:"usage_count"`
+		LastResetAt time.Time         `json:"last_reset_date"`
 	}
 	err = tx.Table("ai_usage").
 		Where("user_id = ?", claims.Sub).
@@ -186,11 +186,11 @@ func (h *AIUsageHandler) IncrementAIUsage(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			// レコードが存在しない場合は新規作成
 			aiUsage = struct {
-				ID          uuid.UUID `json:"id"`
-				UsageCount  int       `json:"usage_count"`
-				LastResetAt time.Time `json:"last_reset_date"`
+				ID          models.UUIDString `json:"id"`
+				UsageCount  int               `json:"usage_count"`
+				LastResetAt time.Time         `json:"last_reset_date"`
 			}{
-				ID:          uuid.New(),
+				ID:          models.FromUUID(uuid.New()),
 				UsageCount:  1,
 				LastResetAt: time.Now(),
 			}

@@ -15,9 +15,19 @@ type FAQ struct {
 type JSONBFaq []FAQ
 
 func (f *JSONBFaq) Scan(value interface{}) error {
-	bytes, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("failed to scan JSONBFaq: expected []byte, got %T", value)
+	if value == nil {
+		*f = JSONBFaq{}
+		return nil
+	}
+
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		return fmt.Errorf("failed to scan JSONBFaq: expected []byte or string, got %T", value)
 	}
 
 	// 空の値の場合は空の配列を返す
@@ -27,12 +37,12 @@ func (f *JSONBFaq) Scan(value interface{}) error {
 	}
 
 	// 配列形式の場合はそのままアンマーシャリング
-	if bytes[0] == '[' {
+	if len(bytes) > 0 && bytes[0] == '[' {
 		return json.Unmarshal(bytes, f)
 	}
 
 	// オブジェクト形式の場合は配列に変換
-	if bytes[0] == '{' {
+	if len(bytes) > 0 && bytes[0] == '{' {
 		var singleFAQ FAQ
 		if err := json.Unmarshal(bytes, &singleFAQ); err != nil {
 			return err
@@ -44,6 +54,18 @@ func (f *JSONBFaq) Scan(value interface{}) error {
 	return fmt.Errorf("invalid FAQ format: %s", string(bytes))
 }
 
+// Value はJSONBFaqをデータベースに保存する
 func (f JSONBFaq) Value() (driver.Value, error) {
-	return json.Marshal(f)
+	if f == nil || len(f) == 0 {
+		return "[]", nil
+	}
+
+	// JSONBとして保存するため、バイト配列を返す
+	bytes, err := json.Marshal(f)
+	if err != nil {
+		return nil, err
+	}
+
+	// PreferSimpleProtocol: trueの場合、文字列として返す
+	return string(bytes), nil
 }

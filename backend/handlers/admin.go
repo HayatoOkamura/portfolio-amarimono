@@ -443,6 +443,7 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid instructions format"})
 			return
 		}
+		log.Printf("🥦 Parsed instructions: %+v", instructions)
 	}
 
 	var ingredients []models.RecipeIngredient
@@ -451,6 +452,7 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ingredients format"})
 			return
 		}
+		log.Printf("🥦 Parsed ingredients: %+v", ingredients)
 	}
 
 	var nutrition models.NutritionInfo
@@ -459,6 +461,7 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nutrition format"})
 			return
 		}
+		log.Printf("🥦 Parsed nutrition: %+v", nutrition)
 	}
 
 	var faq models.JSONBFaq
@@ -467,6 +470,7 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid FAQ format"})
 			return
 		}
+		log.Printf("🥦 Parsed FAQ: %+v", faq)
 	}
 
 	// レシピの作成
@@ -486,6 +490,11 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 		FAQ:          faq,
 	}
 
+	log.Printf("🥦 Recipe before save: %+v", recipe)
+	log.Printf("🥦 Instructions type: %T, value: %+v", recipe.Instructions, recipe.Instructions)
+	log.Printf("🥦 Nutrition type: %T, value: %+v", recipe.Nutrition, recipe.Nutrition)
+	log.Printf("🥦 FAQ type: %T, value: %+v", recipe.FAQ, recipe.FAQ)
+
 	// トランザクションの開始
 	tx := h.DB.Begin()
 	if tx.Error != nil {
@@ -504,7 +513,7 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 	files := form.File["image"]
 	if len(files) > 0 {
 		// 画像を保存
-		imagePath, err := utils.SaveRecipeImage(c, files[0], recipe.ID.String(), false)
+		imagePath, err := utils.SaveRecipeImage(c, files[0], recipe.ID.ToUUID().String(), false)
 		if err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
@@ -523,7 +532,7 @@ func (h *AdminHandler) AddRecipe(c *gin.Context) {
 		fileKey := fmt.Sprintf("instruction_image_%d", i)
 		if imageFile, err := c.FormFile(fileKey); err == nil {
 			// 画像を保存
-			imagePath, err := utils.SaveRecipeImage(c, imageFile, recipe.ID.String(), true)
+			imagePath, err := utils.SaveRecipeImage(c, imageFile, recipe.ID.ToUUID().String(), true)
 			if err != nil {
 				tx.Rollback()
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save instruction image"})
@@ -598,12 +607,13 @@ func parseInt(s string) int {
 	return i
 }
 
-func parseUUID(s string) *uuid.UUID {
+func parseUUID(s string) *models.UUIDString {
 	id, err := uuid.Parse(s)
 	if err != nil {
 		return nil
 	}
-	return &id
+	uuidString := models.FromUUID(id)
+	return &uuidString
 }
 
 func parseBool(s string) bool {

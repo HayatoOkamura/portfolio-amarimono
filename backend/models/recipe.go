@@ -2,12 +2,10 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Recipe struct {
-	ID                  uuid.UUID          `json:"id" gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
+	ID                  UUIDString         `json:"id" gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
 	Name                string             `json:"name" binding:"required"`
 	Instructions        JSONBInstructions  `json:"instructions" gorm:"type:jsonb" binding:"required"`
 	MainImage           string             `json:"image_url" gorm:"column:image_url"`
@@ -22,7 +20,7 @@ type Recipe struct {
 	Catchphrase         string             `json:"catchphrase"`
 	FAQ                 JSONBFaq           `json:"faq" gorm:"type:jsonb;default:'[]'"`
 	Likes               []Like             `json:"likes"`
-	UserID              *uuid.UUID         `json:"user_id" gorm:"type:uuid"`
+	UserID              *UUIDString        `json:"user_id" gorm:"type:uuid"`
 	IsPublic            bool               `json:"is_public" gorm:"default:true"`
 	IsDraft             bool               `json:"is_draft" gorm:"default:false"`
 	NutritionPercentage map[string]float64 `json:"nutrition_percentage,omitempty" gorm:"-"`
@@ -31,7 +29,7 @@ type Recipe struct {
 }
 
 type RecipeIngredient struct {
-	RecipeID         uuid.UUID  `json:"recipe_id" gorm:"type:uuid;primaryKey"`
+	RecipeID         UUIDString `json:"recipe_id" gorm:"type:uuid;primaryKey"`
 	IngredientID     int        `json:"ingredient_id" gorm:"primaryKey"`
 	QuantityRequired float64    `json:"quantity_required"`
 	UnitID           int        `json:"unit_id" gorm:"foreignKey:UnitID;references:ID"`
