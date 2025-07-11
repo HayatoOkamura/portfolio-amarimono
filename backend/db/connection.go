@@ -1,6 +1,7 @@
 package db
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -81,7 +82,7 @@ func InitDB() (*DBConfig, error) {
 	// GORMの初期化
 	database, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  dsn,
-		PreferSimpleProtocol: false, // JSONB処理のためfalseに設定
+		PreferSimpleProtocol: true, // prepared statementを完全に無効化
 	}), &gorm.Config{
 		Logger:                                   logger.Default.LogMode(logger.Info),
 		SkipDefaultTransaction:                   true,
@@ -129,7 +130,7 @@ func InitDB() (*DBConfig, error) {
 
 			database, err = gorm.Open(postgres.New(postgres.Config{
 				DSN:                  fallbackDSN,
-				PreferSimpleProtocol: false, // JSONB処理のためfalseに設定
+				PreferSimpleProtocol: true, // prepared statementを完全に無効化
 			}), &gorm.Config{
 				Logger:                                   logger.Default.LogMode(logger.Info),
 				SkipDefaultTransaction:                   true,
@@ -191,6 +192,21 @@ func InitDB() (*DBConfig, error) {
 	// 接続プールのコネクターにフックを追加（prepared statementクリア）
 	sqlDB.SetConnMaxLifetime(15 * time.Minute)
 	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
+
+	// JSONB処理のためのカスタム設定
+	database.Callback().Create().Before("gorm:create").Register("jsonb_marshal", func(db *gorm.DB) {
+		for _, field := range db.Statement.Schema.Fields {
+			if field.Tag.Get("gorm") == "type:jsonb" {
+				if value, ok := db.Statement.Dest.(map[string]interface{}); ok {
+					if jsonValue, exists := value[field.DBName]; exists {
+						if jsonBytes, err := json.Marshal(jsonValue); err == nil {
+							value[field.DBName] = string(jsonBytes)
+						}
+					}
+				}
+			}
+		}
+	})
 
 	// Supabaseクライアントの初期化
 	supabaseURL := os.Getenv("SUPABASE_URL")
