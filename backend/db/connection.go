@@ -163,19 +163,19 @@ func InitDB() (*DBConfig, error) {
 
 	// GORMの初期化
 	log.Println("⚙️ GORMの初期化中...")
-	log.Printf("🔧 GORM設定:")
+	log.Printf("🔧 GORM設定（Stack Overflow記事を参考）:")
 	log.Printf("   📝 PrepareStmt: false (prepared statement無効化)")
 	log.Printf("   📝 SkipDefaultTransaction: true")
 	log.Printf("   📝 QueryFields: true")
 	log.Printf("   📝 DryRun: false")
 	log.Printf("   📝 DisableForeignKeyConstraintWhenMigrating: true")
-	log.Printf("🔧 PostgreSQL設定:")
+	log.Printf("🔧 PostgreSQL設定（Stack Overflow記事を参考）:")
 	if environment == "development" {
 		log.Printf("   📝 開発環境のため、古いPostgreSQLバージョンに対応した設定を使用")
 	} else {
-		log.Printf("   📝 statement_cache_mode: describe")
-		log.Printf("   📝 prepared_statement_cache_size: 0")
+		log.Printf("   📝 DEALLOCATE ALL: セッション開始時に実行")
 		log.Printf("   📝 max_prepared_statements: 0")
+		log.Printf("   📝 接続プール: 最小限の設定")
 	}
 
 	database, err := gorm.Open(postgres.New(postgres.Config{
@@ -197,12 +197,12 @@ func InitDB() (*DBConfig, error) {
 		AllowGlobalUpdate: false, // グローバル更新を無効化
 		// Prepared Statementエラー対策の追加設定
 		DisableNestedTransaction: true, // ネストしたトランザクションを無効化
+		// Stack Overflow記事を参考にしたprepared statement無効化
+		PrepareStmt: false, // prepared statementを無効化
 		// セッション設定
 		NowFunc: func() time.Time {
 			return time.Now().UTC()
 		},
-		// prepared statementエラー対策の追加設定
-		PrepareStmt: false, // prepared statementを無効化（GORMレベル）
 	})
 	if err != nil {
 		log.Printf("❌ GORMの初期化に失敗しました: %v", err)
@@ -261,8 +261,8 @@ func InitDB() (*DBConfig, error) {
 				DisableAutomaticPing: true, // 自動pingを無効化
 				// さらに追加の設定
 				AllowGlobalUpdate: false, // グローバル更新を無効化
-				// prepared statementエラー対策の追加設定
-				PrepareStmt: false, // prepared statementを無効化（GORMレベル）
+				// Stack Overflow記事を参考にしたprepared statement無効化
+				PrepareStmt: false, // prepared statementを無効化
 			})
 			if err != nil {
 				log.Printf("❌ フォールバック接続も失敗しました: %v", err)
@@ -311,21 +311,21 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("failed to get database instance: %v", err)
 	}
 
-	// 接続プールの最適化（本番環境対応）
+	// 接続プールの最適化（Stack Overflow記事を参考）
 	if environment == "development" {
-		// 開発環境用の設定
-		sqlDB.SetMaxIdleConns(5)                   // アイドル接続数を減らす
-		sqlDB.SetMaxOpenConns(20)                  // 最大接続数を制限
-		sqlDB.SetConnMaxLifetime(time.Hour)        // 接続の最大生存時間
-		sqlDB.SetConnMaxIdleTime(30 * time.Minute) // アイドル接続の最大生存時間
-		log.Println("✅ 開発環境用の接続プール設定が完了しました")
-	} else {
-		// 本番環境用の設定（Supabase最適化 + prepared statementエラー対策）
-		sqlDB.SetMaxIdleConns(1)                  // アイドル接続を最小限に
-		sqlDB.SetMaxOpenConns(3)                  // 接続数をさらに制限
+		// 開発環境用の設定（prepared statementエラー対策）
+		sqlDB.SetMaxIdleConns(1)                  // アイドル接続数を最小限に
+		sqlDB.SetMaxOpenConns(10)                 // 最大接続数を制限
 		sqlDB.SetConnMaxLifetime(5 * time.Minute) // 接続の最大生存時間を短縮
-		sqlDB.SetConnMaxIdleTime(2 * time.Minute) // アイドル接続の最大生存時間を短縮
-		log.Println("✅ 本番環境用の接続プール設定が完了しました（prepared statementエラー対策適用）")
+		sqlDB.SetConnMaxIdleTime(1 * time.Minute) // アイドル接続の最大生存時間を短縮
+		log.Println("✅ 開発環境用の接続プール設定が完了しました（prepared statementエラー対策）")
+	} else {
+		// 本番環境用の設定（Stack Overflow記事を参考）
+		sqlDB.SetMaxIdleConns(1)                  // アイドル接続数を最小限に
+		sqlDB.SetMaxOpenConns(3)                  // 最大接続数を制限
+		sqlDB.SetConnMaxLifetime(5 * time.Minute) // 接続の最大生存時間を短縮
+		sqlDB.SetConnMaxIdleTime(1 * time.Minute) // アイドル接続の最大生存時間を短縮
+		log.Println("✅ 本番環境用の接続プール設定が完了しました（prepared statementエラー対策）")
 	}
 
 	// 接続テスト
@@ -340,8 +340,24 @@ func InitDB() (*DBConfig, error) {
 	log.Println("🔧 セッション設定を強制適用中...")
 	if strings.Contains(finalHost, "pooler.supabase.com") {
 		log.Println("   📝 Pooler接続のため、一部の設定をスキップします")
+
+		// Pooler接続でもprepared statementエラー対策を実行
+		_, err = sqlDB.Exec("DEALLOCATE ALL")
+		if err != nil {
+			log.Printf("⚠️ DEALLOCATE ALL設定に失敗: %v", err)
+		} else {
+			log.Println("   ✅ DEALLOCATE ALL を実行（prepared statementをクリア）")
+		}
 	} else if environment == "development" {
 		log.Println("   📝 開発環境のため、古いPostgreSQLバージョンに対応して一部の設定をスキップします")
+
+		// 開発環境でもprepared statementエラー対策を実行
+		_, err = sqlDB.Exec("DEALLOCATE ALL")
+		if err != nil {
+			log.Printf("⚠️ DEALLOCATE ALL設定に失敗: %v", err)
+		} else {
+			log.Println("   ✅ DEALLOCATE ALL を実行（prepared statementをクリア）")
+		}
 	} else {
 		// 本番環境での適切な設定
 		_, err = sqlDB.Exec("SET statement_timeout = '30s'")
@@ -351,20 +367,20 @@ func InitDB() (*DBConfig, error) {
 			log.Println("   ✅ statement_timeout = '30s' を設定")
 		}
 
-		// prepared statementエラー対策の設定
+		// Stack Overflow記事を参考にしたprepared statementエラー対策
+		_, err = sqlDB.Exec("DEALLOCATE ALL")
+		if err != nil {
+			log.Printf("⚠️ DEALLOCATE ALL設定に失敗: %v", err)
+		} else {
+			log.Println("   ✅ DEALLOCATE ALL を実行（prepared statementをクリア）")
+		}
+
+		// prepared statementの最大数を制限
 		_, err = sqlDB.Exec("SET max_prepared_statements = 0")
 		if err != nil {
 			log.Printf("⚠️ max_prepared_statements設定に失敗: %v", err)
 		} else {
 			log.Println("   ✅ max_prepared_statements = 0 を設定")
-		}
-
-		// セッションごとのprepared statementキャッシュを無効化
-		_, err = sqlDB.Exec("SET prepared_statement_cache_size = 0")
-		if err != nil {
-			log.Printf("⚠️ prepared_statement_cache_size設定に失敗: %v", err)
-		} else {
-			log.Println("   ✅ prepared_statement_cache_size = 0 を設定")
 		}
 	}
 
