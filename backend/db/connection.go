@@ -94,7 +94,7 @@ func InitDB() (*DBConfig, error) {
 		)
 	} else {
 		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write application_name=amarimono-backend",
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write application_name=amarimono-backend prefer_simple_protocol=false disable_prefetch=true",
 			finalHost, finalPort, finalUser, dbPassword, dbName,
 		)
 	}
@@ -156,7 +156,7 @@ func InitDB() (*DBConfig, error) {
 				)
 			} else {
 				fallbackDSN = fmt.Sprintf(
-					"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write application_name=amarimono-backend",
+					"host=%s port=%s user=%s password=%s dbname=%s sslmode=require connect_timeout=10 target_session_attrs=read-write application_name=amarimono-backend prefer_simple_protocol=false",
 					fallbackHost, fallbackPort, fallbackUser, dbPassword, dbName,
 				)
 			}
