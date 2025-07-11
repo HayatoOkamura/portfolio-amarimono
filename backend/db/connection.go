@@ -172,13 +172,14 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("failed to ping database: %v", err)
 	}
 
-	// セッション設定（prepared statementエラー対策）
+	// セッション設定（prepared statementエラー対策 - Supabase対応）
 	preparedStatementSettings := []string{
 		"SET statement_timeout = '30s'",
 		"SET prepared_statement_cache_size = 0",
 		"SET max_prepared_statements = 0",
-		"SET statement_cache_mode = 'describe'",
+		"SET statement_cache_mode = 'describe'", // Supabase推奨設定
 		"SET application_name = 'amarimono-backend'",
+		"SET search_path = public",
 		"DEALLOCATE ALL", // 既存のprepared statementをクリア
 	}
 

@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: amarimono-backend
+    env: docker
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: go build -o main .
+    startCommand: ./main
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: USE_POOLER
+        value: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_DB_HOST
+        sync: false
+      - key: SUPABASE_DB_PORT
+        sync: false
+      - key: SUPABASE_DB_USER
+        sync: false
+      - key: SUPABASE_DB_PASSWORD
+        sync: false
+      - key: SUPABASE_DB_NAME
+        sync: false
+      - key: GOOGLE_CLOUD_TRANSLATION_API_KEY
+        sync: false
+    scaling:
+      minInstances: 1
+      maxInstances: 1
+      autoScaling: false
+    healthCheckPath: /health
+    disk:
+      name: uploads
+      mountPath: /app/uploads
+      sizeGB: 1 
