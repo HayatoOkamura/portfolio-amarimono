@@ -81,7 +81,7 @@ func InitDB() (*DBConfig, error) {
 	// GORMの初期化
 	database, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  dsn,
-		PreferSimpleProtocol: false,
+		PreferSimpleProtocol: true, // prepared statementを完全に無効化
 	}), &gorm.Config{
 		Logger:                                   logger.Default.LogMode(logger.Info),
 		SkipDefaultTransaction:                   true,
@@ -129,7 +129,7 @@ func InitDB() (*DBConfig, error) {
 
 			database, err = gorm.Open(postgres.New(postgres.Config{
 				DSN:                  fallbackDSN,
-				PreferSimpleProtocol: false,
+				PreferSimpleProtocol: true, // prepared statementを完全に無効化
 			}), &gorm.Config{
 				Logger:                                   logger.Default.LogMode(logger.Info),
 				SkipDefaultTransaction:                   true,
@@ -171,20 +171,18 @@ func InitDB() (*DBConfig, error) {
 		return nil, fmt.Errorf("failed to ping database: %v", err)
 	}
 
-	// セッション設定
-	if strings.Contains(finalHost, "pooler.supabase.com") {
-		sqlDB.Exec("SET statement_timeout = '30s'")
-	} else if environment == "development" {
-		sqlDB.Exec("SET statement_timeout = '30s'")
-	} else {
-		preparedStatementSettings := []string{
-			"SET statement_timeout = '30s'",
-			"SET prepared_statement_cache_size = 0",
-			"SET max_prepared_statements = 0",
-			"SET statement_cache_mode = 'describe'",
-		}
-		for _, setting := range preparedStatementSettings {
-			sqlDB.Exec(setting)
+	// セッション設定（prepared statementエラー対策）
+	preparedStatementSettings := []string{
+		"SET statement_timeout = '30s'",
+		"SET prepared_statement_cache_size = 0",
+		"SET max_prepared_statements = 0",
+		"SET statement_cache_mode = 'describe'",
+		"DEALLOCATE ALL", // 既存のprepared statementをクリア
+	}
+
+	for _, setting := range preparedStatementSettings {
+		if _, err := sqlDB.Exec(setting); err != nil {
+			log.Printf("⚠️ セッション設定に失敗: %s - %v", setting, err)
 		}
 	}
 
