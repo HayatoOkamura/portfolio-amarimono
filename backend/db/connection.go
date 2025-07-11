@@ -43,24 +43,36 @@ func InitDB() (*DBConfig, error) {
 
 	usePooler = os.Getenv("USE_POOLER")
 
+	// 接続設定の詳細ログ
+	log.Printf("🔍 接続設定の詳細:")
+	log.Printf("   📝 元のホスト: %s", dbHost)
+	log.Printf("   📝 元のポート: %s", dbPort)
+	log.Printf("   📝 元のユーザー: %s", dbUser)
+	log.Printf("   📝 USE_POOLER: %s", usePooler)
+	log.Printf("   📝 環境: %s", environment)
+
 	if strings.Contains(dbHost, "pooler.supabase.com") {
 		finalHost = dbHost
 		finalPort = dbPort
 		finalUser = dbUser
+		log.Printf("   📝 Pooler接続を使用（既にpooler形式）")
 	} else {
 		projectRef := extractProjectRef(dbHost)
 		if projectRef == "" {
 			return nil, fmt.Errorf("failed to extract project reference ID from host: %s", dbHost)
 		}
+		log.Printf("   📝 プロジェクトリファレンス: %s", projectRef)
 
 		if usePooler == "true" {
 			finalHost = fmt.Sprintf("%s.pooler.supabase.com", projectRef)
 			finalPort = "6543"
 			finalUser = fmt.Sprintf("postgres.%s", projectRef)
+			log.Printf("   📝 Pooler接続に変換: %s:%s", finalHost, finalPort)
 		} else {
 			finalHost = dbHost
 			finalPort = dbPort
 			finalUser = dbUser
+			log.Printf("   📝 Direct接続を使用: %s:%s", finalHost, finalPort)
 		}
 	}
 
@@ -77,6 +89,19 @@ func InitDB() (*DBConfig, error) {
 			finalHost, finalPort, finalUser, dbPassword, dbName,
 		)
 	}
+
+	// 接続文字列の詳細ログ（パスワードは隠す）
+	log.Printf("🔍 最終接続設定:")
+	log.Printf("   📝 ホスト: %s", finalHost)
+	log.Printf("   📝 ポート: %s", finalPort)
+	log.Printf("   📝 ユーザー: %s", finalUser)
+	log.Printf("   📝 データベース: %s", dbName)
+	sslMode := "require"
+	if environment == "development" {
+		sslMode = "disable"
+	}
+	log.Printf("   📝 SSL: %s", sslMode)
+	log.Printf("   📝 接続文字列（パスワード除く）: host=%s port=%s user=%s dbname=%s", finalHost, finalPort, finalUser, dbName)
 
 	// GORMの初期化
 	database, err := gorm.Open(postgres.New(postgres.Config{
