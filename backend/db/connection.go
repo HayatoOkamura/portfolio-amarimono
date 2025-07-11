@@ -161,10 +161,10 @@ func InitDB() (*DBConfig, error) {
 		sqlDB.SetConnMaxIdleTime(30 * time.Minute)
 	} else {
 		// 本番環境用の設定（prepared statementエラー根本解決）
-		sqlDB.SetMaxIdleConns(0)                   // アイドル接続を無効化
-		sqlDB.SetMaxOpenConns(1)                   // 接続数を1に制限
-		sqlDB.SetConnMaxLifetime(30 * time.Second) // 接続の最大生存時間を短縮
-		sqlDB.SetConnMaxIdleTime(10 * time.Second) // アイドル接続の最大生存時間を短縮
+		sqlDB.SetMaxIdleConns(2)                  // アイドル接続を最小限に
+		sqlDB.SetMaxOpenConns(5)                  // 接続数を適度に制限
+		sqlDB.SetConnMaxLifetime(5 * time.Minute) // 接続の最大生存時間を延長
+		sqlDB.SetConnMaxIdleTime(2 * time.Minute) // アイドル接続の最大生存時間を延長
 	}
 
 	// 接続テスト
