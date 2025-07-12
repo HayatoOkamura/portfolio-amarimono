@@ -43,8 +43,13 @@ export const imageBaseUrl = typeof window !== 'undefined'
         return `http://${currentHost}:54321/storage/v1/object/public/images`;
       }
       
+      // 本番環境ではSupabase StorageのURLを使用
+      if (currentHost === 'amarimono.okamura.dev') {
+        return 'https://qmrjsqeigdkizkrpiahs.supabase.co/storage/v1/object/public/images';
+      }
+      
       // その他の場合は環境変数を使用
-      return process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:54321/storage/v1/object/public/images';
+      return process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'https://qmrjsqeigdkizkrpiahs.supabase.co/storage/v1/object/public/images';
     })()
   : process.env.NEXT_PUBLIC_LOCAL_IMAGE_URL || 'http://localhost:54321/storage/v1/object/public/images';
 
