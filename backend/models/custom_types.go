@@ -74,11 +74,22 @@ func (u *UUIDString) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		parsed, err := uuid.ParseBytes(v)
-		if err != nil {
-			return err
+		// PreferSimpleProtocol: trueの場合、バイト配列がUUIDのバイト表現の場合がある
+		if len(v) == 16 {
+			// 16バイトの場合はUUIDのバイト表現として処理
+			parsed, err := uuid.ParseBytes(v)
+			if err != nil {
+				return err
+			}
+			*u = UUIDString(parsed)
+		} else {
+			// それ以外の場合は文字列として処理
+			parsed, err := uuid.Parse(string(v))
+			if err != nil {
+				return err
+			}
+			*u = UUIDString(parsed)
 		}
-		*u = UUIDString(parsed)
 	case string:
 		parsed, err := uuid.Parse(v)
 		if err != nil {
@@ -96,6 +107,9 @@ func (u UUIDString) Value() (driver.Value, error) {
 	if u == UUIDString(uuid.Nil) {
 		return nil, nil
 	}
+
+	// PreferSimpleProtocol: trueの場合、文字列として返す
+	// これにより、UUIDがバイト配列ではなく文字列として処理される
 	return uuid.UUID(u).String(), nil
 }
 
@@ -112,4 +126,33 @@ func (u UUIDString) ToUUID() uuid.UUID {
 // FromUUID はuuid.UUIDからUUIDStringを作成
 func FromUUID(id uuid.UUID) UUIDString {
 	return UUIDString(id)
+}
+
+// MarshalJSON はUUIDStringをJSONとしてシリアライズする
+func (u UUIDString) MarshalJSON() ([]byte, error) {
+	if u == UUIDString(uuid.Nil) {
+		return []byte("null"), nil
+	}
+	return json.Marshal(uuid.UUID(u).String())
+}
+
+// UnmarshalJSON はJSONからUUIDStringをデシリアライズする
+func (u *UUIDString) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*u = UUIDString(uuid.Nil)
+		return nil
+	}
+
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+
+	parsed, err := uuid.Parse(str)
+	if err != nil {
+		return err
+	}
+
+	*u = UUIDString(parsed)
+	return nil
 }

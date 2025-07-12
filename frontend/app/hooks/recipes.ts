@@ -285,7 +285,14 @@ export const fetchSearchRecipes = async (query: string): Promise<Recipe[]> => {
 // レシピIDで詳細を取得
 export const fetchRecipeByIdService = async (id: string) => {
   try {
+    console.log("🔍 DEBUG - fetchRecipeByIdService called with ID:", id);
+    
     const response = await api.get(`/admin/recipes/${id}`);
+    
+    console.log("🔍 DEBUG - API Response:");
+    console.log("   📝 Response data:", response.data);
+    console.log("   📝 Response data type:", typeof response.data);
+    console.log("   📝 Response data keys:", Object.keys(response.data || {}));
     
     if (!response.data) {
       throw new Error('Recipe data not found');
@@ -293,10 +300,16 @@ export const fetchRecipeByIdService = async (id: string) => {
     
     // レスポンスデータが直接recipeオブジェクトの場合
     if (!response.data.recipe) {
+      console.log("🔍 DEBUG - Using direct recipe data");
+      console.log("   📝 Recipe ID from API:", response.data.id);
+      console.log("   📝 Recipe ID type:", typeof response.data.id);
       return mapRecipe(response.data);
     }
     
     // レスポンスデータが{ recipe: ... }の形式の場合
+    console.log("🔍 DEBUG - Using nested recipe data");
+    console.log("   📝 Recipe ID from API:", response.data.recipe.id);
+    console.log("   📝 Recipe ID type:", typeof response.data.recipe.id);
     return mapRecipe(response.data.recipe);
   } catch (error: any) {
     console.error('Error in fetchRecipeByIdService:', error);

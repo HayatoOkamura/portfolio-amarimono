@@ -26,8 +26,21 @@ const RecipeDetailClient = ({ id }: RecipeDetailClientProps) => {
 
   useEffect(() => {
     if (id) {
+      // デバッグ: URLパラメータのIDを確認
+      console.log("🔍 DEBUG - URL Parameter ID:");
+      console.log("   📝 ID Type:", typeof id);
+      console.log("   📝 ID Value:", id);
+      console.log("   📝 ID Length:", id.length);
+      
       fetchRecipeByIdService(id)
         .then((recipe) => {
+          // デバッグ: 取得したレシピのIDを確認
+          console.log("🔍 DEBUG - Recipe ID from API:");
+          console.log("   📝 Recipe ID Type:", typeof recipe.id);
+          console.log("   📝 Recipe ID Value:", recipe.id);
+          console.log("   📝 Recipe ID Length:", recipe.id.length);
+          console.log("   📝 Full Recipe:", recipe);
+          
           setRecipe(recipe);
         })
         .catch((error) => console.error("Error fetching recipe:", error));

@@ -551,6 +551,19 @@ func (h *RecipeHandler) GetRecipeByID(c *gin.Context) {
 		return
 	}
 
+	// デバッグ: UUIDの詳細情報をログ出力
+	log.Printf("🔍 DEBUG - Recipe ID Details:")
+	log.Printf("   📝 Recipe ID Type: %T", recipe.ID)
+	log.Printf("   📝 Recipe ID Value: %v", recipe.ID)
+	log.Printf("   📝 Recipe ID String(): %s", recipe.ID.String())
+	log.Printf("   📝 Recipe ID ToUUID(): %v", recipe.ID.ToUUID())
+	log.Printf("   📝 Recipe ID MarshalJSON test:")
+	if jsonBytes, err := json.Marshal(recipe.ID); err != nil {
+		log.Printf("      ❌ MarshalJSON error: %v", err)
+	} else {
+		log.Printf("      ✅ MarshalJSON result: %s", string(jsonBytes))
+	}
+
 	// 栄養情報がない場合はデフォルト値を設定
 	if recipe.Nutrition == (models.NutritionInfo{}) {
 		recipe.Nutrition = models.NutritionInfo{
@@ -645,6 +658,14 @@ func (h *RecipeHandler) GetUserRecipes(c *gin.Context) {
 
 		// Recipe structのNutritionPercentageフィールドに設定
 		recipes[i].NutritionPercentage = nutritionPercentage
+	}
+
+	// デバッグ: レシピのUUIDを確認
+	log.Printf("🔍 DEBUG - GetUserRecipes Response:")
+	for i, recipe := range recipes {
+		log.Printf("   📝 Recipe %d ID: %s (Type: %T)", i, recipe.ID, recipe.ID)
+		log.Printf("   📝 Recipe %d ID String: %s", i, recipe.ID.String())
+		log.Printf("   📝 Recipe %d ID ToUUID: %s", i, recipe.ID.ToUUID().String())
 	}
 
 	c.JSON(http.StatusOK, gin.H{"recipes": recipes})

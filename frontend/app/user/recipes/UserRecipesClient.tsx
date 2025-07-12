@@ -40,6 +40,12 @@ const ListMyRecipeContent = () => {
   const sortedRecipes = useSortedRecipes(filteredRecipes);
 
   const handleRecipeClick = (recipeId: string) => {
+    // デバッグ: レシピIDの詳細を確認
+    console.log("🔍 DEBUG - Recipe Click ID:");
+    console.log("   📝 Recipe ID Type:", typeof recipeId);
+    console.log("   📝 Recipe ID Value:", recipeId);
+    console.log("   📝 Recipe ID Length:", recipeId.length);
+    
     router.push(`/user/recipes/${recipeId}`);
   };
 
@@ -108,6 +114,16 @@ const ListMyRecipeContent = () => {
                         isLink={true}
                         href={`/recipes/${recipe.id}`}
                       />
+                      {/* デバッグ: レシピIDの詳細を確認 */}
+                      {(() => {
+                        console.log("🔍 DEBUG - Recipe in map:", {
+                          id: recipe.id,
+                          idType: typeof recipe.id,
+                          idLength: recipe.id.length,
+                          fullRecipe: recipe
+                        });
+                        return null;
+                      })()}
                     </div>
                   ))
                 ) : (
