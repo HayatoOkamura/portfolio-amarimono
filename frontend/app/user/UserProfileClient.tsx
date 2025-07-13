@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useUserLikeCount, useUserRecipeAverageRating } from "@/app/hooks/user";
 import { imageBaseUrl } from "@/app/utils/api";
-import { useRecommendedRecipes } from "@/app/hooks/recipes";
+import { useRecommendedRecipes, useUserRecipes } from "@/app/hooks/recipes";
 import { FaUserCircle } from "react-icons/fa";
 import { ImSpoonKnife } from "react-icons/im";
 import { FaHeart } from "react-icons/fa";
@@ -41,16 +41,19 @@ const UserProfile = () => {
   const { data: recipes, isLoading: isRecipesLoading } = useRecommendedRecipes(
     user?.id || ""
   );
+  const { data: userRecipes, isLoading: isUserRecipesLoading } = useUserRecipes(
+    user?.id || ""
+  );
   const [recipeCount, setRecipeCount] = useState(0);
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    if (recipes) {
-      setRecipeCount(recipes.length);
+    if (userRecipes) {
+      setRecipeCount(userRecipes.length);
     }
-  }, [recipes]);
+  }, [userRecipes]);
 
-  const isLoading = isLikeCountLoading || isRatingLoading || isRecipesLoading;
+  const isLoading = isLikeCountLoading || isRatingLoading || isRecipesLoading || isUserRecipesLoading;
 
   const handleImageError = () => {
     console.error("Error loading profile image");

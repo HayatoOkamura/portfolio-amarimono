@@ -72,8 +72,8 @@ func (h *RecommendationHandler) GetRecommendedRecipes(c *gin.Context) {
 
 	// おすすめレシピの取得
 	var recommendedRecipes []models.Recipe
-	query := h.DB.Preload("Genre").Where("cost_estimate BETWEEN ? AND ?", avgCost*0.8, avgCost*1.2).
-		Where("cooking_time BETWEEN ? AND ?", avgCookingTime*0.8, avgCookingTime*1.2)
+	query := h.DB.Preload("Genre").Where("cost_estimate BETWEEN ? AND ?", int(avgCost*0.8), int(avgCost*1.2)).
+		Where("cooking_time BETWEEN ? AND ?", int(avgCookingTime*0.8), int(avgCookingTime*1.2))
 
 	if err := query.Find(&recommendedRecipes).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recommended recipes"})
