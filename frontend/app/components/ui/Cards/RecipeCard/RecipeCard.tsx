@@ -26,25 +26,6 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   isLink = false,
   href,
 }) => {
-  // ジャンル表示用の文字列を取得
-  const getGenreText = () => {
-    if (!recipe.genre) return "すべて";
-    if (typeof recipe.genre === "string") return recipe.genre;
-
-    // genre.nameがオブジェクトの場合
-    if (typeof recipe.genre.name === "object" && "name" in recipe.genre.name) {
-      const genreName = recipe.genre.name as { name: string };
-      return genreName.name;
-    }
-
-    // genre.nameが文字列の場合
-    if (typeof recipe.genre.name === "string") {
-      return recipe.genre.name;
-    }
-
-    return "すべて";
-  };
-
   const cardContent = (
     <div className={`${styles.card_block} ${styles[`card_block--${size}`]} ${className || ''}`}>
       <div className={styles.card_block__img}>

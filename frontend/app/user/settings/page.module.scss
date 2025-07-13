@@ -1,19 +1,32 @@
-.container {
+@import "@/app/styles/config/breakpoints";
+@import "@/app/styles/config/device";
+
+.container_block {
   max-width: 1200px;
   margin: 0 auto;
   padding: 32px;
-}
+  @include mq-max("sp") {
+    padding: 20px;
+  }
 
-.title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #323232;
-  margin-bottom: 16px;
+  &__title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #323232;
+    @include mq-max("sp") {
+      font-size: 1.5rem;
+    }
+  }
+  
+  &__description {
+    font-size: 1.1rem;
+    color: #666;
+    margin-top: 16px;
+    margin-bottom: 32px;
+    line-height: 1.6;
+    @include mq-max("sp") {
+     margin-top: 8px;
+     font-size: 1rem;
+    }
+  } 
 }
-
-.description {
-  font-size: 1.1rem;
-  color: #666;
-  margin-bottom: 32px;
-  line-height: 1.6;
-} 
