@@ -6,7 +6,7 @@ import styles from "./BaseIngredientCard.module.scss";
 import { imageBaseUrl } from "@/app/utils/api";
 import { Ingredient } from "@/app/types/index";
 import { useUnits } from "@/app/hooks/units";
-import { SUPPORTED_UNITS, PRESENCE_UNITS } from "@/app/utils/unitConversion";
+import { PRESENCE_UNITS } from "@/app/utils/unitConversion";
 
 export interface BaseIngredientCardProps {
   ingredient: Ingredient;

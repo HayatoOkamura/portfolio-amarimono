@@ -18,18 +18,6 @@ import { withAuth } from "@/app/components/auth/withAuth";
 import { useUserStore } from "@/app/stores/userStore";
 import { ResponsiveWrapper } from "../components/common/ResponsiveWrapper";
 
-interface User {
-  id: string;
-  email: string;
-  username?: string;
-  profileImage?: string;
-  age?: number;
-  gender?: string;
-  email_confirmed_at?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
 // ユーザープロフィールコンポーネント
 const UserProfile = () => {
   const { user } = useUserStore();

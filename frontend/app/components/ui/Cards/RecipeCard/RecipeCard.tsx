@@ -1,10 +1,9 @@
 "use client";
-import React, { useEffect } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { imageBaseUrl } from "@/app/utils/api";
 import styles from "./RecipeCard.module.scss";
-import { backendUrl } from "@/app/utils/api";
 import { Recipe } from "@/app/types/index";
 
 interface RecipeCardProps {

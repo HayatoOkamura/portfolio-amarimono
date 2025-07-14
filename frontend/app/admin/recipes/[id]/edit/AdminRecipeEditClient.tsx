@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Recipe, NewRecipe } from "@/app/types/index";
 import { imageBaseUrl } from "@/app/utils/api";
 import { fetchRecipeByIdService } from "@/app/hooks/recipes";
 import { RegistrationForm } from "@/app/components/features/RecipeForm/RegistrationForm";

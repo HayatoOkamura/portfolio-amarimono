@@ -12,7 +12,6 @@ import useGenreStore from "@/app/stores/genreStore";
 import useRecipeStore, { SortOption } from "@/app/stores/recipeStore";
 import { Recipe } from "@/app/types/index";
 import Link from "next/link";
-import { calculateAverageRating } from "@/app/utils/calculateAverageRating";
 import { RecipeSort } from "@/app/components/ui/RecipeSort/RecipeSort";
 import StarRating from "@/app/components/ui/StarRating/StarRating";
 import styles from "./recipe.module.scss";

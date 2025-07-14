@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import IngredientSelector from "./components/layout/IngredientSelector/IngredientSelector";
 import GenerateRecipe from "./components/ui/GenerateRecipe/GenerateRecipe";
 import SearchModeMenu from "./components/ui/SearchModeMenu/SearchModeMenu";
-import { Ingredient, Recipe } from "./types/index";
+import { Ingredient } from "./types/index";
 import RecipeLoading from "./components/ui/Loading/RecipeLoading";
 import { useFetchRecipesAPI } from "./hooks/recipes";
 import useRecipeStore from "./stores/recipeStore";

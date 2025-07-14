@@ -7,8 +7,6 @@ import BaseIngredientCard from "../BaseIngredientCard/BaseIngredientCard";
 import { useUnits } from "@/app/hooks/units";
 import { SUPPORTED_UNITS } from "@/app/utils/unitConversion";
 
-const PRESENCE_UNITS = ["適量", "少々", "ひとつまみ"] as const;
-
 export interface RecipeCreationIngredientCardProps {
   ingredient: Ingredient;
   isSelected: boolean;

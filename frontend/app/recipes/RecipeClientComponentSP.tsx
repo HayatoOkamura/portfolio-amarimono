@@ -13,12 +13,11 @@ import useGenreStore from "../stores/genreStore";
 // UI
 import Loading from "../components/ui/Loading/Loading";
 import RecipeLoading from "../components/ui/Loading/RecipeLoading";
-import { PageLoading } from "../components/ui/Loading/PageLoading";
 import StarRating from "@/app/components/ui/StarRating/StarRating";
 import ResponsivePieChart from "../components/ui/PieChart/PieChart";
 import { RecipeSort } from "../components/ui/RecipeSort/RecipeSort";
 // Hooks
-import { useFetchRecipesAPI, useSearchRecipes } from "../hooks/recipes";
+import { useSearchRecipes } from "../hooks/recipes";
 import { useSortedRecipes } from "../hooks/recipes";
 // Utils
 import { imageBaseUrl } from "@/app/utils/api";

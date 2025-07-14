@@ -1,9 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { searchFoodData, getNutritionData } from '../../../utils/foodData';
 import styles from "./IngredientForm.module.scss";
-import { useRouter } from "next/navigation";
-import { useAddIngredient, useUpdateIngredient } from "@/app/hooks/ingredients";
-import { api } from "@/app/utils/api";
 import { ImageUploader } from '../RecipeForm/components/ImageUploader';
 
 interface IngredientFormProps {

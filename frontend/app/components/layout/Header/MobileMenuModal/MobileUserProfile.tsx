@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import styles from "./MobileMenuModal.module.scss";
 import { useUserStore } from "@/app/stores/userStore";
 import { FaUserCircle } from "react-icons/fa";

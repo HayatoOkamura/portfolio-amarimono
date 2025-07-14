@@ -2,7 +2,6 @@
 
 import React, { useEffect } from "react";
 import styles from "./MobileMenuModal.module.scss";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FaUserCircle } from "react-icons/fa";

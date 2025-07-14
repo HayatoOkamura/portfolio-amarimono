@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useUpdateUserIngredientDefaults, useUpdateIngredientDefaults } from '@/app/hooks/userIngredientDefaults';
 import { useIngredients } from '@/app/hooks/ingredients';
 import { useAuth } from '@/app/hooks/useAuth';
-import useIngredientStore from '@/app/stores/ingredientStore';
 import { useUpdateIngredientQuantity } from '@/app/hooks/ingredients';
 
 interface InitialSettingsStepProps {

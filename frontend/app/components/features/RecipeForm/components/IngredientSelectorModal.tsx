@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Modal } from '@/app/components/common/Modal/Modal';
-import { Ingredient, Unit } from '@/app/types/index';
+import { Ingredient } from '@/app/types/index';
 import styles from './IngredientSelectorModal.module.scss';
 import CategoryCard from '@/app/components/ui/Cards/CategoryCard/CategoryCard';
 import RecipeCreationIngredientCard from '@/app/components/ui/Cards/RecipeCreationIngredientCard/RecipeCreationIngredientCard';

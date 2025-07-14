@@ -6,24 +6,11 @@ import { useUserStore } from "@/app/stores/userStore";
 import { updateUserProfile, useUser } from "@/app/hooks/user";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageLoading } from "@/app/components/ui/Loading/PageLoading";
-import { imageBaseUrl } from "@/app/utils/api";
 import { withAuth } from "@/app/components/auth/withAuth";
 import { toast } from "react-hot-toast";
 import { useImageUpload } from "@/app/components/features/RecipeForm/hooks/useImageUpload";
 import { LuImagePlus } from "react-icons/lu";
 import Image from "next/image";
-
-interface User {
-  id: string;
-  email: string;
-  username?: string;
-  profileImage?: string;
-  age?: number;
-  gender?: string;
-  email_confirmed_at?: string;
-  created_at?: string;
-  updated_at?: string;
-}
 
 function EditProfileContent() {
   const { user: authUser, isLoading: isAuthLoading } = useUserStore();
