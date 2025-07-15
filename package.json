@@ -3,5 +3,8 @@
     "@supabase/ssr": "^0.6.1",
     "@types/react-transition-group": "^4.4.12",
     "react-transition-group": "^4.4.5"
+  },
+  "devDependencies": {
+    "@fullhuman/postcss-purgecss": "^7.0.2"
   }
 }

@@ -1,6 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    optimizeCss: true, // CSS最適化を有効化
+  },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production', // 本番環境でconsole削除
+  },
   images: {
     unoptimized: process.env.ENVIRONMENT === 'development',
     remotePatterns: process.env.ENVIRONMENT === 'development' 
