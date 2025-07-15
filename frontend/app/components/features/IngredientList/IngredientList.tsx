@@ -30,6 +30,9 @@ const IngredientList: React.FC<IngredientListProps> = ({
                 alt={ingredient.name}
                 width={100}
                 height={100}
+                priority={false}
+                loading="lazy"
+                sizes="(max-width: 768px) 50vw, 25vw"
               />
             ) : (
               <div className={styles.noImage}>No Image</div>

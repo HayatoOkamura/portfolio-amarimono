@@ -174,6 +174,9 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
                         alt={ingredient.name}
                         width={100}
                         height={100}
+                        priority={false}
+                        loading="lazy"
+                        sizes="(max-width: 768px) 50vw, 25vw"
                       />
                     </div>
                     <p className={styles.ingredients_list__name}>
@@ -259,6 +262,9 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
                       alt={ingredient.name}
                       width={100}
                       height={100}
+                      priority={false}
+                      loading="lazy"
+                      sizes="(max-width: 768px) 50vw, 25vw"
                     />
                   </div>
                   <p className={styles.ingredients_list__name}>

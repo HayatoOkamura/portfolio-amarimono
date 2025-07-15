@@ -27,6 +27,7 @@ const RecipeLoading: React.FC<RecipeLoadingProps> = ({ progress }) => {
         loop
         autoplay
         className={styles.loading_block__lottie}
+        style={{ width: '100%', height: 'auto' }}
       />
     </div>
   );

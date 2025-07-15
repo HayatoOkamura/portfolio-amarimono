@@ -40,6 +40,9 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
           alt={recipe.name}
           width={100}
           height={100}
+          priority={false}
+          loading="lazy"
+          sizes="(max-width: 768px) 50vw, 25vw"
         />
       </div>
       <div className={styles.card_block__contents}>
