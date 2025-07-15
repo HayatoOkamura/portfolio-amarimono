@@ -76,6 +76,7 @@
     "@types/yargs": "^17.0.33",
     "@types/yargs-parser": "^21.0.3",
     "autoprefixer": "^10.4.21",
+    "critters": "^0.0.20",
     "css-loader": "^7.1.2",
     "eslint": "^8",
     "eslint-config-next": "^14.1.0",

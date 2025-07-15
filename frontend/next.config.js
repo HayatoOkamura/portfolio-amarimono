@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    optimizeCss: true, // CSS最適化を有効化
+    // optimizeCss: true, // CSS最適化を一時的に無効化
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production', // 本番環境でconsole削除

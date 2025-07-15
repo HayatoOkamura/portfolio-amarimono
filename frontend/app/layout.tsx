@@ -18,7 +18,7 @@ const notoSansJp = Noto_Sans_JP({
 const roboto = Roboto({
   subsets: ["latin"],
   weight: ["400", "700"],
-  preload: false,
+  preload: true,
   variable: "--font-roboto",
   display: "swap",
   fallback: ["Arial", "Helvetica", "sans-serif"],

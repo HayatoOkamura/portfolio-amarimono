@@ -1,0 +1,75 @@
+@import "@/app/styles/config/breakpoints";
+
+.not_found_block {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100%;
+  background: var(--primary-bg-color);
+  padding: 2rem;
+
+  &__container {
+    background: #fff;
+    border-radius: 12px;
+    padding: 48px 20px;
+    text-align: center;
+    max-width: 580px;
+    width: 100%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    @include mq-max("sp") {
+      padding: 32px 24px;
+      border-radius: 8px;
+    }
+  }
+
+  &__title {
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--primary-accent-color);
+    margin: 0 0 1rem 0;
+    line-height: 1;
+    font-family: var(--font-roboto);
+    @include mq-max("sp") {
+      font-size: 3rem;
+    }
+  }
+
+  &__subtitle {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-font-color);
+    margin: 0 0 1rem 0;
+    @include mq-max("sp") {
+      font-size: 1.25rem;
+    }
+  }
+
+  &__message {
+    font-size: 1rem;
+    color: var(--secondary-font-color);
+    margin: 0 0 2rem 0;
+    line-height: 1.6;
+    @include mq-max("sp") {
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+  }
+
+  &__button {
+    padding: 0.75rem 1.5rem;
+    background: var(--primary-accent-color);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+    @include mq-max("sp") {
+      padding: 0.875rem 1.25rem;
+      font-size: 0.875rem;
+    }
+  }
+} 
