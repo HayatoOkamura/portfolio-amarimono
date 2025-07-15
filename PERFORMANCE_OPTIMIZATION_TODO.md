@@ -51,9 +51,9 @@ TOPページのLighthouseパフォーマンススコア33を85-90に改善する
 ### 2. Lottieアニメーションの最適化
 
 #### 2.1 Loading.tsxの最適化
-- [ ] `frontend/app/components/ui/Loading/Loading.tsx`を修正
-- [ ] 明示的なサイズ指定を追加
-- [ ] アニメーションの軽量化
+- [✔︎] `frontend/app/components/ui/Loading/Loading.tsx`を修正
+- [✔︎] 明示的なサイズ指定を追加
+- [✔︎] アニメーションの軽量化
 
 ```typescript
 <DotLottieReact
@@ -66,8 +66,8 @@ TOPページのLighthouseパフォーマンススコア33を85-90に改善する
 ```
 
 #### 2.2 RecipeLoading.tsxの最適化
-- [ ] `frontend/app/components/ui/Loading/RecipeLoading.tsx`を修正
-- [ ] 同様の最適化を適用
+- [✔︎] `frontend/app/components/ui/Loading/RecipeLoading.tsx`を修正
+- [✔︎] 同様の最適化を適用
 
 ### 3. 未使用CSS/JSの削除
 

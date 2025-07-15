@@ -2,14 +2,16 @@ html {
   font-size: 16px; 
 }
 
+body,
+body * {
+  font-family: var(--default-font-family);
+}
+
 body {
   color: var(--primary-font-color);
   background: var(--primary-bg-color);
   overflow: hidden;
   margin: 0;
-  font-family: var(--font-noto-sans-jp), "Yu Gothic Medium", "游ゴシック Medium", YuGothic,
-  "游ゴシック体", Meiryo, "Hiragino Kaku Gothic Pro", "ＭＳ Ｐゴシック", Osaka,
-  Arial, Sans-serif;
 }
 
 main {

@@ -86,14 +86,6 @@ const fetchUserDetails = async (userId: string, session: any) => {
     }
     const data = await response.json();
     
-    // 🔥 追加: role情報の取得状況をログ出力
-    console.log('🔍 User details fetched:', {
-      userId,
-      username: data.username,
-      role: data.role,
-      hasRole: !!data.role
-    });
-    
     return {
       username: data.username || '',
       profileImage: data.profile_image || '',

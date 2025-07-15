@@ -1,12 +1,31 @@
 @import './config/variables';
 @import './config/breakpoints';
 @import './config/mixins';
-@import './base/base';
 @import './base/reset';
+@import './base/base';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+// @tailwind base;
+// @tailwind components;
+// @tailwind utilities;
+
+/* グローバルフォント設定 */
+* {
+  font-family: "Noto Sans JP", var(--font-noto-sans-jp), "Yu Gothic Medium", "游ゴシック Medium", YuGothic, "游ゴシック体", Meiryo, "Hiragino Kaku Gothic Pro", "ＭＳ Ｐゴシック", Osaka, Arial, sans-serif !important;
+}
+
+/* デバッグ用: フォント変数の確認 */
+body::before {
+  content: "Font Variable: " var(--font-noto-sans-jp);
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 5px;
+  font-size: 12px;
+  z-index: 9999;
+  display: none;
+}
 
 /* モーダルのアニメーション */
 .modal-enter {
