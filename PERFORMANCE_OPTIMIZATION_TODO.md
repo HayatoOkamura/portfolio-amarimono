@@ -72,12 +72,12 @@ TOPページのLighthouseパフォーマンススコア33を85-90に改善する
 ### 3. 未使用CSS/JSの削除
 
 #### 3.1 未使用ライブラリの特定と削除
-- [ ] `@chakra-ui/next-js`の使用状況確認
-- [ ] `@chakra-ui/react`の使用状況確認
-- [ ] `framer-motion`の使用状況確認
-- [ ] `react-joyride`の使用状況確認
-- [ ] `swiper`の使用状況確認
-- [ ] 未使用ライブラリを`package.json`から削除
+- [✔︎] `@chakra-ui/next-js`の使用状況確認
+- [✔︎] `@chakra-ui/react`の使用状況確認
+- [✔︎] `framer-motion`の使用状況確認
+- [✔︎] `react-joyride`の使用状況確認
+- [✔︎] `swiper`の使用状況確認
+- [✔︎] 未使用ライブラリを`package.json`から削除
 
 #### 3.2 CSS最適化
 - [ ] 未使用のCSSクラスを特定
