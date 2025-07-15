@@ -29,10 +29,8 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
       <ResponsiveWrapper breakpoint="sp" renderBelow={null}>
         <div className={styles.card_block__image}>
           <Image
-            // fill
             src={`/images/top/pic_category${imageId}.jpg`}
             alt={genre.name}
-            // priority
             width={100}
             height={100}
             className={styles.card_block__image_img}

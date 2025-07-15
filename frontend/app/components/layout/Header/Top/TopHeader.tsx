@@ -71,7 +71,7 @@ const TopHeader = () => {
                   alt="あまりもの ロゴ"
                   width={100}
                   height={100}
-                  priority
+                  className={styles.header_block__logo_img}
                 />
               </Link>
             </div>
