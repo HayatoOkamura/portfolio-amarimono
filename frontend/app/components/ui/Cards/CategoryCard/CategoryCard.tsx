@@ -35,6 +35,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
             // priority
             width={100}
             height={100}
+            className={styles.card_block__image_img}
           />
         </div>
       </ResponsiveWrapper>
