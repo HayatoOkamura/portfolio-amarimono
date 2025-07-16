@@ -19,9 +19,21 @@ import (
 
 var log = logrus.New()
 
-// SaveImage は画像を保存し、URLを返す
+// SaveImage は画像を保存し、URLを返す（R2対応）
 func SaveImage(c *gin.Context, file *multipart.FileHeader, path string, fileName string) (string, error) {
-	log.Printf("Starting SaveImage function with path: %s, fileName: %s", path, fileName)
+	// 環境変数でストレージを切り替え
+	storageType := os.Getenv("STORAGE_TYPE")
+	if storageType == "r2" {
+		return SaveImageToR2(c, file, path, fileName)
+	}
+
+	// 既存のSupabase実装（フォールバック）
+	return SaveImageToSupabase(c, file, path, fileName)
+}
+
+// SaveImageToSupabase は画像をSupabaseに保存し、URLを返す
+func SaveImageToSupabase(c *gin.Context, file *multipart.FileHeader, path string, fileName string) (string, error) {
+	log.Printf("Starting SaveImageToSupabase function with path: %s, fileName: %s", path, fileName)
 
 	// ファイルを開く
 	src, err := file.Open()
@@ -126,9 +138,22 @@ func SaveRecipeImage(c *gin.Context, file *multipart.FileHeader, recipeID string
 	return imagePath, nil
 }
 
-// DeleteImage は画像を削除する
+// DeleteImage は画像を削除する（R2対応）
 func DeleteImage(url string) error {
-	logrus.Printf("Starting DeleteImage function with URL: %s", url)
+	storageType := os.Getenv("STORAGE_TYPE")
+	if storageType == "r2" {
+		// URLからファイルパスを抽出
+		filePath := extractFilePathFromURL(url)
+		return DeleteImageFromR2(filePath)
+	}
+
+	// 既存のSupabase実装（フォールバック）
+	return DeleteImageFromSupabase(url)
+}
+
+// DeleteImageFromSupabase は画像をSupabaseから削除する
+func DeleteImageFromSupabase(url string) error {
+	logrus.Printf("Starting DeleteImageFromSupabase function with URL: %s", url)
 
 	// Extract file path from URL
 	var filePath string

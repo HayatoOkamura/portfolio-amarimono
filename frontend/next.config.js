@@ -88,6 +88,12 @@ const nextConfig = {
             hostname: 'qmrjsqeigdkizkrpiahs.supabase.co',
             port: '',
             pathname: '/storage/v1/object/public/images/**',
+          },
+          {
+            protocol: 'https',
+            hostname: 'pub-xxxxx.r2.dev', // Cloudflare R2のドメイン
+            port: '',
+            pathname: '/**',
           }
         ],
     minimumCacheTTL: 86400, // 24時間に延長
@@ -108,7 +114,7 @@ const nextConfig = {
     // 画像表示用
     IMAGE_BASE_URL: process.env.ENVIRONMENT === 'development'
       ? 'http://localhost:54321/storage/v1/object/public/images'  // ブラウザからアクセスする時用
-      : process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'https://qmrjsqeigdkizkrpiahs.supabase.co/storage/v1/object/public/images',
+      : process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-a63f718fe8894565998a27328e2d1b15.r2.dev',
   },
   async rewrites() {
     // APIエンドポイントのみをリライト

@@ -43,15 +43,15 @@ export const imageBaseUrl = typeof window !== 'undefined'
         return `http://${currentHost}:54321/storage/v1/object/public/images`;
       }
       
-      // 本番環境ではSupabase StorageのURLを使用
+      // 本番環境ではCloudflare R2のURLを使用
       if (currentHost === 'amarimono.okamura.dev') {
-        return 'https://qmrjsqeigdkizkrpiahs.supabase.co/storage/v1/object/public/images';
+        return process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-xxxxx.r2.dev';
       }
       
       // その他の場合は環境変数を使用
-      return process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'https://qmrjsqeigdkizkrpiahs.supabase.co/storage/v1/object/public/images';
+      return process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-xxxxx.r2.dev';
     })()
-  : process.env.NEXT_PUBLIC_LOCAL_IMAGE_URL || 'http://localhost:54321/storage/v1/object/public/images';
+  : process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-xxxxx.r2.dev';
 
 // axiosインスタンスの作成
 export const api = axios.create({

@@ -24,16 +24,16 @@ export default function RecipeImage({ src, alt, width = 256, height = 256 }: Rec
                 return `http://${currentHost}:54321/storage/v1/object/public/images/${src}`;
             }
             
-            // その他の場合は環境変数を使用
+            // 本番環境ではCloudflare R2のURLを使用
             if (process.env.ENVIRONMENT === 'production') {
-                return `${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}/${src}`;
+                return `${process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL}/${src}`;
             } else {
                 return `${process.env.NEXT_PUBLIC_LOCAL_IMAGE_URL}/${src}`;
             }
         } else {
             // サーバーサイドでは環境変数を使用
             if (process.env.ENVIRONMENT === 'production') {
-                return `${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}/${src}`;
+                return `${process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL}/${src}`;
             } else {
                 return `${process.env.NEXT_PUBLIC_LOCAL_IMAGE_URL}/${src}`;
             }
