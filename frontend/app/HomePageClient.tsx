@@ -1,11 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import IngredientSelector from "./components/layout/IngredientSelector/IngredientSelector";
-import GenerateRecipe from "./components/ui/GenerateRecipe/GenerateRecipe";
-import SearchModeMenu from "./components/ui/SearchModeMenu/SearchModeMenu";
 import { Ingredient } from "./types/index";
 import RecipeLoading from "./components/ui/Loading/RecipeLoading";
 import { useFetchRecipesAPI } from "./hooks/recipes";
@@ -13,6 +11,19 @@ import useRecipeStore from "./stores/recipeStore";
 import useIngredientStore from "./stores/ingredientStore";
 import styles from "@/app/styles/HomePage.module.scss";
 import { ResponsiveWrapper } from "./components/common/ResponsiveWrapper";
+
+// 動的インポート
+const IngredientSelector = dynamic(() => import("./components/layout/IngredientSelector/IngredientSelector"), {
+  ssr: false
+});
+
+const GenerateRecipe = dynamic(() => import("./components/ui/GenerateRecipe/GenerateRecipe"), {
+  ssr: false
+});
+
+const SearchModeMenu = dynamic(() => import("./components/ui/SearchModeMenu/SearchModeMenu"), {
+  ssr: false
+});
 
 interface HomePageClientProps {
   initialIngredients: Ingredient[];
@@ -134,6 +145,8 @@ export default function HomePageClient({
           width: "100%",
           gap: "1rem",
         }}
+        aria-label="レシピ検索中"
+        aria-live="polite"
       >
         <RecipeLoading progress={progress} />
       </div>
@@ -151,13 +164,15 @@ export default function HomePageClient({
             <button
               onClick={() => setIsSearchModeModalOpen(true)}
               aria-expanded={isSearchModeModalOpen}
-              aria-haspopup="true"
+              aria-haspopup="dialog"
+              aria-label="レシピ検索条件を設定"
             >
               レシピ検索条件
             </button>
             <button
               onClick={handleOpenGenerateRecipeModal}
               data-onboarding="settings-button"
+              aria-label="選択した具材を確認"
             >
               選択した具材
             </button>
@@ -167,6 +182,7 @@ export default function HomePageClient({
             <button
               onClick={handleSearch}
               data-onboarding="mobile-search-button"
+              aria-label="選択した具材でレシピを検索"
             >
               レシピを検索
             </button>

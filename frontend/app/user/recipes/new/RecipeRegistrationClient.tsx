@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/app/hooks/useAuth";
 import useIngredientStore from "@/app/stores/ingredientStore";
 import useGenreStore from "@/app/stores/genreStore";
-import { RegistrationForm } from "@/app/components/features/RecipeForm/RegistrationForm";
 import { useIngredients } from "@/app/hooks/ingredients";
 import {
   useUserRecipes,
@@ -16,6 +16,11 @@ import { Instruction } from "@/app/types/index";
 import styles from "./new.module.scss";
 import { useRouter } from "next/navigation";
 import { withAuth } from "@/app/components/auth/withAuth";
+
+// 動的インポート
+const RegistrationForm = dynamic(() => import("@/app/components/features/RecipeForm/RegistrationForm").then(mod => ({ default: mod.RegistrationForm })), {
+  ssr: false
+});
 
 const RecipeRegistrationContent = () => {
   const { user } = useAuth();

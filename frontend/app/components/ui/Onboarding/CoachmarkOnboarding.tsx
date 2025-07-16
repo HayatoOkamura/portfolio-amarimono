@@ -1,8 +1,35 @@
 import React, { useState } from 'react';
-import Joyride, { CallBackProps, STATUS, Step, Placement } from 'react-joyride';
+import dynamic from 'next/dynamic';
 import styles from './CoachmarkOnboarding.module.scss';
 import './CoachmarkOnboarding.global.scss';
 import { InitialSettingsStep } from '../../features/Onboarding/InitialSettingsStep';
+
+// 動的インポート
+const Joyride = dynamic(() => import('react-joyride'), {
+  ssr: false
+});
+
+// 型定義
+type Step = {
+  target: string;
+  content: React.ReactNode;
+  placement?: 'top' | 'bottom' | 'left' | 'right' | 'auto';
+  disableBeacon?: boolean;
+};
+
+type CallBackProps = {
+  status: string;
+  type: string;
+  index: number;
+  action: string;
+};
+
+type Placement = 'top' | 'bottom' | 'left' | 'right' | 'auto';
+
+const STATUS = {
+  FINISHED: 'finished',
+  SKIPPED: 'skipped'
+} as const;
 
 interface CoachmarkOnboardingProps {
   isOpen: boolean;

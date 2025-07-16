@@ -76,7 +76,8 @@ const SearchModeMenu = ({
           className={styles.menu_trigger}
           onClick={() => setIsOpen(!isOpen)}
           aria-expanded={isOpen}
-          aria-haspopup="true"
+          aria-haspopup="listbox"
+          aria-label="レシピ検索条件を選択"
         >
           <span className={styles.menu_trigger__text}>レシピ検索条件</span>
           <span className={`${styles.menu_trigger__arrow} ${isOpen ? styles.menu_trigger__arrow_open : ''}`}>
@@ -85,12 +86,18 @@ const SearchModeMenu = ({
         </button>
 
         {isOpen && (
-          <div className={styles.menu_dropdown}>
+          <div 
+            className={styles.menu_dropdown}
+            role="listbox"
+            aria-label="検索条件の選択肢"
+          >
             {searchModes.map((mode) => (
               <button
                 key={mode.value}
                 className={`${styles.menu_item} ${currentMode === mode.value ? styles.menu_item_active : ''}`}
                 onClick={() => handleModeSelect(mode.value)}
+                role="option"
+                aria-selected={currentMode === mode.value}
               >
                 <div className={styles.menu_item__content}>
                   {mode.value === 'partial_without_quantity' && (
@@ -112,14 +119,23 @@ const SearchModeMenu = ({
       <div 
         className={`${styles.modal_overlay} ${isModalOpen ? styles["is-open"] : ""}`}
         onClick={onCloseModal}
+        aria-hidden="true"
       />
       <div 
         className={`${styles.modal_content} ${isModalOpen ? styles["is-open"] : ""}`}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="search-mode-modal-title"
       >
         <div className={styles.modal_content__header}>
-          <h2>レシピ検索条件</h2>
-          <button onClick={onCloseModal}>×</button>
+          <h2 id="search-mode-modal-title">レシピ検索条件</h2>
+          <button 
+            onClick={onCloseModal}
+            aria-label="モーダルを閉じる"
+          >
+            ×
+          </button>
         </div>
         <div className={styles.modal_content__body}>
           {searchModes.map((mode) => (
@@ -127,6 +143,7 @@ const SearchModeMenu = ({
               key={mode.value}
               className={`${styles.modal_item} ${currentMode === mode.value ? styles.modal_item_active : ''}`}
               onClick={() => handleModeSelect(mode.value)}
+              aria-pressed={currentMode === mode.value}
             >
               <div className={styles.modal_item__content}>
                 {mode.value === 'partial_without_quantity' && (

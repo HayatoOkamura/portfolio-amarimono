@@ -7,6 +7,20 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production', // 本番環境でconsole削除
   },
+  webpack: (config, { isServer }) => {
+    // webpack-bundle-analyzerの設定
+    if (process.env.ANALYZE === 'true') {
+      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+      config.plugins.push(
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'static',
+          openAnalyzer: false,
+          reportFilename: '../bundle-analyzer-report.html',
+        })
+      );
+    }
+    return config;
+  },
   images: {
     unoptimized: process.env.ENVIRONMENT === 'development',
     remotePatterns: process.env.ENVIRONMENT === 'development' 
@@ -76,13 +90,14 @@ const nextConfig = {
             pathname: '/storage/v1/object/public/images/**',
           }
         ],
-    minimumCacheTTL: 60,
+    minimumCacheTTL: 86400, // 24時間に延長
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    // 画像最適化の追加設定
   },
   env: {
     // クライアントサイドでの API アクセス用

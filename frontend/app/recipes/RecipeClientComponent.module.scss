@@ -526,10 +526,7 @@
     }
 
     &__btn {
-      font-size: 0.875rem;
       background: var(--primary-accent-color);
-      color: #fff;
-      font-weight: 600;
       border-radius: 3px;
       text-align: center;
       max-width: 120px;
@@ -540,7 +537,10 @@
       }
 
       a {
+        font-size: 0.875rem;
         padding: 10px 12px 11px;
+        color: #fff;
+        font-weight: 600;
         display: block;
         @include mq-max("sp") {
           padding: calc(10 / #{$device_sp} * 100vw)

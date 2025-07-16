@@ -1,10 +1,10 @@
 /* eslint-disable */
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import styles from "./RecipeClientComponent.module.scss";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 // Store
 import useIngredientStore from "../stores/ingredientStore";
@@ -34,6 +34,7 @@ import { TbSalt } from "react-icons/tb";
 
 // Types
 import { Recipe, Ingredient } from "@/app/types/index";
+import { motion } from "framer-motion";
 
 /**
  * RecipeClientComponentPC
@@ -471,7 +472,7 @@ const RecipeClientComponentPC = () => {
                   {/* 詳細ページへのリンク */}
                   <div className={styles.detail_block__btn}>
                     <Link href={`/recipes/${persistedSelectedRecipe.id}`}>
-                      <button>詳しく見る</button>
+                      詳しく見る
                     </Link>
                   </div>
                   {/* 調理時間と費用目安 */}

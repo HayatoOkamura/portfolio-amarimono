@@ -16,6 +16,7 @@ import SearchModeMenu from "../../ui/SearchModeMenu/SearchModeMenu";
 import { useTextSearch } from "@/app/hooks/useTextSearch";
 import { ResponsiveWrapper } from "@/app/components/common/ResponsiveWrapper";
 import { useScreenSize } from "@/app/hooks/useScreenSize";
+import ImagePreloader from "../../ui/ImagePreloader/ImagePreloader";
 
 interface IngredientSelectorProps {
   initialIngredients: Ingredient[];
@@ -185,18 +186,28 @@ const IngredientSelector = ({
     );
   }
 
+  // 最初の8つの具材の画像URLを取得
+  const priorityImageUrls = filteredIngredients
+    .slice(0, 8)
+    .map(ingredient => ingredient.imageUrl)
+    .filter((url): url is string => typeof url === "string");
+
   return (
     <div className={styles.container_block}>
+      {/* 重要な画像のプリロード */}
+      <ImagePreloader imageUrls={priorityImageUrls} />
+      
       {/* カテゴリカード */}
       <section
         className={styles.category_block}
         data-onboarding="category-filter"
+        aria-label="具材カテゴリー選択"
       >
         {/* category_block__titleをスマホ時は非表示 */}
         <ResponsiveWrapper breakpoint="sp" renderBelow={null}>
           <h2 className={styles.category_block__title}>具材カテゴリー</h2>
         </ResponsiveWrapper>
-        <div className={styles.category_block__contents}>
+        <div className={styles.category_block__contents} role="tablist" aria-label="具材カテゴリー">
           {genres.map((genre) => (
             <CategoryCard
               key={genre.id}
@@ -209,7 +220,7 @@ const IngredientSelector = ({
       </section>
 
       {/* 具材一覧 */}
-      <section className={styles.ingredient_block}>
+      <section className={styles.ingredient_block} aria-label="具材選択">
         <div
           className={styles.ingredient_block__overlay}
           data-onboarding="ingredient-selector"
@@ -244,9 +255,13 @@ const IngredientSelector = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className={styles.search_block__input}
+            aria-label="具材名で検索"
+            aria-describedby={isSearching ? "search-status" : undefined}
           />
           {isSearching && (
-            <div className={styles.search_block__loading}>検索中...</div>
+            <div className={styles.search_block__loading} id="search-status" aria-live="polite">
+              検索中...
+            </div>
           )}
         </div>
 
@@ -254,9 +269,11 @@ const IngredientSelector = ({
           className={styles.ingredient_block__wrapper}
           id="target"
           style={{ height }}
+          role="grid"
+          aria-label="具材グリッド"
         >
           <div className={styles.ingredient_block__contents}>
-            {filteredIngredients.map((ingredient) => (
+            {filteredIngredients.map((ingredient, index) => (
               <IngredientCard
                 key={ingredient.id}
                 ingredient={{
@@ -266,6 +283,7 @@ const IngredientSelector = ({
                       ? ingredient.imageUrl
                       : null,
                 }}
+                isPriority={index < 8} // 最初の8つの画像を優先読み込み
               />
             ))}
           </div>

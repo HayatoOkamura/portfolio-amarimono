@@ -24,9 +24,24 @@ export default function Main({ children }: { children: React.ReactNode }) {
       : "inherit";
   }, [pathname]);
 
+  // ページタイトルを動的に設定
+  const getPageTitle = () => {
+    if (pathname === "/") return "レシピ検索ページ";
+    if (pathname.startsWith("/recipes")) return "レシピ一覧・詳細ページ";
+    if (pathname.startsWith("/user")) return "ユーザーページ";
+    if (pathname.startsWith("/admin")) return "管理ページ";
+    if (pathname.startsWith("/help")) return "ヘルプページ";
+    return "ページ";
+  };
+
   if (isLoading) {
     return (
-      <main className="w-full" style={{ backgroundColor: "#fff" }}>
+      <main 
+        className="w-full" 
+        style={{ backgroundColor: "#fff" }}
+        aria-label="ページ読み込み中"
+        aria-live="polite"
+      >
         <div className={styles.contents_wrapper}>
           <Loading />
         </div>
@@ -35,7 +50,11 @@ export default function Main({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <main className="w-full" style={{ backgroundColor: bgColor }}>
+    <main 
+      className="w-full" 
+      style={{ backgroundColor: bgColor }}
+      aria-label={getPageTitle()}
+    >
       <div className={styles.contents_wrapper}>{children}</div>
     </main>
   );

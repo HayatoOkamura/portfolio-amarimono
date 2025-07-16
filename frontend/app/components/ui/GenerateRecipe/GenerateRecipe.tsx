@@ -128,7 +128,7 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
   return (
     <>
       {/* 通常表示（PC用） */}
-      <section className={styles.container_block}>
+      <section className={styles.container_block} aria-label="選択した具材の確認">
         <div className={styles.container_block__inner}>
           <div className={styles.container_block__header}>
             <h2 className={styles.container_block__title}>選択した具材</h2>
@@ -137,10 +137,24 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
               onClick={() => setShowTooltip(!showTooltip)}
+              role="button"
+              tabIndex={0}
+              aria-label="検索条件の詳細を表示"
+              aria-expanded={showTooltip}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setShowTooltip(!showTooltip);
+                }
+              }}
             >
               <IoMdInformationCircleOutline />
               {showTooltip && (
-                <div className={styles.search_mode_notice__tooltip}>
+                <div 
+                  className={styles.search_mode_notice__tooltip}
+                  role="tooltip"
+                  aria-hidden="true"
+                >
                   <p>{getSearchModeMessage()}</p>
                 </div>
               )}
@@ -150,6 +164,8 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
             <button
               className={styles.toggle_seasonings}
               onClick={() => setShowSeasonings(!showSeasonings)}
+              aria-expanded={showSeasonings}
+              aria-controls="seasonings-list"
             >
               {showSeasonings
                 ? "調味料、スパイスを非表示"
@@ -158,7 +174,11 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
           )}
           <div className={styles.container_block__contents}>
             {filteredIngredients.length > 0 && (
-              <ul className={styles.ingredients_list}>
+              <ul 
+                className={styles.ingredients_list}
+                id="seasonings-list"
+                aria-label="選択された具材のリスト"
+              >
                 {filteredIngredients.map((ingredient: Ingredient) => (
                   <li
                     key={ingredient.id}
@@ -199,46 +219,77 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
             className={styles.container_block__btn}
             data-onboarding="search-button"
           >
-            <button onClick={handleRecipe}>レシピを検索</button>
+            <button 
+              onClick={handleRecipe}
+              aria-label="選択した具材でレシピを検索"
+            >
+              レシピを検索
+            </button>
           </div>
         </div>
 
-        {error && <p className="text-red-500">{error}</p>}
+        {error && <p className="text-red-500" role="alert">{error}</p>}
       </section>
 
       {/* モーダル表示（スマホ用） - 常にレンダリング */}
       <div 
         className={`${styles.modal_overlay} ${isModalOpen ? styles["is-open"] : ""}`}
         onClick={onCloseModal}
+        aria-hidden="true"
       />
       <div 
         className={`${styles.modal_content} ${isModalOpen ? styles["is-open"] : ""}`}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        aria-describedby="modal-description"
       >
         <div className={styles.modal_content__header}>
           <div className={styles.modal_content__header__title}>
-            <h2>選択した具材</h2>
+            <h2 id="modal-title">選択した具材</h2>
             <div 
               className={styles.search_mode_notice}
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
               onClick={() => setShowTooltip(!showTooltip)}
+              role="button"
+              tabIndex={0}
+              aria-label="検索条件の詳細を表示"
+              aria-expanded={showTooltip}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setShowTooltip(!showTooltip);
+                }
+              }}
             >
               <IoMdInformationCircleOutline />
               {showTooltip && (
-                <div className={styles.search_mode_notice__tooltip}>
+                <div 
+                  className={styles.search_mode_notice__tooltip}
+                  role="tooltip"
+                  aria-hidden="true"
+                >
                   <p>{getSearchModeMessage()}</p>
                 </div>
               )}
             </div>
           </div>
-          <button onClick={onCloseModal}>×</button>
+          <button 
+            onClick={onCloseModal}
+            aria-label="モーダルを閉じる"
+          >
+            ×
+          </button>
         </div>
-        <div className={styles.modal_content__body}>
+        <div className={styles.modal_content__body} id="modal-description">
           {hasSeasonings && (
             <button
               className={styles.toggle_seasonings}
               onClick={() => setShowSeasonings(!showSeasonings)}
+              aria-expanded={showSeasonings}
+              aria-controls="modal-seasonings-list"
             >
               {showSeasonings
                 ? "調味料、スパイスを非表示"
@@ -246,7 +297,11 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
             </button>
           )}
           {filteredIngredients.length > 0 && (
-            <ul className={styles.ingredients_list}>
+            <ul 
+              className={styles.ingredients_list}
+              id="modal-seasonings-list"
+              aria-label="選択された具材のリスト"
+            >
               {filteredIngredients.map((ingredient: Ingredient) => (
                 <li
                   key={ingredient.id}
@@ -284,7 +339,12 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
           )}
         </div>
         <div className={styles.modal_content__footer}>
-          <button onClick={handleRecipe}>レシピを検索</button>
+          <button 
+            onClick={handleRecipe}
+            aria-label="選択した具材でレシピを検索"
+          >
+            レシピを検索
+          </button>
         </div>
       </div>
     </>

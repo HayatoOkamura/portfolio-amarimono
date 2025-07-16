@@ -5,10 +5,11 @@ import LoadingProvider from "./providers/LoadingProvider";
 import type { Metadata } from "next";
 import Container from "@/app/components/layout/Container/Container";
 import { Toaster } from 'react-hot-toast';
+import PerformanceMonitor from './components/common/PerformanceMonitor/PerformanceMonitor';
 
 const notoSansJp = Noto_Sans_JP({
   subsets: ["latin", "latin-ext"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600"], // 300を削除
   preload: true,
   variable: "--font-noto-sans-jp",
   display: "swap",
@@ -17,7 +18,7 @@ const notoSansJp = Noto_Sans_JP({
 
 const roboto = Roboto({
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "500"],
   preload: true,
   variable: "--font-roboto",
   display: "swap",
@@ -26,7 +27,7 @@ const roboto = Roboto({
 
 const tsukimiRounded = Tsukimi_Rounded({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500"], // 600を削除
   preload: false,
   variable: "--font-tsukimi-rounded",
   display: "swap",
@@ -130,6 +131,7 @@ export default function RootLayout({
           </LoadingProvider>
         </QueryProvider>
         <Toaster position="top-center" />
+        <PerformanceMonitor />
       </body>
     </html>
   );

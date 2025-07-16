@@ -1,10 +1,10 @@
 /* eslint-disable */
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import styles from "./RecipeClientComponent.module.scss";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 // Store
 import useIngredientStore from "../stores/ingredientStore";
@@ -32,6 +32,7 @@ import { GiMeat } from "react-icons/gi";
 import { TbSalt } from "react-icons/tb";
 // Types
 import { Recipe, Ingredient } from "@/app/types/index";
+import { motion } from "framer-motion";
 
 /**
  * RecipeClientComponentSP

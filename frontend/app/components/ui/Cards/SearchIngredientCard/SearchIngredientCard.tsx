@@ -13,10 +13,12 @@ interface DefaultIngredient {
 
 export interface RecipeSearchIngredientCardProps {
   ingredient: Ingredient;
+  isPriority?: boolean;
 }
 
 const RecipeSearchIngredientCard: React.FC<RecipeSearchIngredientCardProps> = ({
   ingredient,
+  isPriority = false,
 }) => {
   const { addIngredient, removeIngredient, ingredients } = useIngredientStore();
   const isSelected = ingredients.some(
@@ -74,6 +76,7 @@ const RecipeSearchIngredientCard: React.FC<RecipeSearchIngredientCardProps> = ({
       onQuantityChange={handleQuantityUpdate}
       isRecipeCreation={false}
       className={`${styles.ingredient_card} ${isSelected ? styles.selected : ""}`}
+      isPriority={isPriority}
     />
   );
 };

@@ -7,6 +7,8 @@ import { imageBaseUrl } from "@/app/utils/api";
 import { Ingredient } from "@/app/types/index";
 import { useUnits } from "@/app/hooks/units";
 import { PRESENCE_UNITS } from "@/app/utils/unitConversion";
+import { useIntersectionObserver } from "@/app/hooks/useIntersectionObserver";
+import { INGREDIENT_BLUR_PLACEHOLDER } from "@/app/utils/imageUtils";
 
 export interface BaseIngredientCardProps {
   ingredient: Ingredient;
@@ -18,6 +20,7 @@ export interface BaseIngredientCardProps {
   isRecipeCreation?: boolean;
   className?: string;
   onClick?: () => void;
+  isPriority?: boolean;
 }
 
 const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
@@ -30,10 +33,17 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
   isRecipeCreation = false,
   className = "",
   onClick,
+  isPriority = false,
 }) => {
   const { data: units } = useUnits();
   const isPresenceType = ingredient.unit.type === "presence";
   const isQuantityTypeWithStep1 = ingredient.unit.type === "quantity" && ingredient.unit.step === 1;
+  
+  // Intersection Observerを使用して遅延読み込みを最適化
+  const { elementRef, hasIntersected } = useIntersectionObserver<HTMLLIElement>({
+    threshold: 0.1,
+    rootMargin: '100px',
+  });
 
   const handleQuantityUpdate = (delta: number) => {
     if (!onQuantityChange) return;
@@ -45,16 +55,6 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
       return Number.isInteger(qty) ? qty : Number(qty).toFixed(1);
     }
     return Number.isInteger(qty) ? qty : Number(qty).toFixed(1);
-  };
-
-  const handleUnitChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    if (!onUnitChange) return;
-    const newUnit = units?.find((unit) => unit.name === e.target.value);
-    if (newUnit) {
-
-      // 単位変更を実行（数量リセットは親コンポーネントで処理）
-      onUnitChange(ingredient.id, newUnit.name);
-    }
   };
 
   const renderQuantityControls = () => {
@@ -74,6 +74,7 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
             }}
             disabled={!isSelected}
             className={`${styles.card_block__button} ${styles["card_block__button--minus"]}`}
+            aria-label={`${ingredient.name}を選択解除`}
           >
             -
           </button>
@@ -84,6 +85,7 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
             }}
             disabled={isSelected}
             className={`${styles.card_block__button} ${styles["card_block__button--plus"]}`}
+            aria-label={`${ingredient.name}を選択`}
           >
             +
           </button>
@@ -104,11 +106,12 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
               : quantity <= 0
           }
           className={`${styles.card_block__button} ${styles["card_block__button--minus"]}`}
+          aria-label={`${ingredient.name}の数量を減らす`}
         >
           -
         </button>
         {(!isPresenceType || isCurrentUnitAdjustable || isRecipeCreation) && (
-          <span>
+          <span aria-label={`${ingredient.name}の数量: ${formatQuantity(quantity)}${currentUnit}`}>
             {PRESENCE_UNITS.includes(currentUnit as typeof PRESENCE_UNITS[number])
               ? currentUnit
               : currentUnit === "大さじ" || currentUnit === "小さじ"
@@ -125,6 +128,7 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
             isPresenceType && !isCurrentUnitAdjustable ? isSelected : false
           }
           className={`${styles.card_block__button} ${styles["card_block__button--plus"]}`}
+          aria-label={`${ingredient.name}の数量を増やす`}
         >
           +
         </button>
@@ -134,25 +138,38 @@ const BaseIngredientCard: React.FC<BaseIngredientCardProps> = ({
 
   return (
     <li
+      ref={elementRef}
       className={`${styles.card_block} ${
         isSelected ? styles["card_block--selected"] : ""
       } ${className}`}
       onClick={onClick}
+      role="gridcell"
+      aria-selected={isSelected}
     >
       <div className={styles.card_block__image}>
-        <Image
-          src={
-            ingredient.imageUrl
-              ? `${imageBaseUrl}/${ingredient.imageUrl}`
-              : "/pic_ingredient_default.webp"
-          }
-          alt={ingredient.name}
-          width={100}
-          height={100}
-          priority={false}
-          loading="lazy"
-          sizes="(max-width: 768px) 50vw, 25vw"
-        />
+        {(isPriority || hasIntersected) && (
+          <Image
+            src={
+              ingredient.imageUrl
+                ? `${imageBaseUrl}/${ingredient.imageUrl}`
+                : "/pic_ingredient_default.webp"
+            }
+            alt={ingredient.name}
+            width={100}
+            height={100}
+            priority={isPriority}
+            loading={isPriority ? "eager" : "lazy"}
+            sizes="100px"
+            quality={75}
+            placeholder="blur"
+            blurDataURL={INGREDIENT_BLUR_PLACEHOLDER}
+          />
+        )}
+        {!isPriority && !hasIntersected && (
+          <div className={styles.card_block__image__placeholder}>
+            読み込み中...
+          </div>
+        )}
       </div>
       <div className={styles.card_block__contents}>
         <p className={styles.card_block__name}>{ingredient.name}</p>

@@ -25,6 +25,9 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
     <button
       className={`${styles.card_block} ${isSelected ? styles["current"] : ""}`}
       onClick={onClick}
+      role="tab"
+      aria-selected={isSelected}
+      aria-label={`${genre.name}カテゴリーを選択`}
     >
       <ResponsiveWrapper breakpoint="sp" renderBelow={null}>
         <div className={styles.card_block__image}>
