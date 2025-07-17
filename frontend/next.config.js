@@ -91,9 +91,23 @@ const nextConfig = {
               hostname: 'portfolio-amarimono-backend.onrender.com',
               pathname: '/uploads/**',
             },
+            // Cloudflare R2の画像ドメイン
+            {
+              protocol: 'https',
+              hostname: 'pub-a63f718fe8894565998a27328e2d1b15.r2.dev',
+              pathname: '/**',
+            },
           ];
       return patterns;
     })(),
+    // 画像最適化の詳細設定
+    minimumCacheTTL: 86400, // 24時間
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   env: {
     // クライアントサイドでの API アクセス用
