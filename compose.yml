@@ -58,7 +58,7 @@ services:
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
       - NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
       - NEXT_PUBLIC_BACKEND_INTERNAL_URL=http://portfolio-amarimono_backend_1:8080
-      - NEXT_PUBLIC_IMAGE_BASE_URL=http://host.docker.internal:54321/storage/v1/object/public/images
+      - NEXT_PUBLIC_IMAGE_BASE_URL=https://pub-a63f718fe8894565998a27328e2d1b15.r2.dev
       - NEXT_PUBLIC_LOCAL_IMAGE_URL=http://localhost:54321/storage/v1/object/public/images
       - WATCHPACK_POLLING=false
       - CHOKIDAR_USEPOLLING=false

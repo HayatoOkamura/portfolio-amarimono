@@ -64,7 +64,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 # フロントエンド設定（開発環境）
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
 NEXT_PUBLIC_BACKEND_INTERNAL_URL=portfolio-amarimono_backend_1
-NEXT_PUBLIC_IMAGE_BASE_URL=https://your-project.supabase.co/storage/v1/object/public/images
+NEXT_PUBLIC_IMAGE_BASE_URL=https://pub-a63f718fe8894565998a27328e2d1b15.r2.dev
 
 # フロントエンド設定（本番環境）
 NEXT_PUBLIC_SITE_URL=https://amarimono.okamura.dev
