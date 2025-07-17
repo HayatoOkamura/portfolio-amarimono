@@ -92,11 +92,29 @@ export default function HomePageClient({
       return;
     }
 
+    // 本番環境でのデバッグ情報を追加
+    if (process.env.ENVIRONMENT === 'production') {
+      console.log("🔍 PRODUCTION DEBUG - handleSearch called:");
+      console.log("   📝 Ingredients count:", ingredients.length);
+      console.log("   📝 Ingredients:", ingredients);
+      console.log("   📝 Search mode:", searchMode);
+      console.log("   📝 Environment:", process.env.ENVIRONMENT);
+    }
+
     setIsSearching(true);
     setProgress(0);
 
     try {
       const result = await refetch();
+
+      // 本番環境での検索結果デバッグ
+      if (process.env.ENVIRONMENT === 'production') {
+        console.log("🔍 PRODUCTION DEBUG - Search result:");
+        console.log("   📝 Result isError:", result.isError);
+        console.log("   📝 Result isSuccess:", result.isSuccess);
+        console.log("   📝 Result data:", result.data);
+        console.log("   📝 Result error:", result.error);
+      }
 
       if (result.isError) {
         console.error("レシピの取得に失敗しました:", result.error);
@@ -112,6 +130,10 @@ export default function HomePageClient({
         return;
       }
     } catch (error) {
+      // 本番環境でのエラーデバッグ
+      if (process.env.ENVIRONMENT === 'production') {
+        console.error("🔍 PRODUCTION DEBUG - Search error:", error);
+      }
       console.error("Search error:", error);
       setIsSearching(false);
     }

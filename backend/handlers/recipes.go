@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -42,20 +43,55 @@ type SearchRequest struct {
 
 // SerchRecipes handles POST /api/recipes
 func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
+	// 本番環境でのデバッグ情報を追加
+	environment := os.Getenv("ENVIRONMENT")
+	if environment == "production" {
+		log.Printf("🔍 PRODUCTION DEBUG - SerchRecipes called:")
+		log.Printf("   📝 Method: %s", c.Request.Method)
+		log.Printf("   📝 URL: %s", c.Request.URL.String())
+		log.Printf("   📝 Headers: %+v", c.Request.Header)
+		log.Printf("   📝 Remote Address: %s", c.ClientIP())
+		log.Printf("   📝 User Agent: %s", c.Request.UserAgent())
+	}
+
 	var request SearchRequest
 
 	// 受信したリクエストボディをログに出力
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
+		if environment == "production" {
+			log.Printf("❌ PRODUCTION ERROR - Failed to read request body: %v", err)
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 	log.Println("🥦 Request body:", string(body))
 
+	// 本番環境でのリクエストボディデバッグ
+	if environment == "production" {
+		log.Printf("🔍 PRODUCTION DEBUG - Request body length: %d", len(body))
+		log.Printf("🔍 PRODUCTION DEBUG - Request body content: %s", string(body))
+	}
+
 	// JSONデコードを試みる
 	if err := json.Unmarshal(body, &request); err != nil {
+		if environment == "production" {
+			log.Printf("❌ PRODUCTION ERROR - JSON unmarshal failed: %v", err)
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format", "details": err.Error()})
 		return
+	}
+
+	// 本番環境でのリクエスト構造デバッグ
+	if environment == "production" {
+		log.Printf("🔍 PRODUCTION DEBUG - Parsed request:")
+		log.Printf("   📝 Ingredients count: %d", len(request.Ingredients))
+		log.Printf("   📝 Search mode: %s", request.SearchMode)
+		log.Printf("   📝 Ignore quantity: %v", request.IgnoreQuantity)
+		for i, ing := range request.Ingredients {
+			log.Printf("   📝 Ingredient %d: ID=%d, Quantity=%f, Unit=%s",
+				i+1, ing.IngredientID, ing.QuantityRequired, ing.UnitName)
+		}
 	}
 
 	// 検索モードのデフォルト値を設定（後方互換性のため）
@@ -84,10 +120,21 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		Where("ingredient_id IN ?", ingredientIDs).
 		Group("recipe_id").
 		Pluck("recipe_id", &recipeIDs).Error; err != nil {
+		if environment == "production" {
+			log.Printf("❌ PRODUCTION ERROR - Database query failed for recipe IDs: %v", err)
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query failed", "details": err.Error()})
 		return
 	}
 	log.Printf("🥦 Found recipe IDs: %+v\n", recipeIDs)
+
+	// 本番環境でのレシピIDデバッグ
+	if environment == "production" {
+		log.Printf("🔍 PRODUCTION DEBUG - Recipe IDs found: %d", len(recipeIDs))
+		for i, id := range recipeIDs {
+			log.Printf("   📝 Recipe ID %d: %s", i+1, id)
+		}
+	}
 
 	// レシピと関連具材をロード（下書きを除外）
 	var recipes []models.Recipe
@@ -98,10 +145,22 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 		Preload("Reviews").
 		Where("id IN ? AND is_draft = ?", recipeIDs, false).
 		Find(&recipes).Error; err != nil {
+		if environment == "production" {
+			log.Printf("❌ PRODUCTION ERROR - Database query failed for recipes: %v", err)
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query failed", "details": err.Error()})
 		return
 	}
 	log.Printf("🥦 Found recipes count: %d\n", len(recipes))
+
+	// 本番環境でのレシピデバッグ
+	if environment == "production" {
+		log.Printf("🔍 PRODUCTION DEBUG - Recipes loaded: %d", len(recipes))
+		for i, recipe := range recipes {
+			log.Printf("   📝 Recipe %d: ID=%s, Name=%s, Ingredients=%d",
+				i+1, recipe.ID, recipe.Name, len(recipe.Ingredients))
+		}
+	}
 
 	// 栄養情報の標準値を取得
 	var standard models.NutritionStandard
@@ -183,6 +242,18 @@ func (h *RecipeHandler) SerchRecipes(c *gin.Context) {
 	}
 
 	log.Printf("🥦 Final result count: %d\n", len(result))
+
+	// 本番環境での最終結果デバッグ
+	if environment == "production" {
+		log.Printf("🔍 PRODUCTION DEBUG - Final results:")
+		log.Printf("   📝 Total recipes found: %d", len(result))
+		for i, recipe := range result {
+			log.Printf("   📝 Final Recipe %d: ID=%s, Name=%s",
+				i+1, recipe.ID, recipe.Name)
+		}
+		log.Printf("🔍 PRODUCTION DEBUG - Response preparation complete")
+	}
+
 	c.JSON(http.StatusOK, result)
 }
 

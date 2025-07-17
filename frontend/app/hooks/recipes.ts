@@ -262,13 +262,47 @@ export const fetchRecipesAPI = async (ingredients: { id: number; quantity: numbe
     searchMode: searchMode
   };
 
-  const response = await api.post("/api/recipes", requestBody);
+  // 本番環境でのデバッグ情報を追加
+  if (process.env.ENVIRONMENT === 'production') {
+    console.log("🔍 PRODUCTION DEBUG - fetchRecipesAPI:");
+    console.log("   📝 API Base URL:", api.defaults.baseURL);
+    console.log("   📝 Request URL:", `${api.defaults.baseURL}/api/recipes`);
+    console.log("   📝 Request Body:", JSON.stringify(requestBody, null, 2));
+    console.log("   📝 Environment:", process.env.ENVIRONMENT);
+    console.log("   📝 Current Hostname:", typeof window !== 'undefined' ? window.location.hostname : 'server-side');
+  }
 
-  console.log("🥦 リクエストURL", api.defaults.baseURL);
+  try {
+    const response = await api.post("/api/recipes", requestBody);
 
-  console.log("🥦", response.data);
+    // 本番環境でのレスポンスデバッグ
+    if (process.env.ENVIRONMENT === 'production') {
+      console.log("🔍 PRODUCTION DEBUG - API Response:");
+      console.log("   📝 Response Status:", response.status);
+      console.log("   📝 Response Headers:", response.headers);
+      console.log("   📝 Response Data Type:", typeof response.data);
+      console.log("   📝 Response Data Length:", Array.isArray(response.data) ? response.data.length : 'Not an array');
+      console.log("   📝 Response Data:", JSON.stringify(response.data, null, 2));
+    }
 
-  return Array.isArray(response.data) ? mapRecipes(response.data) : [];
+    console.log("🥦 リクエストURL", api.defaults.baseURL);
+    console.log("🥦", response.data);
+
+    return Array.isArray(response.data) ? mapRecipes(response.data) : [];
+  } catch (error: any) {
+    // 本番環境でのエラーデバッグ
+    if (process.env.ENVIRONMENT === 'production') {
+      console.error("🔍 PRODUCTION DEBUG - API Error:");
+      console.error("   📝 Error Type:", typeof error);
+      console.error("   📝 Error Message:", error.message);
+      console.error("   📝 Error Response:", error.response);
+      console.error("   📝 Error Request:", error.request);
+      console.error("   📝 Error Config:", error.config);
+    }
+    
+    console.error('Error fetching recipes:', error);
+    throw error;
+  }
 };
 
 // レシピ名で検索
