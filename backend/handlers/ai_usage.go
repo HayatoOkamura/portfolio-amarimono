@@ -274,6 +274,7 @@ func (h *AIUsageHandler) GenerateDescription(c *gin.Context) {
 	var aiUsage struct {
 		UsageCount int `json:"usage_count"`
 	}
+	recordExists := true
 	if err := h.DB.Table("ai_usage").
 		Select("usage_count").
 		Where("user_id = ?", claims.Sub).
@@ -281,6 +282,7 @@ func (h *AIUsageHandler) GenerateDescription(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			// レコードが存在しない場合は新規作成
 			aiUsage.UsageCount = 0
+			recordExists = false
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "使用回数の取得に失敗しました"})
 			return
@@ -301,13 +303,27 @@ func (h *AIUsageHandler) GenerateDescription(c *gin.Context) {
 	}
 
 	// 使用回数を増やす
-	if err := tx.Table("ai_usage").
-		Where("user_id = ?", claims.Sub).
-		Update("usage_count", gorm.Expr("usage_count + 1")).
-		Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "使用回数の更新に失敗しました"})
-		return
+	if recordExists {
+		// 既存のレコードを更新
+		if err := tx.Table("ai_usage").
+			Where("user_id = ?", claims.Sub).
+			Update("usage_count", gorm.Expr("usage_count + 1")).
+			Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "使用回数の更新に失敗しました"})
+			return
+		}
+	} else {
+		// 新規レコードを作成
+		if err := tx.Table("ai_usage").Create(map[string]interface{}{
+			"user_id":         claims.Sub,
+			"usage_count":     1,
+			"last_reset_date": time.Now(),
+		}).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "使用回数の作成に失敗しました"})
+			return
+		}
 	}
 
 	// トランザクションをコミット

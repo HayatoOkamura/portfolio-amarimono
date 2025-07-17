@@ -24,6 +24,7 @@ Amarimonoは、最新の技術を使用して構築されたフルスタック�
 - **フレームワーク**: Go/Gin
 - **言語**: Go
 - **データベース**: Supabase
+- **ストレージ**: Cloudflare R2（本番環境）、Supabase Storage（開発環境）
 - **キャッシュ**: Redis
 - **デプロイ**: Render
 
@@ -31,6 +32,7 @@ Amarimonoは、最新の技術を使用して構築されたフルスタック�
 - **コンテナ化**: Docker
 - **オーケストレーション**: Docker Compose
 - **データベース**: Supabase
+- **ストレージ**: Cloudflare R2
 - **開発環境**: Supabase CLI (ローカル開発用)
 
 ## 📋 必要条件
@@ -41,6 +43,7 @@ Amarimonoは、最新の技術を使用して構築されたフルスタック�
 - Node.js 18以上
 - npmまたはyarn
 - Supabaseアカウント
+- Cloudflareアカウント（本番環境用）
 
 ## 🚀 始め方
 
@@ -53,23 +56,7 @@ cd portfolio-amarimono
 
 ### 2. 環境設定
 
-ルートディレクトリに`.env`ファイルを作成し、以下の変数を設定します：
-
-```env
-# Supabase設定
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-
-# フロントエンド設定（開発環境）
-NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
-NEXT_PUBLIC_BACKEND_INTERNAL_URL=portfolio-amarimono_backend_1
-NEXT_PUBLIC_IMAGE_BASE_URL=https://pub-a63f718fe8894565998a27328e2d1b15.r2.dev
-
-# フロントエンド設定（本番環境）
-NEXT_PUBLIC_SITE_URL=https://amarimono.okamura.dev
-NEXT_PUBLIC_BACKEND_URL=https://amarimono-api.okamura.dev
-```
+ルートディレクトリに`.env`ファイルを作成し、変数を設定します
 
 ### 3. 開発環境の起動
 
@@ -217,17 +204,7 @@ supabase db dump --db-url <production-db-url> -f production_backup_$(date +%Y%m%
 
 #### 1. Vercel環境変数の確認と設定
 
-Vercelダッシュボードで以下の環境変数が正しく設定されているか確認してください：
-
-```env
-# 必須環境変数
-NEXT_PUBLIC_SITE_URL=https://amarimono.okamura.dev
-NEXT_PUBLIC_BACKEND_URL=https://amarimono-api.okamura.dev
-NEXT_PUBLIC_PROD_SUPABASE_URL=https://qmrjsqeigdkizkrpiahs.supabase.co
-NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY=your_supabase_anon_key
-NEXT_PUBLIC_PROD_SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-ENVIRONMENT=production
-```
+Vercelダッシュボードで以下の環境変数が正しく設定されているか確認してください
 
 **設定手順**:
 1. Vercelダッシュボードにアクセス
@@ -502,6 +479,7 @@ Google Cloud ConsoleでOAuth設定を確認してください：
 - [Supabase](https://supabase.com/) - バックエンドサービス
 - [PostgreSQL](https://www.postgresql.org/) - データベース
 - [Redis](https://redis.io/) - キャッシュ
+- [Cloudflare R2](https://www.cloudflare.com/products/r2/) - オブジェクトストレージ
 
 ## 🌐 本番環境
 
@@ -515,6 +493,11 @@ Google Cloud ConsoleでOAuth設定を確認してください：
 
 ### データベース（Supabase）
 - **ダッシュボード**: https://supabase.com/dashboard
+
+### ストレージ（Cloudflare R2）
+- **ダッシュボード**: https://dash.cloudflare.com/
+- **バケット**: amarimono-images
+- **公開URL**: https://pub-a63f718fe8894565998a27328e2d1b15.r2.dev
 
 ### ドメイン設定概要
 
@@ -706,7 +689,7 @@ Client Components (CSR)
 
 2. **画像処理**
    - アップロードされた画像を最適化
-   - Supabase Storageに保存
+   - 本番環境ではCloudflare R2に保存、開発環境ではSupabase Storageに保存
    - 画像URLをデータベースに保存
 
 3. **データベース更新**
