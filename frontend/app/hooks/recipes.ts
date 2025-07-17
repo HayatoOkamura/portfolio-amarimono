@@ -2,7 +2,7 @@
 "use client"
 import { useQuery, useMutation, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { Recipe, Instruction, Ingredient, Review } from "../types/index";
-import { backendUrl, handleApiResponse } from "../utils/api";
+import { backendUrl, handleApiResponse, isSeasoningOrSpice } from "../utils/api";
 import useRecipeStore from "@/app/stores/recipeStore";
 import { sortRecipes } from "@/app/utils/sortRecipes";
 import { api } from "@/app/utils/api";
@@ -244,7 +244,7 @@ export const fetchRecipesService = async (): Promise<Recipe[]> => {
 // 具材からレシピを検索
 export const fetchRecipesAPI = async (ingredients: { id: number; quantity: number }[], searchMode: SearchMode = 'exact_with_quantity') => {
   if (ingredients.length === 0) {
-    throw new Error("具材が選択されていません");
+    throw new Error("具材が選択されていません（調味料、スパイスは除く）");
   }
 
   const transformedIngredients = ingredients.map(({ id, quantity }) => ({
@@ -571,7 +571,7 @@ export const useFetchRecipesAPI = (
       });
       
       if (validIngredients.length === 0) {
-        throw new Error("具材が選択されていません");
+        throw new Error("具材が選択されていません（調味料、スパイスは除く）");
       }
       
       try {

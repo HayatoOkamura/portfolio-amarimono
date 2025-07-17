@@ -6,7 +6,7 @@ import Image from "next/image";
 import { IoMdInformationCircleOutline } from "react-icons/io";
 import toast from "react-hot-toast";
 import styles from "./GenerateRecipe.module.scss";
-import { imageBaseUrl } from "@/app/utils/api";
+import { imageBaseUrl, isSeasoningOrSpice } from "@/app/utils/api";
 import useRecipeStore from "@/app/stores/recipeStore";
 import useIngredientStore from "@/app/stores/ingredientStore";
 import { Ingredient } from "@/app/types/index";
@@ -65,8 +65,14 @@ const GenerateRecipe = ({ onSearch, isModalOpen = false, onCloseModal }: Generat
           []
         );
 
-      if (filteredIngredients.length === 0) {
-        toast.error("具材が選択されていません。");
+      // 調味料とスパイスを除外した具材をフィルタリング
+      const nonSeasoningIngredients = filteredIngredients.filter((ingredient) => {
+        const ingredientData = fetchedIngredients?.find(ing => ing.id === ingredient.id);
+        return ingredientData && !isSeasoningOrSpice(ingredientData);
+      });
+
+      if (nonSeasoningIngredients.length === 0) {
+        toast.error("具材が選択されていません（調味料、スパイスは除く）。");
         return;
       }
 

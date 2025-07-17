@@ -92,3 +92,15 @@ export const handleApiResponse = async (response: Response) => {
   }
   return response.json();
 };
+
+// 調味料とスパイスを判定する共通関数
+export const isSeasoningOrSpice = (ingredient: { genre: { id: number; name: string } }) => {
+  // 調味料（genre_id: 5）とスパイス（genre_id: 6）を判定
+  return ingredient.genre.id === 5 || ingredient.genre.id === 6 || 
+         ingredient.genre.name === "調味料" || ingredient.genre.name === "スパイス";
+};
+
+// 調味料系の単位名を判定する関数
+export const isSeasoningUnit = (unitName: string) => {
+  return ['大さじ', '小さじ', '適量', '少々', 'ひとつまみ'].includes(unitName);
+};

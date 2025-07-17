@@ -11,6 +11,7 @@ import useRecipeStore from "./stores/recipeStore";
 import useIngredientStore from "./stores/ingredientStore";
 import styles from "@/app/styles/HomePage.module.scss";
 import { ResponsiveWrapper } from "./components/common/ResponsiveWrapper";
+import { isSeasoningOrSpice } from "./utils/api";
 
 // 動的インポート
 const IngredientSelector = dynamic(() => import("./components/layout/IngredientSelector/IngredientSelector"), {
@@ -87,8 +88,11 @@ export default function HomePageClient({
   }, [isSearchModeModalOpen, isGenerateRecipeModalOpen]);
 
   const handleSearch = async () => {
-    if (ingredients.length === 0) {
-      toast.error("具材を選択してください");
+    // 調味料とスパイスを除外した具材をフィルタリング
+    const nonSeasoningIngredients = ingredients.filter(ingredient => !isSeasoningOrSpice(ingredient));
+    
+    if (nonSeasoningIngredients.length === 0) {
+      toast.error("具材を選択してください（調味料、スパイスは除く）");
       return;
     }
 
