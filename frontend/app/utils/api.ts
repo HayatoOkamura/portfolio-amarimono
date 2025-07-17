@@ -45,13 +45,13 @@ export const imageBaseUrl = typeof window !== 'undefined'
       
       // 本番環境ではCloudflare R2のURLを使用
       if (currentHost === 'amarimono.okamura.dev') {
-        return process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-xxxxx.r2.dev';
+        return process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-a63f718fe8894565998a27328e2d1b15.r2.dev';
       }
       
       // その他の場合は環境変数を使用
-      return process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-xxxxx.r2.dev';
+      return process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-a63f718fe8894565998a27328e2d1b15.r2.dev';
     })()
-  : process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-xxxxx.r2.dev';
+  : process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL || 'https://pub-a63f718fe8894565998a27328e2d1b15.r2.dev';
 
 // axiosインスタンスの作成
 export const api = axios.create({
