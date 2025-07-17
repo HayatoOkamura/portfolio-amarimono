@@ -79,7 +79,7 @@ export const CoachmarkOnboarding: React.FC<CoachmarkOnboardingProps> = ({ isOpen
       content: (
         <div className={styles.content}>
           <h3 className={styles.content__title}>検索方法の設定</h3>
-          <p className={styles.content__description}>検索の厳密さを調整できます。「材料いくつか」なら手持ちの具材が1つでも含まれるレシピを、「材料すべて」なら全ての具材が必要なレシピを検索します。</p>
+          <p className={styles.content__description}>検索の厳密さを調整できます。<br />「材料いくつか」なら具材が1つでも含まれるレシピを、「材料すべて」なら全ての具材が必要なレシピを検索します。</p>
         </div>
       ),
       placement: 'bottom' as Placement,

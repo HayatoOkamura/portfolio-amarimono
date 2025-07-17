@@ -1,6 +1,7 @@
 @import "../../../../styles/config/breakpoints";
 
 .header_block {
+  position: relative;
   z-index: 101;
   background: #fff;
   display: flex;
