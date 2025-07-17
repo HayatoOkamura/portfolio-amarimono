@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import Container from "@/app/components/layout/Container/Container";
 import { Toaster } from 'react-hot-toast';
 import PerformanceMonitor from './components/common/PerformanceMonitor/PerformanceMonitor';
+import Script from 'next/script';
 
 const notoSansJp = Noto_Sans_JP({
   subsets: ["latin", "latin-ext"],
@@ -123,7 +124,13 @@ export default function RootLayout({
       className={`${notoSansJp.variable} ${roboto.variable} ${tsukimiRounded.variable}`}
       suppressHydrationWarning
     >
-      <head />
+      <head>
+        {/* プリロード設定 */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://api.okamura.dev" />
+        <link rel="dns-prefetch" href="https://qmrjsqeigdkizkrpiahs.supabase.co" />
+      </head>
       <body>
         <QueryProvider>
           <LoadingProvider>
@@ -132,6 +139,20 @@ export default function RootLayout({
         </QueryProvider>
         <Toaster position="top-center" />
         <PerformanceMonitor />
+        
+        {/* 外部スクリプトの最適化 */}
+        {process.env.NODE_ENV === 'production' && (
+          <Script
+            src="https://okamura.dev/analytics.js"
+            strategy="lazyOnload"
+            onLoad={() => {
+              console.log('Analytics script loaded');
+            }}
+            onError={() => {
+              console.warn('Analytics script failed to load');
+            }}
+          />
+        )}
       </body>
     </html>
   );

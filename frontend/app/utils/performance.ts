@@ -129,13 +129,37 @@ export const measureCLS = (): void => {
   }
 };
 
-// 開発環境でのみパフォーマンス監視を有効化
+// 本番環境でもパフォーマンス監視を有効化（軽量化）
 export const initPerformanceMonitoring = (): void => {
-  if (process.env.NODE_ENV === 'development' && isBrowser) {
+  if (isBrowser) {
     try {
-      measureLCP();
-      measureFID();
-      measureCLS();
+      // 本番環境では軽量版の監視のみ実行
+      if (process.env.NODE_ENV === 'production') {
+        // Core Web Vitalsの監視のみ
+        measureLCP();
+        measureFID();
+        measureCLS();
+      } else {
+        // 開発環境では詳細な監視
+        measureLCP();
+        measureFID();
+        measureCLS();
+        
+        // 追加のパフォーマンス指標
+        if ('performance' in window) {
+          // ナビゲーションタイミング
+          const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+          if (navigation) {
+            console.log('Navigation Timing:', {
+              domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
+              loadComplete: navigation.loadEventEnd - navigation.loadEventStart,
+              domInteractive: navigation.domInteractive,
+              firstPaint: performance.getEntriesByName('first-paint')[0]?.startTime,
+              firstContentfulPaint: performance.getEntriesByName('first-contentful-paint')[0]?.startTime,
+            });
+          }
+        }
+      }
     } catch (error) {
       console.warn('Performance monitoring initialization failed:', error);
     }

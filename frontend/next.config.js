@@ -3,11 +3,12 @@ const nextConfig = {
   reactStrictMode: true,
   experimental: {
     // optimizeCss: true, // CSS最適化を一時的に無効化
+    optimizePackageImports: ['react-icons', 'framer-motion', '@dnd-kit/core', '@dnd-kit/sortable'],
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production', // 本番環境でconsole削除
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     // webpack-bundle-analyzerの設定
     if (process.env.ANALYZE === 'true') {
       const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
@@ -19,10 +20,53 @@ const nextConfig = {
         })
       );
     }
+
+    // 本番環境での最適化
+    if (!dev && !isServer) {
+      // コード分割の最適化
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+            priority: 10,
+          },
+          common: {
+            name: 'common',
+            minChunks: 2,
+            chunks: 'all',
+            priority: 5,
+            reuseExistingChunk: true,
+          },
+          // 大きなライブラリを個別に分割
+          framerMotion: {
+            test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
+            name: 'framer-motion',
+            chunks: 'all',
+            priority: 20,
+          },
+          reactIcons: {
+            test: /[\\/]node_modules[\\/]react-icons[\\/]/,
+            name: 'react-icons',
+            chunks: 'all',
+            priority: 20,
+          },
+          dndKit: {
+            test: /[\\/]node_modules[\\/]@dnd-kit[\\/]/,
+            name: 'dnd-kit',
+            chunks: 'all',
+            priority: 20,
+          },
+        },
+      };
+    }
+
     return config;
   },
   images: {
-    unoptimized: true, // Cloudflare R2の課金制限を回避するため、画像最適化を無効化
+    unoptimized: false, // 画像最適化を有効化
     remotePatterns: (() => {
       const patterns = process.env.ENVIRONMENT === 'development' 
         ? [
@@ -115,7 +159,6 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    // 画像最適化の追加設定
   },
   env: {
     // クライアントサイドでの API アクセス用

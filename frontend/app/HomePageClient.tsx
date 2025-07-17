@@ -15,15 +15,18 @@ import { isSeasoningOrSpice } from "./utils/api";
 
 // 動的インポート
 const IngredientSelector = dynamic(() => import("./components/layout/IngredientSelector/IngredientSelector"), {
-  ssr: false
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-64 rounded-lg" />
 });
 
 const GenerateRecipe = dynamic(() => import("./components/ui/GenerateRecipe/GenerateRecipe"), {
-  ssr: false
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-16 rounded-lg" />
 });
 
 const SearchModeMenu = dynamic(() => import("./components/ui/SearchModeMenu/SearchModeMenu"), {
-  ssr: false
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-8 rounded-lg" />
 });
 
 interface HomePageClientProps {
