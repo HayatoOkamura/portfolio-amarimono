@@ -22,7 +22,7 @@ const nextConfig = {
     return config;
   },
   images: {
-    unoptimized: process.env.ENVIRONMENT === 'development',
+    unoptimized: true, // Cloudflare R2の課金制限を回避するため、画像最適化を無効化
     remotePatterns: (() => {
       const patterns = process.env.ENVIRONMENT === 'development' 
         ? [
