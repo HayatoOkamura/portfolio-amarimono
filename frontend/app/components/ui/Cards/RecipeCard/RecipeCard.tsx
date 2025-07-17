@@ -5,6 +5,7 @@ import Link from "next/link";
 import { imageBaseUrl } from "@/app/utils/api";
 import styles from "./RecipeCard.module.scss";
 import { Recipe } from "@/app/types/index";
+import OptimizedImage from "@/app/components/ui/OptimizedImage/OptimizedImage";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -25,18 +26,18 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   isLink = false,
   href,
 }) => {
+  const imageSrc = recipe.imageUrl
+    ? `${imageBaseUrl}/${recipe.imageUrl}`
+    : "/pic_recipe_default.webp";
+
   const cardContent = (
     <div className={`${styles.card_block} ${styles[`card_block--${size}`]} ${className || ''}`}>
       <div className={styles.card_block__img}>
         {recipe.isDraft && (
           <span className={styles.card_block__draft}>下書き</span>
         )}
-        <Image
-          src={
-            recipe.imageUrl
-              ? `${imageBaseUrl}/${recipe.imageUrl}`
-              : "/pic_recipe_default.webp"
-          }
+        <OptimizedImage
+          src={imageSrc}
           alt={recipe.name}
           width={100}
           height={100}

@@ -17,6 +17,7 @@ import RecipeCard from "../components/ui/Cards/RecipeCard/RecipeCard";
 import StarRating from "@/app/components/ui/StarRating/StarRating";
 import ResponsivePieChart from "../components/ui/PieChart/PieChart";
 import { RecipeSort } from "../components/ui/RecipeSort/RecipeSort";
+import OptimizedImage from "@/app/components/ui/OptimizedImage/OptimizedImage";
 // Hooks
 import { useSearchRecipes } from "../hooks/recipes";
 import { useSortedRecipes } from "../hooks/recipes";
@@ -284,7 +285,7 @@ const RecipeClientComponentPC = () => {
             {/* 現在のレシピ画像 */}
             <div className={styles.current_recipe__img}>
               <div className={styles.current_recipe__img_inner}>
-                <Image
+                <OptimizedImage
                   src={
                     `${imageBaseUrl}/${persistedSelectedRecipe?.imageUrl}` ||
                     "/pic_recipe_default.webp"
@@ -299,7 +300,7 @@ const RecipeClientComponentPC = () => {
             {/* 次のレシピ画像 */}
             <div className={`${styles.current_recipe__img} ${styles["next"]}`}>
               <div className={styles.current_recipe__img_inner}>
-                <Image
+                <OptimizedImage
                   src={
                     nextRecipe
                       ? `${imageBaseUrl}/${nextRecipe.imageUrl}`

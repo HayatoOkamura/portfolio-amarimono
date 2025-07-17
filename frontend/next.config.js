@@ -91,7 +91,7 @@ const nextConfig = {
               hostname: 'portfolio-amarimono-backend.onrender.com',
               pathname: '/uploads/**',
             },
-            // Cloudflare R2の画像ドメイン
+            // Cloudflare R2の画像ドメイン - 最適化を無効化
             {
               protocol: 'https',
               hostname: 'pub-a63f718fe8894565998a27328e2d1b15.r2.dev',
@@ -108,6 +108,9 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    // Cloudflare R2の画像については最適化を無効化
+    loader: 'default',
+    domains: ['pub-a63f718fe8894565998a27328e2d1b15.r2.dev'],
   },
   env: {
     // クライアントサイドでの API アクセス用
