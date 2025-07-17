@@ -1,7 +1,9 @@
+"use client";
+
 import React from "react";
 import ClientContainer from "./ClientContainer";
 
-const Container = async ({ children }: { children: React.ReactNode }) => {
+const Container = ({ children }: { children: React.ReactNode }) => {
   return <ClientContainer>{children}</ClientContainer>;
 };
 

@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import styles from './not-found.module.scss';
 
+// 静的生成の最適化
+export const dynamic = 'force-static';
+export const revalidate = false;
+
 export default function NotFound() {
   return (
     <div className={styles.not_found_block}>

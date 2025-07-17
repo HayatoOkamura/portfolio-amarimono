@@ -8,6 +8,8 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production', // 本番環境でconsole削除
   },
+  // 静的生成のタイムアウト設定を延長
+  staticPageGenerationTimeout: 300,
   webpack: (config, { isServer, dev }) => {
     // webpack-bundle-analyzerの設定
     if (process.env.ANALYZE === 'true') {
@@ -39,25 +41,6 @@ const nextConfig = {
             chunks: 'all',
             priority: 5,
             reuseExistingChunk: true,
-          },
-          // 大きなライブラリを個別に分割
-          framerMotion: {
-            test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
-            name: 'framer-motion',
-            chunks: 'all',
-            priority: 20,
-          },
-          reactIcons: {
-            test: /[\\/]node_modules[\\/]react-icons[\\/]/,
-            name: 'react-icons',
-            chunks: 'all',
-            priority: 20,
-          },
-          dndKit: {
-            test: /[\\/]node_modules[\\/]@dnd-kit[\\/]/,
-            name: 'dnd-kit',
-            chunks: 'all',
-            priority: 20,
           },
         },
       };
@@ -95,70 +78,22 @@ const nextConfig = {
               port: '54321',
               pathname: '/storage/v1/object/public/images/**',
             },
-            {
-              protocol: 'http',
-              hostname: '192.168.11.2',
-              port: '8080',
-              pathname: '/uploads/**',
-            },
-            {
-              protocol: 'http',
-              hostname: '192.168.11.2',
-              port: '54321',
-              pathname: '/storage/v1/object/public/images/**',
-            },
-            {
-              protocol: 'http',
-              hostname: 'host.docker.internal',
-              port: '54321',
-              pathname: '/storage/v1/object/public/images/**',
-            }
           ]
         : [
-            // 本番環境では特定のホストのみ許可
-            {
-              protocol: 'https',
-              hostname: 'amarimono-backend.onrender.com',
-              port: '',
-              pathname: '/uploads/**',
-            },
-            {
-              protocol: 'https',
-              hostname: 'api.okamura.dev',
-              port: '',
-              pathname: '/uploads/**',
-            },
+            // 本番環境では特定のドメインのみ許可
             {
               protocol: 'https',
               hostname: 'qmrjsqeigdkizkrpiahs.supabase.co',
-              port: '',
               pathname: '/storage/v1/object/public/images/**',
             },
             {
               protocol: 'https',
-              hostname: 'pub-a63f718fe8894565998a27328e2d1b15.r2.dev', // Cloudflare R2のドメイン
-              port: '',
-              pathname: '/**',
-            }
+              hostname: 'portfolio-amarimono-backend.onrender.com',
+              pathname: '/uploads/**',
+            },
           ];
-      
-      // 本番環境でのデバッグ情報をログ出力
-      if (process.env.ENVIRONMENT === 'production') {
-        console.log('=== Next.js Image Configuration Debug ===');
-        console.log('Environment:', process.env.ENVIRONMENT);
-        console.log('NODE_ENV:', process.env.NODE_ENV);
-        console.log('NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL:', process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_URL);
-        console.log('Remote Patterns:', JSON.stringify(patterns, null, 2));
-      }
       return patterns;
     })(),
-    minimumCacheTTL: 86400, // 24時間に延長
-    formats: ['image/avif', 'image/webp'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   env: {
     // クライアントサイドでの API アクセス用
