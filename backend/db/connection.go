@@ -31,18 +31,6 @@ func InitDB() (*DBConfig, error) {
 	dbName := os.Getenv("SUPABASE_DB_NAME")
 	environment := os.Getenv("ENVIRONMENT")
 
-	// 本番環境でのデバッグ情報を追加
-	if environment == "production" {
-		log.Printf("🔍 PRODUCTION DEBUG - Database connection initialization:")
-		log.Printf("   📝 Environment: %s", environment)
-		log.Printf("   📝 DB Host: %s", dbHost)
-		log.Printf("   📝 DB Port: %s", dbPort)
-		log.Printf("   📝 DB User: %s", dbUser)
-		log.Printf("   📝 DB Name: %s", dbName)
-		log.Printf("   📝 Use Pooler: %s", os.Getenv("USE_POOLER"))
-		log.Printf("   📝 Supabase URL: %s", os.Getenv("SUPABASE_URL"))
-	}
-
 	// 環境変数の詳細ログ
 	log.Println("🔍 環境変数の詳細:")
 	log.Printf("   🌍 ENVIRONMENT: %s", environment)
@@ -478,90 +466,6 @@ func InitDB() (*DBConfig, error) {
 		}
 		for _, setting := range sessionSettings {
 			log.Printf("   📝 Session %s: %s", setting.Name, setting.Value)
-		}
-	}
-
-	// 本番環境での追加監視設定
-	if environment != "development" {
-		log.Println("🔍 本番環境での追加監視設定:")
-
-		// prepared statementの統計情報を確認
-		var prepStmtCount int
-		err = gormDB.QueryRow("SELECT COUNT(*) FROM pg_prepared_statements").Scan(&prepStmtCount)
-		if err != nil {
-			log.Printf("⚠️ prepared statement数確認に失敗: %v", err)
-		} else {
-			log.Printf("   📝 Current Prepared Statements: %d", prepStmtCount)
-		}
-
-		// アクティブな接続数を確認
-		var activeConnections int
-		err = gormDB.QueryRow("SELECT COUNT(*) FROM pg_stat_activity WHERE state = 'active'").Scan(&activeConnections)
-		if err != nil {
-			log.Printf("⚠️ アクティブ接続数確認に失敗: %v", err)
-		} else {
-			log.Printf("   📝 Active Connections: %d", activeConnections)
-		}
-
-		// 最大接続数を確認
-		var maxConnections int
-		err = gormDB.QueryRow("SHOW max_connections").Scan(&maxConnections)
-		if err != nil {
-			log.Printf("⚠️ 最大接続数確認に失敗: %v", err)
-		} else {
-			log.Printf("   📝 Max Connections: %d", maxConnections)
-		}
-
-		// 本番環境でのデータベース接続テスト
-		log.Println("🔍 PRODUCTION DEBUG - Database connection test:")
-
-		// 基本的なクエリテスト
-		var testResult string
-		err = gormDB.QueryRow("SELECT 'connection_test'").Scan(&testResult)
-		if err != nil {
-			log.Printf("❌ PRODUCTION ERROR - Basic query test failed: %v", err)
-		} else {
-			log.Printf("   ✅ Basic query test passed: %s", testResult)
-		}
-
-		// レシピテーブルの存在確認
-		var tableExists bool
-		err = gormDB.QueryRow("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'recipes')").Scan(&tableExists)
-		if err != nil {
-			log.Printf("❌ PRODUCTION ERROR - Table existence check failed: %v", err)
-		} else {
-			log.Printf("   📝 Recipes table exists: %v", tableExists)
-		}
-
-		// レシピテーブルのレコード数確認
-		if tableExists {
-			var recipeCount int
-			err = gormDB.QueryRow("SELECT COUNT(*) FROM recipes WHERE is_draft = false").Scan(&recipeCount)
-			if err != nil {
-				log.Printf("❌ PRODUCTION ERROR - Recipe count query failed: %v", err)
-			} else {
-				log.Printf("   📝 Published recipes count: %d", recipeCount)
-			}
-		}
-
-		// 具材テーブルの存在確認
-		var ingredientTableExists bool
-		err = gormDB.QueryRow("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'ingredients')").Scan(&ingredientTableExists)
-		if err != nil {
-			log.Printf("❌ PRODUCTION ERROR - Ingredient table existence check failed: %v", err)
-		} else {
-			log.Printf("   📝 Ingredients table exists: %v", ingredientTableExists)
-		}
-
-		// 具材テーブルのレコード数確認
-		if ingredientTableExists {
-			var ingredientCount int
-			err = gormDB.QueryRow("SELECT COUNT(*) FROM ingredients").Scan(&ingredientCount)
-			if err != nil {
-				log.Printf("❌ PRODUCTION ERROR - Ingredient count query failed: %v", err)
-			} else {
-				log.Printf("   📝 Ingredients count: %d", ingredientCount)
-			}
 		}
 	}
 

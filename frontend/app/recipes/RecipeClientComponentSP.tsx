@@ -245,17 +245,6 @@ const RecipeClientComponentSP = () => {
 
   // レシピデータが存在し、かつ空の場合のみ「レシピが見つかりませんでした」を表示
   if (persistedRecipes && persistedRecipes.length === 0) {
-    // 本番環境でのデバッグ情報を追加
-    if (process.env.ENVIRONMENT === 'production') {
-      console.log("🔍 PRODUCTION DEBUG - No recipes found (SP):");
-      console.log("   📝 persistedRecipes:", persistedRecipes);
-      console.log("   📝 persistedRecipes length:", persistedRecipes.length);
-      console.log("   📝 searchType:", searchType);
-      console.log("   📝 searchExecuted:", searchExecuted);
-      console.log("   📝 query:", query);
-      console.log("   📝 Environment:", process.env.ENVIRONMENT);
-    }
-
     return (
       <div className={styles.no_recipes_container}>
         <p className={styles.no_recipes_message}>

@@ -8,40 +8,19 @@ export const backendUrl = typeof window !== 'undefined'
       const currentHost = window.location.hostname;
       const currentPort = window.location.port;
       
-      // 本番環境でのデバッグ情報
-      if (process.env.ENVIRONMENT === 'production') {
-        console.log("🔍 PRODUCTION DEBUG - backendUrl calculation:");
-        console.log("   📝 Current Hostname:", currentHost);
-        console.log("   📝 Current Port:", currentPort);
-        console.log("   📝 Environment:", process.env.ENVIRONMENT);
-        console.log("   📝 NEXT_PUBLIC_BACKEND_URL:", process.env.NEXT_PUBLIC_BACKEND_URL);
-      }
-      
       // 開発環境の場合、同じホストの8080ポートを使用
       if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
-        const url = 'http://localhost:8080';
-        if (process.env.ENVIRONMENT === 'production') {
-          console.log("   📝 Using localhost URL:", url);
-        }
-        return url;
+        return 'http://localhost:8080';
       }
       
       // ローカルネットワークの場合（192.168.x.xなど）
       if (currentHost.match(/^192\.168\./) || currentHost.match(/^10\./) || currentHost.match(/^172\./)) {
-        const url = `http://${currentHost}:8080`;
-        if (process.env.ENVIRONMENT === 'production') {
-          console.log("   📝 Using local network URL:", url);
-        }
-        return url;
+        return `http://${currentHost}:8080`;
       }
       
       // 本番環境では新しいサブドメインを使用
       if (currentHost === 'amarimono.okamura.dev') {
-        const url = 'https://amarimono-api.okamura.dev';
-        if (process.env.ENVIRONMENT === 'production') {
-          console.log("   📝 Using production API URL:", url);
-        }
-        return url;
+        return 'https://amarimono-api.okamura.dev';
       }
       
       // その他の場合は環境変数を使用
