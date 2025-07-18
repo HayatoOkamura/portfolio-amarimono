@@ -7,6 +7,7 @@ import { FaUserCircle } from "react-icons/fa";
 import Image from "next/image";
 import Link from "next/link";
 import { imageBaseUrl } from "@/app/utils/api";
+import OptimizedImage from "@/app/components/ui/OptimizedImage/OptimizedImage";
 
 const MobileUserProfile = () => {
   const { user } = useUserStore();
@@ -16,7 +17,7 @@ const MobileUserProfile = () => {
     <div className={styles.user_profile}>
       <div className={styles.user_profile__image}>
         {user && user.profileImage && !imageError ? (
-          <Image
+          <OptimizedImage
             src={`${imageBaseUrl}/${user.profileImage}`}
             alt="User Profile"
             width={80}

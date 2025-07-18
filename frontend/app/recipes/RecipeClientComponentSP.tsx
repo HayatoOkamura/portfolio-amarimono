@@ -13,9 +13,11 @@ import useGenreStore from "../stores/genreStore";
 // UI
 import Loading from "../components/ui/Loading/Loading";
 import RecipeLoading from "../components/ui/Loading/RecipeLoading";
+import RecipeCard from "../components/ui/Cards/RecipeCard/RecipeCard";
 import StarRating from "@/app/components/ui/StarRating/StarRating";
 import ResponsivePieChart from "../components/ui/PieChart/PieChart";
 import { RecipeSort } from "../components/ui/RecipeSort/RecipeSort";
+import OptimizedImage from "@/app/components/ui/OptimizedImage/OptimizedImage";
 // Hooks
 import { useSearchRecipes } from "../hooks/recipes";
 import { useSortedRecipes } from "../hooks/recipes";
@@ -309,7 +311,7 @@ const RecipeClientComponentSP = () => {
                   } ${isFadingOut ? styles.fade_in : ""}`}
                 >
                   <div className={styles.current_recipe__img_inner}>
-                    <Image
+                    <OptimizedImage
                       src={
                         `${imageBaseUrl}/${nextRecipe?.imageUrl}` ||
                         "/pic_recipe_default.webp"
@@ -331,7 +333,7 @@ const RecipeClientComponentSP = () => {
                 }`}
               >
                 <div className={styles.current_recipe__img_inner}>
-                  <Image
+                  <OptimizedImage
                     src={
                       `${imageBaseUrl}/${persistedSelectedRecipe?.imageUrl}` ||
                       "/pic_recipe_default.webp"

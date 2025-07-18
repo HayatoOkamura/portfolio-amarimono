@@ -1,8 +1,10 @@
+"use client";
 import React from "react";
 import Image from "next/image";
 import { imageBaseUrl } from "@/app/utils/api";
-import { Ingredient } from "@/app/types/index";
 import styles from "./IngredientList.module.scss";
+import { Ingredient } from "@/app/types/index";
+import OptimizedImage from "@/app/components/ui/OptimizedImage/OptimizedImage";
 
 interface IngredientListProps {
   ingredients: Ingredient[];
@@ -21,7 +23,7 @@ const IngredientList: React.FC<IngredientListProps> = ({
         <div key={ingredient.id} className={styles.card_block}>
           <div className={styles.card_block__image}>
             {ingredient.imageUrl ? (
-              <Image
+              <OptimizedImage
                 src={
                   ingredient.imageUrl
                     ? `${imageBaseUrl}/${ingredient.imageUrl}`
@@ -40,30 +42,16 @@ const IngredientList: React.FC<IngredientListProps> = ({
           </div>
           <div className={styles.card_block__content}>
             <h3 className={styles.card_block__name}>{ingredient.name}</h3>
-            {/* <div className={styles.card_block__details}>
-              <div className={styles.card_block__info}>
-                <p>ジャンル: {ingredient.genre.name}</p>
-                <p>単位: {ingredient.unit.name}</p>
-                <p>100g相当量: {ingredient.gramEquivalent}g</p>
-              </div>
-              <div className={styles.card_block__info}>
-                <p>カロリー: {ingredient.nutrition.calories}kcal</p>
-                <p>タンパク質: {ingredient.nutrition.protein}g</p>
-                <p>脂質: {ingredient.nutrition.fat}g</p>
-                <p>炭水化物: {ingredient.nutrition.carbohydrates}g</p>
-                <p>塩分: {ingredient.nutrition.salt}g</p>
-              </div>
-            </div> */}
             <div className={styles.card_block__actions}>
               <button
                 onClick={() => onEdit(ingredient)}
-                className={styles.card_block__button}
+                className={styles.card_block__edit}
               >
                 編集
               </button>
               <button
                 onClick={() => onDelete(ingredient.id)}
-                className={styles.card_block__button}
+                className={styles.card_block__delete}
               >
                 削除
               </button>

@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import OptimizedImage from '@/app/components/ui/OptimizedImage/OptimizedImage';
 import { useMemo, useState } from 'react';
 
 interface RecipeImageProps {
@@ -104,7 +104,7 @@ export default function RecipeImage({ src, alt, width = 256, height = 256 }: Rec
 
     return (
         <div className="relative">
-            <Image
+            <OptimizedImage
                 src={imageUrl}
                 alt={alt}
                 width={width}

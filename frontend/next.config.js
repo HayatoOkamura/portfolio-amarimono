@@ -49,7 +49,7 @@ const nextConfig = {
     return config;
   },
   images: {
-    unoptimized: false, // 画像最適化を有効化
+    unoptimized: true, // Cloudflare R2の画像最適化を無効化
     remotePatterns: (() => {
       const patterns = process.env.ENVIRONMENT === 'development' 
         ? [

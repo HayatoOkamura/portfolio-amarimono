@@ -7,6 +7,7 @@ import { FaUserCircle } from "react-icons/fa";
 import Image from "next/image";
 import Link from "next/link";
 import { imageBaseUrl } from "@/app/utils/api";
+import OptimizedImage from "@/app/components/ui/OptimizedImage/OptimizedImage";
 
 const ClientAuthMenu = () => {
   const { user } = useUserStore();
@@ -23,7 +24,7 @@ const ClientAuthMenu = () => {
           <Link href="/user/">
             <div className={styles.user_block__icon}>
               {user.profileImage && !imageError ? (
-                <Image
+                <OptimizedImage
                   src={`${imageBaseUrl}/${user.profileImage}`}
                   alt="User Profile"
                   className={styles.user_block__icon_img}
