@@ -186,10 +186,12 @@
     }
 
     &__calculate {
+      font-size: 1rem;
+      font-weight: 600;
       margin-top: 12px;
       background: var(--primary-accent-color);
       color: #fff;
-      padding: 8px 16px;
+      padding: 8px 20px 9px;
       border: 1px solid var(--primary-accent-color);
       border-radius: 4px;
       cursor: pointer;
