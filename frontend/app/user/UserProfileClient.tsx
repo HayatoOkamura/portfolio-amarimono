@@ -61,7 +61,6 @@ const UserProfile = () => {
               <OptimizedImage
                 src={`${imageBaseUrl}/${user.profileImage}`}
                 alt="User Profile"
-                className={styles.user_block__icon_img}
                 width={100}
                 height={100}
                 onError={handleImageError}

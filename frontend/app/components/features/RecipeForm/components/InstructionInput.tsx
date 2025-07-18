@@ -248,22 +248,20 @@ export const InstructionInput = ({
                       </div>
                     )}
                   </div>
-                  <div className={styles.instruction_block__controls}>
-                    <textarea
-                      placeholder={`Step ${instruction.step}`}
-                      value={instruction.description}
-                      onChange={(e) =>
-                        onUpdateInstructions(
-                          instructions.map((step, i) =>
-                            i === index
-                              ? { ...step, description: e.target.value }
-                              : step
-                          )
+                  <textarea
+                    placeholder={`Step ${instruction.step}`}
+                    value={instruction.description}
+                    onChange={(e) =>
+                      onUpdateInstructions(
+                        instructions.map((step, i) =>
+                          i === index
+                            ? { ...step, description: e.target.value }
+                            : step
                         )
-                      }
-                      className={styles.instruction_block__textarea}
-                    />
-                  </div>
+                      )
+                    }
+                    className={styles.instruction_block__textarea}
+                  />
                 </div>
               </SortableItem>
             ))}
