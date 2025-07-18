@@ -1,6 +1,5 @@
 "use client";
 import React from "react";
-import Image from "next/image";
 import { imageBaseUrl } from "@/app/utils/api";
 import styles from "./IngredientList.module.scss";
 import { Ingredient } from "@/app/types/index";
