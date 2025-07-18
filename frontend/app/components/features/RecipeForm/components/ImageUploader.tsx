@@ -1,11 +1,8 @@
-"use client";
-import React from "react";
-import Image from "next/image";
-import { toast } from "react-hot-toast";
 import { useImageUpload } from "../hooks/useImageUpload";
+import { LuImagePlus } from "react-icons/lu";
 import styles from "./ImageUploader.module.scss";
 import OptimizedImage from "@/app/components/ui/OptimizedImage/OptimizedImage";
-
+import toast from "react-hot-toast";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface ImageUploaderProps {
@@ -67,17 +64,25 @@ export const ImageUploader = ({ imageUrl, image, onImageChange }: ImageUploaderP
           </div>
         ) : (
           <div className={styles.imageUploader__placeholder}>
-            <div className={styles.imageUploader__placeholderContent}>
-              <span className={styles.imageUploader__placeholderText}>
-                画像をアップロード
-              </span>
-            </div>
             <input
               type="file"
               accept="image/*"
               onChange={handleChange}
               className={styles.imageUploader__input}
             />
+            <div className={styles.imageUploader__placeholderContent}>
+              <div className={styles.imageUploader__icon}>
+                <LuImagePlus />
+              </div>
+              <div className={styles.imageUploader__uploadText}>
+                <label className={styles.imageUploader__uploadLabel}>
+                  料理の画像をアップロード
+                </label>
+              </div>
+              <p className={styles.imageUploader__fileInfo}>
+                PNG, JPG, GIF up to 10MB
+              </p>
+            </div>
           </div>
         )}
       </div>

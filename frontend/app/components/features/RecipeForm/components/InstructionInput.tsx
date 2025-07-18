@@ -1,162 +1,290 @@
 "use client";
-import React, { useState } from "react";
-import { toast } from "react-hot-toast";
-import { useImageUpload } from "../hooks/useImageUpload";
-import styles from "./InstructionInput.module.scss";
-import { imageBaseUrl } from "@/app/utils/api";
-import OptimizedImage from "@/app/components/ui/OptimizedImage/OptimizedImage";
 
-interface Instruction {
-  step: number;
-  description: string;
-  imageURL?: string | File;
+import React from "react";
+import { useImageUpload } from "../hooks/useImageUpload";
+import { RecipeFormData } from "../types/recipeForm";
+import { VALIDATION_MESSAGES } from "../constants/validationMessages";
+import { imageBaseUrl } from "@/app/utils/api";
+import styles from "./InstructionInput.module.scss";
+import toast from "react-hot-toast";
+import OptimizedImage from "@/app/components/ui/OptimizedImage/OptimizedImage";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { FaCirclePlus } from "react-icons/fa6";
+import { FaGripLines, FaTrash } from "react-icons/fa";
+import { LuImagePlus } from "react-icons/lu";
+
+interface SortableItemProps {
+  id: string;
+  children: React.ReactNode;
+  listeners?: any;
 }
 
+const SortableItem = ({ id, children, listeners }: SortableItemProps) => {
+  const { attributes, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 999 : 0,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      {React.cloneElement(children as React.ReactElement, { listeners })}
+    </div>
+  );
+};
+
+interface DragHandleProps {
+  id: string;
+}
+
+const DragHandle = ({ id }: DragHandleProps) => {
+  const { listeners } = useSortable({ id });
+
+  return (
+    <button className={styles.instruction_block__drag_handle} {...listeners}>
+      <FaGripLines />
+    </button>
+  );
+};
+
 interface InstructionInputProps {
-  instructions: Instruction[];
-  onInstructionsChange: (instructions: Instruction[]) => void;
+  instructions: RecipeFormData["instructions"];
+  onUpdateInstructions: (instructions: RecipeFormData["instructions"]) => void;
 }
 
 export const InstructionInput = ({
-  instructions,
-  onInstructionsChange,
+  instructions = [],
+  onUpdateInstructions,
 }: InstructionInputProps) => {
-  const { handleImageChange } = useImageUpload();
+  const { handleImageChange, getImageUrl, revokeImageUrl } = useImageUpload();
 
-  const addInstruction = () => {
-    const newInstruction: Instruction = {
-      step: instructions.length + 1,
-      description: "",
-    };
-    onInstructionsChange([...instructions, newInstruction]);
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      const oldIndex = instructions.findIndex(
+        (_, i) => `step-${i}` === active.id
+      );
+      const newIndex = instructions.findIndex(
+        (_, i) => `step-${i}` === over.id
+      );
+
+      const newInstructions = [...instructions];
+      const [movedItem] = newInstructions.splice(oldIndex, 1);
+      newInstructions.splice(newIndex, 0, movedItem);
+
+      // ステップ番号を更新
+      const updatedInstructions = newInstructions.map((step, index) => ({
+        ...step,
+        step: index + 1,
+      }));
+
+      onUpdateInstructions(updatedInstructions);
+    }
   };
 
-  const removeInstruction = (index: number) => {
+  const handleDeleteInstruction = (index: number) => {
+    if (instructions.length === 1) {
+      toast.error(VALIDATION_MESSAGES.MIN_INSTRUCTIONS);
+      return;
+    }
+
     const updatedInstructions = instructions
       .filter((_, i) => i !== index)
-      .map((instruction, i) => ({
-        ...instruction,
+      .map((step, i) => ({
         step: i + 1,
+        description: step.description,
+        imageURL: step.imageURL,
       }));
-    onInstructionsChange(updatedInstructions);
-  };
 
-  const updateInstruction = (index: number, field: keyof Instruction, value: string) => {
-    const updatedInstructions = [...instructions];
-    updatedInstructions[index] = {
-      ...updatedInstructions[index],
-      [field]: value,
-    };
-    onInstructionsChange(updatedInstructions);
-  };
-
-  const handleImageUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    index: number
-  ) => {
-    const result = await handleImageChange(e);
-    if (result) {
-      const updatedInstructions = [...instructions];
-      updatedInstructions[index] = {
-        ...updatedInstructions[index],
-        imageURL: result.image,
-      };
-      onInstructionsChange(updatedInstructions);
-    }
-  };
-
-  const getImageUrl = (imageURL: string | File | undefined): string => {
-    if (!imageURL) return "";
-    if (imageURL instanceof File) {
-      return URL.createObjectURL(imageURL);
-    }
-    if (typeof imageURL === "string" && imageURL.startsWith("http")) {
-      return imageURL;
-    }
-    if (typeof imageURL === "string") {
-      return `${imageBaseUrl}/${imageURL}`;
-    }
-    return "";
+    onUpdateInstructions(updatedInstructions);
   };
 
   return (
     <div className={styles.instruction_block}>
-      <h3 className={styles.instruction_block__title}>作り方</h3>
-      {instructions.map((instruction, index) => (
-        <div key={index} className={styles.instruction_block__item}>
-          <div className={styles.instruction_block__header}>
-            <span className={styles.instruction_block__step}>
-              ステップ {instruction.step}
-            </span>
-            {instructions.length > 1 && (
-              <button
-                type="button"
-                onClick={() => removeInstruction(index)}
-                className={styles.instruction_block__remove}
-              >
-                削除
-              </button>
-            )}
-          </div>
-          <div className={styles.instruction_block__content}>
-            <textarea
-              value={instruction.description}
-              onChange={(e) =>
-                updateInstruction(index, "description", e.target.value)
-              }
-              placeholder="作り方を入力してください"
-              className={styles.instruction_block__textarea}
-              rows={3}
-            />
-            <div className={styles.instruction_block__image_container}>
-              {instruction.imageURL ? (
-                <>
-                  <OptimizedImage
-                    src={getImageUrl(instruction.imageURL)}
-                    alt={`Step ${instruction.step}`}
-                    className={styles.instruction_block__image}
-                    width={100}
-                    height={100}
-                  />
-                  <div
-                    className={styles.instruction_block__image_overlay}
-                  >
-                    <span
-                      className={styles.instruction_block__image_text}
-                    >
-                      画像を変更
-                    </span>
+      <div className={styles.instruction_block__container}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={instructions.map((_, index) => `step-${index}`)}
+            strategy={verticalListSortingStrategy}
+          >
+            {instructions.map((instruction, index) => (
+              <SortableItem key={`step-${index}`} id={`step-${index}`}>
+                <div className={styles.instruction_block__step}>
+                  <div className={styles.instruction_block__header}>
+                    <div className={styles.instruction_block__step_number}>
+                      {instruction.step}
+                    </div>
+                    <div className={styles.instruction_block__actions}>
+                      <DragHandle id={`step-${index}`} />
+                      <button
+                        className={styles.instruction_block__delete}
+                        onClick={() => handleDeleteInstruction(index)}
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
                   </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(e, index)}
-                    className={styles.instruction_block__image_input}
-                  />
-                </>
-              ) : (
-                <div className={styles.instruction_block__image_placeholder}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(e, index)}
-                    className={styles.instruction_block__image_input}
-                  />
-                  <span className={styles.instruction_block__image_placeholder_text}>
-                    画像を追加
-                  </span>
+                  <div className={styles.instruction_block__image_container}>
+                    {instruction.imageURL ? (
+                      <>
+                        <OptimizedImage
+                          src={
+                            instruction.imageURL instanceof File
+                              ? URL.createObjectURL(instruction.imageURL)
+                              : typeof instruction.imageURL === "string" &&
+                                instruction.imageURL.startsWith("http")
+                              ? instruction.imageURL
+                              : typeof instruction.imageURL === "string"
+                              ? `${imageBaseUrl}/${instruction.imageURL}`
+                              : ""
+                          }
+                          alt={`Step ${instruction.step}`}
+                          className={styles.instruction_block__image}
+                          width={100}
+                          height={100}
+                        />
+                        <div
+                          className={styles.instruction_block__image_overlay}
+                        >
+                          <span
+                            className={styles.instruction_block__image_text}
+                          >
+                            画像を変更
+                          </span>
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const updatedInstructions = instructions.map(
+                                (step, i) =>
+                                  i === index
+                                    ? {
+                                        ...step,
+                                        imageURL: file,
+                                      }
+                                    : step
+                              );
+                              onUpdateInstructions(updatedInstructions);
+                            }
+                          }}
+                          className={styles.instruction_block__image_input}
+                        />
+                      </>
+                    ) : (
+                      <div className={styles.instruction_block__placeholder}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const updatedInstructions = instructions.map(
+                                (step, i) =>
+                                  i === index
+                                    ? {
+                                        ...step,
+                                        imageURL: file,
+                                      }
+                                    : step
+                              );
+                              onUpdateInstructions(updatedInstructions);
+                            }
+                          }}
+                          className={styles.instruction_block__image_input}
+                        />
+                        <div
+                          className={
+                            styles.instruction_block__placeholder_content
+                          }
+                        >
+                          <div className={styles.instruction_block__icon}>
+                            <LuImagePlus />
+                          </div>
+                          <div
+                            className={styles.instruction_block__upload_text}
+                          >
+                            <label
+                              className={styles.instruction_block__upload_label}
+                            >
+                              手順の画像を<br />アップロード
+                            </label>
+                          </div>
+                          <p className={styles.instruction_block__file_info}>
+                            PNG, JPG, GIF up to 10MB
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.instruction_block__controls}>
+                    <textarea
+                      placeholder={`Step ${instruction.step}`}
+                      value={instruction.description}
+                      onChange={(e) =>
+                        onUpdateInstructions(
+                          instructions.map((step, i) =>
+                            i === index
+                              ? { ...step, description: e.target.value }
+                              : step
+                          )
+                        )
+                      }
+                      className={styles.instruction_block__textarea}
+                    />
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      ))}
+              </SortableItem>
+            ))}
+          </SortableContext>
+        </DndContext>
+      </div>
       <button
-        type="button"
-        onClick={addInstruction}
+        onClick={() =>
+          onUpdateInstructions([
+            ...instructions,
+            {
+              step: instructions.length + 1,
+              description: "",
+              imageURL: undefined,
+            },
+          ])
+        }
         className={styles.instruction_block__add}
       >
-        ステップを追加
+        <FaCirclePlus />
+        手順を追加
       </button>
     </div>
   );

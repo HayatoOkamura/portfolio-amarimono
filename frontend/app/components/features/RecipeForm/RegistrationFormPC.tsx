@@ -300,7 +300,7 @@ export const RegistrationFormPC = ({
           <h2 className={styles.instructions_block__title}>作り方</h2>
           <InstructionInput
             instructions={formData.instructions}
-            onInstructionsChange={(instructions) =>
+            onUpdateInstructions={(instructions) =>
               updateFormData({ instructions })
             }
           />
