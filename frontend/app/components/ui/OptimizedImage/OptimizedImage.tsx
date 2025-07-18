@@ -43,7 +43,7 @@ export default function OptimizedImage({
         width={width}
         height={height}
         className={className}
-        loading={loading}
+        loading={priority ? undefined : loading}
         onError={onError}
         onLoad={onLoad}
         style={{
@@ -55,23 +55,28 @@ export default function OptimizedImage({
   }
 
   // その他の画像はNext.jsのImageコンポーネントを使用
-  return (
-    <Image
-      src={src}
-      alt={alt}
-      width={width}
-      height={height}
-      className={className}
-      priority={priority}
-      loading={loading}
-      sizes={sizes}
-      quality={quality}
-      onError={onError}
-      onLoad={onLoad}
-      style={{
-        objectFit: 'cover',
-        borderRadius: '0.5rem',
-      }}
-    />
-  );
+  // priorityがtrueの場合はloadingプロパティを無視
+  const imageProps: any = {
+    src,
+    alt,
+    width,
+    height,
+    className,
+    priority,
+    sizes,
+    quality,
+    onError,
+    onLoad,
+    style: {
+      objectFit: 'cover',
+      borderRadius: '0.5rem',
+    }
+  };
+
+  // priorityがfalseの場合のみloadingプロパティを追加
+  if (!priority) {
+    imageProps.loading = loading;
+  }
+
+  return <Image {...imageProps} />;
 } 
