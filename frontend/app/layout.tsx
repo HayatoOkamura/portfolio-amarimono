@@ -140,13 +140,6 @@ export default function RootLayout({
         <Toaster position="top-center" />
         <PerformanceMonitor />
         
-        {/* 外部スクリプトの最適化 - イベントハンドラーを削除 */}
-        {process.env.NODE_ENV === 'production' && (
-          <Script
-            src="https://okamura.dev/analytics.js"
-            strategy="lazyOnload"
-          />
-        )}
       </body>
     </html>
   );
