@@ -261,17 +261,12 @@ export function useAuth() {
   const register = async ({ email, password }: { email: string; password: string }): Promise<AuthError | null> => {
     setIsRegistering(true);
     try {
-      // メール認証URLの生成を修正
-      const emailRedirectUrl = process.env.NEXT_PUBLIC_SITE_URL 
-        ? `${process.env.NEXT_PUBLIC_SITE_URL}/callback`
-        : 'https://amarimono.okamura.dev/callback';
-
       // Supabaseでのユーザー登録
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: emailRedirectUrl,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/callback`,
         },
       });
 
@@ -305,8 +300,8 @@ export function useAuth() {
       console.log('🔍 NEXT_PUBLIC_PROD_SUPABASE_URL:', process.env.NEXT_PUBLIC_PROD_SUPABASE_URL);
       console.log('🔍 NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY exists:', !!process.env.NEXT_PUBLIC_PROD_SUPABASE_ANON_KEY);
       
-      // 環境変数からサイトURLを取得、フォールバックとして固定URLを使用
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://amarimono.okamura.dev';
+      // 環境変数からサイトURLを取得、フォールバックとしてwindow.location.originを使用
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       console.log('🔍 Using site URL:', siteUrl);
       
       if (isLogin) {

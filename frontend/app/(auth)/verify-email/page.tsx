@@ -119,9 +119,7 @@ export default function VerifyEmailPage() {
         type: 'signup',
         email: email,
         options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL 
-            ? `${process.env.NEXT_PUBLIC_SITE_URL}/callback`
-            : 'https://amarimono.okamura.dev/callback',
+          emailRedirectTo: `${window.location.origin}/callback`,
         },
       });
 

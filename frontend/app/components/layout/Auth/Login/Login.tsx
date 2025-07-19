@@ -20,9 +20,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL 
-        ? `${process.env.NEXT_PUBLIC_SITE_URL}/callback`
-        : 'https://amarimono.okamura.dev/callback';
+      const redirectUrl = `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/callback`;
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
