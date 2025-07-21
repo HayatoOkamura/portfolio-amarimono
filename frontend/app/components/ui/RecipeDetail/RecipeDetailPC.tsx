@@ -428,7 +428,7 @@ const RecipeDetailPC = memo(
         </div>
 
         {showReviewModal && (
-          <div className={styles.review_modal}>
+          <section className={styles.review_modal}>
             <div className={styles.review_modal__inner}>
               <button
                 className={styles.review_modal__close}
@@ -467,7 +467,7 @@ const RecipeDetailPC = memo(
                 送信
               </button>
             </div>
-          </div>
+          </section>
         )}
 
         {showLoginModal && onLogin && (

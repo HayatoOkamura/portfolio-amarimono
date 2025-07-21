@@ -10,7 +10,7 @@ export default function NotFound() {
     <div className={styles.not_found_block}>
       <div className={styles.not_found_block__container}>
         <h1 className={styles.not_found_block__title}>404</h1>
-        <h2 className={styles.not_found_block__subtitle}>ページが見つかりません</h2>
+        <p className={styles.not_found_block__subtitle}>ページが見つかりません</p>
         <p className={styles.not_found_block__message}>
           お探しのページは存在しないか、移動された可能性があります。
           <br />

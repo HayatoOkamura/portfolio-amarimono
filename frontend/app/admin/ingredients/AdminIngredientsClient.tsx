@@ -163,7 +163,7 @@ const AdminIngredientsClient = () => {
       />
 
       {isModalOpen && (
-        <div className={styles.modal}>
+        <section className={styles.modal}>
           <div className={styles.modalContent}>
             <h2 className={styles.modalTitle}>
               {editingIngredient ? "具材を編集" : "具材を追加"}
@@ -176,7 +176,7 @@ const AdminIngredientsClient = () => {
               genres={ingredientGenres}
             />
           </div>
-        </div>
+        </section>
       )}
     </div>
   );

@@ -20,14 +20,14 @@ export default function AdminClient() {
     <div className={styles.admin__container}>
       <h1 className={styles.admin__title}>管理者ダッシュボード</h1>
       
-      <div className={styles.admin__user_info}>
+      <section className={styles.admin__user_info}>
         <h2 className={styles.admin__user_info_title}>ログイン中のユーザー</h2>
         <p className={styles.admin__user_info_text}>メールアドレス: {user?.email}</p>
         <p className={styles.admin__user_info_text}>ユーザー名: {user?.username || "未設定"}</p>
         <p className={styles.admin__user_info_text}>ロール: {user?.role || "user"}</p>
-      </div>
+      </section>
 
-      <div className={styles.admin__admin_links}>
+      <section className={styles.admin__admin_links}>
         <h2 className={styles.admin__admin_links_title}>管理機能</h2>
         <ul className={styles.admin__admin_links_list}>
           <li className={styles.admin__admin_links_item}>
@@ -46,7 +46,7 @@ export default function AdminClient() {
             </Link>
           </li>
         </ul>
-      </div>
+      </section>
     </div>
   );
 } 

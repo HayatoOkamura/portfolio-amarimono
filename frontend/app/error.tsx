@@ -19,7 +19,7 @@ export default function Error({
     <div className={styles.error_block} role="alert" aria-live="polite">
       <div className={styles.error_block__container}>
         <h1 className={styles.error_block__title}>500</h1>
-        <h2 className={styles.error_block__subtitle}>サーバーエラーが発生しました</h2>
+        <p className={styles.error_block__subtitle}>サーバーエラーが発生しました</p>
         <p className={styles.error_block__message}>
           申し訳ございません。サーバーでエラーが発生しました。
           <br />
